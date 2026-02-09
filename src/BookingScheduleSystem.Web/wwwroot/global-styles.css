@@ -1,0 +1,496 @@
+/**
+ * Global Styles - BookingScheduleSystem
+ * Base styles, resets, and utilities for professional booking platform
+ * WCAG 2.1 AA compliant design system
+ */
+
+/* ========================================
+   IMPORTS
+   ======================================== */
+
+@import url('design-tokens.css');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* ========================================
+   CSS RESET & BASE STYLES
+   ======================================== */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: var(--font-family-base);
+  font-size: 16px;
+  line-height: var(--line-height-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-body-medium);
+  font-weight: var(--font-weight-regular);
+  min-height: 100vh;
+}
+
+/* ========================================
+   FOCUS STATES (WCAG 2.1 AA)
+   ======================================== */
+
+/* Visible focus indicator for keyboard navigation */
+*:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Remove focus outline for mouse users */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Custom focus for buttons and interactive elements */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ========================================
+   TYPOGRAPHY RESETS
+   ======================================== */
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-headline);
+  color: var(--color-text-primary);
+}
+
+p {
+  margin: 0;
+  line-height: var(--line-height-body);
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color var(--transition-duration-base) var(--transition-timing);
+}
+
+a:hover {
+  color: var(--color-primary-dark);
+  text-decoration: underline;
+}
+
+/* ========================================
+   FORM ELEMENTS
+   ======================================== */
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* Remove default browser styles */
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-decoration {
+  -webkit-appearance: none;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ========================================
+   ACCESSIBILITY
+   ======================================== */
+
+/* Screen reader only class */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Skip to main content link */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  padding: var(--space-2) var(--space-4);
+  text-decoration: none;
+  z-index: var(--z-index-modal);
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* Minimum touch target size for mobile (WCAG AA) */
+@media (max-width: 959px) {
+  button, a[role="button"], input[type="button"], input[type="submit"] {
+    min-height: var(--size-touch-target);
+    min-width: var(--size-touch-target);
+  }
+}
+
+/* ========================================
+   UTILITY CLASSES
+   ======================================== */
+
+/* Spacing Utilities */
+.container-padding {
+  padding-left: var(--space-4);
+  padding-right: var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .container-padding {
+    padding-left: var(--space-8);
+    padding-right: var(--space-8);
+  }
+}
+
+.container-section {
+  padding-top: var(--space-16);
+  padding-bottom: var(--space-16);
+}
+
+@media (max-width: 767px) {
+  .container-section {
+    padding-top: var(--space-12);
+    padding-bottom: var(--space-12);
+  }
+}
+
+/* Text Utilities */
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text-primary {
+  color: var(--color-text-primary);
+}
+
+.text-secondary {
+  color: var(--color-text-secondary);
+}
+
+.text-disabled {
+  color: var(--color-text-disabled);
+}
+
+/* Font Weight Utilities */
+.font-light {
+  font-weight: var(--font-weight-light);
+}
+
+.font-regular {
+  font-weight: var(--font-weight-regular);
+}
+
+.font-medium {
+  font-weight: var(--font-weight-medium);
+}
+
+.font-semibold {
+  font-weight: var(--font-weight-semibold);
+}
+
+.font-bold {
+  font-weight: var(--font-weight-bold);
+}
+
+/* Layout Utilities */
+.flex {
+  display: flex;
+}
+
+.flex-column {
+  flex-direction: column;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.gap-1 {
+  gap: var(--space-1);
+}
+
+.gap-2 {
+  gap: var(--space-2);
+}
+
+.gap-3 {
+  gap: var(--space-3);
+}
+
+.gap-4 {
+  gap: var(--space-4);
+}
+
+.gap-6 {
+  gap: var(--space-6);
+}
+
+.gap-8 {
+  gap: var(--space-8);
+}
+
+/* Animation Utilities */
+.transition-all {
+  transition: all var(--transition-duration-base) var(--transition-timing);
+}
+
+.transition-colors {
+  transition: color var(--transition-duration-base) var(--transition-timing),
+              background-color var(--transition-duration-base) var(--transition-timing),
+              border-color var(--transition-duration-base) var(--transition-timing);
+}
+
+.transition-transform {
+  transition: transform var(--transition-duration-base) var(--transition-timing);
+}
+
+/* Hover Effects */
+.hover-lift {
+  transition: transform var(--transition-duration-base) var(--transition-timing),
+              box-shadow var(--transition-duration-base) var(--transition-timing);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+
+/* Elevation/Shadow Utilities */
+.elevation-0 {
+  box-shadow: var(--elevation-0);
+}
+
+.elevation-1 {
+  box-shadow: var(--elevation-1);
+}
+
+.elevation-2 {
+  box-shadow: var(--elevation-2);
+}
+
+.elevation-3 {
+  box-shadow: var(--elevation-3);
+}
+
+.elevation-4 {
+  box-shadow: var(--elevation-4);
+}
+
+.elevation-6 {
+  box-shadow: var(--elevation-6);
+}
+
+.elevation-8 {
+  box-shadow: var(--elevation-8);
+}
+
+/* Border Radius Utilities */
+.rounded-none {
+  border-radius: var(--radius-none);
+}
+
+.rounded-sm {
+  border-radius: var(--radius-sm);
+}
+
+.rounded {
+  border-radius: var(--radius-md);
+}
+
+.rounded-lg {
+  border-radius: var(--radius-lg);
+}
+
+.rounded-xl {
+  border-radius: var(--radius-xl);
+}
+
+.rounded-full {
+  border-radius: var(--radius-full);
+}
+
+/* Visibility Utilities */
+.hidden {
+  display: none !important;
+}
+
+@media (max-width: 599px) {
+  .hidden-xs {
+    display: none !important;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 959px) {
+  .hidden-sm {
+    display: none !important;
+  }
+}
+
+@media (min-width: 960px) and (max-width: 1279px) {
+  .hidden-md {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1280px) {
+  .hidden-lg {
+    display: none !important;
+  }
+}
+
+/* ========================================
+   LOADING & OVERLAY STATES
+   ======================================== */
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-index-modal);
+  backdrop-filter: blur(4px);
+}
+
+/* ========================================
+   SCROLLBAR STYLING (Webkit browsers)
+   ======================================== */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-background-grey);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary);
+}
+
+/* ========================================
+   PRINT STYLES
+   ======================================== */
+
+@media print {
+  * {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  a, a:visited {
+    text-decoration: underline;
+  }
+
+  a[href]::after {
+    content: " (" attr(href) ")";
+  }
+
+  img {
+    max-width: 100% !important;
+  }
+
+  @page {
+    margin: 2cm;
+  }
+
+  h2, h3 {
+    page-break-after: avoid;
+  }
+}
+
+/* ========================================
+   REDUCED MOTION (Accessibility)
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

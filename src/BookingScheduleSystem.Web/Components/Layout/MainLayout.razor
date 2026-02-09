@@ -52,20 +52,141 @@
     {
         PaletteLight = new PaletteLight()
         {
-            Primary = Colors.Blue.Default,
-            Secondary = Colors.Green.Accent4,
-            AppbarBackground = Colors.Blue.Default,
+            // Primary Blue - Trustworthy & Professional
+            Primary = "#2563EB",
+            PrimaryContrastText = "#FFFFFF",
+            PrimaryDarken = "#1E40AF",
+            PrimaryLighten = "#60A5FA",
+
+            // Secondary Teal - Energetic & Modern
+            Secondary = "#14B8A6",
+            SecondaryContrastText = "#FFFFFF",
+            SecondaryDarken = "#0F766E",
+            SecondaryLighten = "#5EEAD4",
+
+            // Tertiary Purple - Special Features
+            Tertiary = "#8B5CF6",
+            TertiaryContrastText = "#FFFFFF",
+            TertiaryDarken = "#7C3AED",
+            TertiaryLighten = "#A78BFA",
+
+            // Semantic Colors
+            Success = "#10B981",
+            SuccessContrastText = "#FFFFFF",
+            Info = "#3B82F6",
+            InfoContrastText = "#FFFFFF",
+            Warning = "#F59E0B",
+            WarningContrastText = "#FFFFFF",
+            Error = "#EF4444",
+            ErrorContrastText = "#FFFFFF",
+
+            // Backgrounds
+            Background = "#FAFBFC",
+            Surface = "#FFFFFF",
+
+            // AppBar
+            AppbarBackground = "#FFFFFF",
+            AppbarText = "#111827",
+
+            // Drawer
+            DrawerBackground = "#FFFFFF",
+            DrawerText = "#111827",
+            DrawerIcon = "#6B7280",
+
+            // Text
+            TextPrimary = "#111827",
+            TextSecondary = "#6B7280",
+            TextDisabled = "#9CA3AF",
+
+            // Borders & Dividers
+            Divider = "#E5E7EB",
+            DividerLight = "#F3F4F6",
+            LinesDefault = "#E5E7EB",
+            LinesInputs = "#D1D5DB",
+
+            // Actions
+            ActionDefault = "#6B7280",
+            ActionDisabled = "#9CA3AF",
+            ActionDisabledBackground = "#F3F4F6",
+
+            // Hover/Ripple states
+            HoverOpacity = 0.06,
+            RippleOpacity = 0.12
         },
         PaletteDark = new PaletteDark()
         {
-            Primary = Colors.Blue.Lighten1,
-            Secondary = Colors.Green.Accent4,
-            AppbarBackground = Colors.Gray.Darken4,
+            // Primary Blue - Lighter for dark backgrounds
+            Primary = "#60A5FA",
+            PrimaryContrastText = "#0F1419",
+            PrimaryDarken = "#3B82F6",
+            PrimaryLighten = "#93C5FD",
+
+            // Secondary Teal - Lighter
+            Secondary = "#5EEAD4",
+            SecondaryContrastText = "#0F1419",
+            SecondaryDarken = "#2DD4BF",
+            SecondaryLighten = "#99F6E4",
+
+            // Tertiary Purple
+            Tertiary = "#A78BFA",
+            TertiaryContrastText = "#0F1419",
+            TertiaryDarken = "#8B5CF6",
+            TertiaryLighten = "#C4B5FD",
+
+            // Semantic Colors - Adjusted for dark mode
+            Success = "#34D399",
+            SuccessContrastText = "#0F1419",
+            Info = "#60A5FA",
+            InfoContrastText = "#0F1419",
+            Warning = "#FBBF24",
+            WarningContrastText = "#0F1419",
+            Error = "#F87171",
+            ErrorContrastText = "#0F1419",
+
+            // Backgrounds
+            Background = "#0F1419",
+            Surface = "#1A1F2E",
+
+            // AppBar
+            AppbarBackground = "#1A1F2E",
+            AppbarText = "#F9FAFB",
+
+            // Drawer
+            DrawerBackground = "#1A1F2E",
+            DrawerText = "#F9FAFB",
+            DrawerIcon = "#9CA3AF",
+
+            // Text
+            TextPrimary = "#F9FAFB",
+            TextSecondary = "#9CA3AF",
+            TextDisabled = "#6B7280",
+
+            // Borders & Dividers
+            Divider = "#374151",
+            DividerLight = "#252A3A",
+            LinesDefault = "#374151",
+            LinesInputs = "#4B5563",
+
+            // Actions
+            ActionDefault = "#9CA3AF",
+            ActionDisabled = "#6B7280",
+            ActionDisabledBackground = "#252A3A",
+
+            // Hover/Ripple states
+            HoverOpacity = 0.12,
+            RippleOpacity = 0.2
         },
         LayoutProperties = new LayoutProperties()
         {
-            DrawerWidthLeft = "260px",
-            DrawerWidthRight = "300px"
+            DefaultBorderRadius = "8px",
+
+            // Drawer
+            DrawerWidthLeft = "280px",
+            DrawerWidthRight = "360px",
+            DrawerMiniWidthLeft = "64px",
+
+            // AppBar
+            AppbarHeight = "64px"
         }
     };
 

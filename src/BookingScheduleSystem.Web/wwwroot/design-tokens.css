@@ -1,0 +1,284 @@
+/**
+ * Design Tokens - BookingScheduleSystem
+ * Professional design system for high-conversion booking platform
+ * Following frontendengineer.md guidelines for trustworthy, calm UI
+ */
+
+:root {
+  /* ========================================
+     COLOR PALETTE - LIGHT MODE
+     ======================================== */
+
+  /* Primary Blue - Trustworthy & Professional */
+  --color-primary: #2563EB;
+  --color-primary-light: #60A5FA;
+  --color-primary-dark: #1E40AF;
+  --color-primary-contrast: #FFFFFF;
+
+  /* Secondary Teal - Energetic & Modern */
+  --color-secondary: #14B8A6;
+  --color-secondary-light: #5EEAD4;
+  --color-secondary-dark: #0F766E;
+  --color-secondary-contrast: #FFFFFF;
+
+  /* Tertiary Purple - Special Features */
+  --color-tertiary: #8B5CF6;
+  --color-tertiary-light: #A78BFA;
+  --color-tertiary-dark: #7C3AED;
+  --color-tertiary-contrast: #FFFFFF;
+
+  /* Semantic Colors */
+  --color-success: #10B981;
+  --color-success-light: #D1FAE5;
+  --color-success-contrast: #FFFFFF;
+
+  --color-error: #EF4444;
+  --color-error-light: #FEE2E2;
+  --color-error-contrast: #FFFFFF;
+
+  --color-warning: #F59E0B;
+  --color-warning-light: #FEF3C7;
+  --color-warning-contrast: #FFFFFF;
+
+  --color-info: #3B82F6;
+  --color-info-light: #DBEAFE;
+  --color-info-contrast: #FFFFFF;
+
+  /* Neutral Palette - Low Eye Strain */
+  --color-background: #FAFBFC;
+  --color-background-grey: #F3F4F6;
+  --color-surface: #FFFFFF;
+  --color-surface-variant: #F9FAFB;
+
+  --color-text-primary: #111827;
+  --color-text-secondary: #6B7280;
+  --color-text-disabled: #9CA3AF;
+  --color-text-hint: #D1D5DB;
+
+  --color-divider: #E5E7EB;
+  --color-divider-light: #F3F4F6;
+  --color-border: #D1D5DB;
+  --color-border-light: #E5E7EB;
+
+  /* Action States */
+  --color-action-hover: rgba(37, 99, 235, 0.08);
+  --color-action-selected: rgba(37, 99, 235, 0.12);
+  --color-action-disabled: #F3F4F6;
+  --color-action-disabled-text: #9CA3AF;
+
+  /* ========================================
+     TYPOGRAPHY
+     ======================================== */
+
+  /* Font Families */
+  --font-family-base: 'Inter', 'Roboto', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family-mono: 'Roboto Mono', 'Consolas', 'Monaco', 'Courier New', monospace;
+
+  /* Font Sizes */
+  --font-size-display-large: 57px;
+  --font-size-display-medium: 45px;
+  --font-size-display-small: 36px;
+
+  --font-size-headline-large: 32px;
+  --font-size-headline-medium: 28px;
+  --font-size-headline-small: 24px;
+
+  --font-size-title-large: 22px;
+  --font-size-title-medium: 16px;
+  --font-size-title-small: 14px;
+
+  --font-size-body-large: 16px;
+  --font-size-body-medium: 14px;
+  --font-size-body-small: 12px;
+
+  --font-size-label-large: 14px;
+  --font-size-label-medium: 12px;
+  --font-size-label-small: 11px;
+
+  /* Font Weights */
+  --font-weight-light: 300;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Line Heights */
+  --line-height-display: 1.12;
+  --line-height-headline: 1.25;
+  --line-height-title: 1.4;
+  --line-height-body: 1.5;
+  --line-height-label: 1.43;
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* Letter Spacing */
+  --letter-spacing-tight: -0.02em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.02em;
+
+  /* ========================================
+     SPACING SCALE (8px base)
+     ======================================== */
+
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-14: 56px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+  --space-32: 128px;
+
+  /* ========================================
+     BORDER RADIUS
+     ======================================== */
+
+  --radius-none: 0;
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-3xl: 32px;
+  --radius-full: 9999px;
+
+  /* ========================================
+     ELEVATION / SHADOWS
+     ======================================== */
+
+  --elevation-0: none;
+  --elevation-1: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --elevation-2: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --elevation-3: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --elevation-4: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --elevation-6: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --elevation-8: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+  /* ========================================
+     Z-INDEX SCALE
+     ======================================== */
+
+  --z-index-dropdown: 1000;
+  --z-index-sticky: 1020;
+  --z-index-fixed: 1030;
+  --z-index-modal-backdrop: 1040;
+  --z-index-modal: 1050;
+  --z-index-popover: 1060;
+  --z-index-tooltip: 1070;
+
+  /* ========================================
+     TRANSITIONS
+     ======================================== */
+
+  --transition-duration-fast: 150ms;
+  --transition-duration-base: 200ms;
+  --transition-duration-slow: 300ms;
+  --transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ========================================
+     BREAKPOINTS (for reference in JS)
+     ======================================== */
+
+  --breakpoint-xs: 0px;
+  --breakpoint-sm: 600px;
+  --breakpoint-md: 960px;
+  --breakpoint-lg: 1280px;
+  --breakpoint-xl: 1920px;
+
+  /* ========================================
+     SIZING
+     ======================================== */
+
+  --size-touch-target: 44px;  /* Minimum for mobile accessibility */
+  --size-icon-sm: 16px;
+  --size-icon-md: 24px;
+  --size-icon-lg: 32px;
+  --size-icon-xl: 48px;
+
+  --size-input-height: 56px;
+  --size-button-height: 40px;
+  --size-button-height-large: 48px;
+  --size-button-height-small: 32px;
+}
+
+/* ========================================
+   DARK MODE COLOR OVERRIDES
+   ======================================== */
+
+[data-theme="dark"],
+.mud-theme-dark {
+  /* Primary - Lighter for dark backgrounds */
+  --color-primary: #60A5FA;
+  --color-primary-light: #93C5FD;
+  --color-primary-dark: #3B82F6;
+  --color-primary-contrast: #0F1419;
+
+  /* Secondary - Lighter teal */
+  --color-secondary: #5EEAD4;
+  --color-secondary-light: #99F6E4;
+  --color-secondary-dark: #2DD4BF;
+  --color-secondary-contrast: #0F1419;
+
+  /* Tertiary - Lighter purple */
+  --color-tertiary: #A78BFA;
+  --color-tertiary-light: #C4B5FD;
+  --color-tertiary-dark: #8B5CF6;
+  --color-tertiary-contrast: #0F1419;
+
+  /* Semantic Colors - Adjusted for dark mode */
+  --color-success: #34D399;
+  --color-success-light: #064E3B;
+  --color-success-contrast: #0F1419;
+
+  --color-error: #F87171;
+  --color-error-light: #7F1D1D;
+  --color-error-contrast: #0F1419;
+
+  --color-warning: #FBBF24;
+  --color-warning-light: #78350F;
+  --color-warning-contrast: #0F1419;
+
+  --color-info: #60A5FA;
+  --color-info-light: #1E3A8A;
+  --color-info-contrast: #0F1419;
+
+  /* Neutrals - Dark theme */
+  --color-background: #0F1419;
+  --color-background-grey: #1A1F2E;
+  --color-surface: #1A1F2E;
+  --color-surface-variant: #252A3A;
+
+  --color-text-primary: #F9FAFB;
+  --color-text-secondary: #9CA3AF;
+  --color-text-disabled: #6B7280;
+  --color-text-hint: #4B5563;
+
+  --color-divider: #374151;
+  --color-divider-light: #252A3A;
+  --color-border: #4B5563;
+  --color-border-light: #374151;
+
+  /* Action States */
+  --color-action-hover: rgba(96, 165, 250, 0.12);
+  --color-action-selected: rgba(96, 165, 250, 0.2);
+  --color-action-disabled: #252A3A;
+  --color-action-disabled-text: #6B7280;
+
+  /* Shadows - Deeper for dark mode */
+  --elevation-1: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --elevation-2: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px -1px rgba(0, 0, 0, 0.4);
+  --elevation-3: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+  --elevation-4: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+  --elevation-6: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+  --elevation-8: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+}
