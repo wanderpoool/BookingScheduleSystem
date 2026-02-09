@@ -1,5 +1,8 @@
 using BookingScheduleSystem.Web.Components;
+using BookingScheduleSystem.Web.Services;
 using MudBlazor.Services;
+using MudBlazor;
+using Microsoft.AspNetCore.Components.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,8 +10,22 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Add MudBlazor services
-builder.Services.AddMudServices();
+// Add authentication and authorization services
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddAuthorization();
+
+// Add MudBlazor services with theme configuration
+builder.Services.AddMudServices(config =>
+{
+    config.SnackbarConfiguration.PositionClass = Defaults.Classes.Position.BottomRight;
+    config.SnackbarConfiguration.PreventDuplicates = false;
+    config.SnackbarConfiguration.NewestOnTop = false;
+    config.SnackbarConfiguration.ShowCloseIcon = true;
+    config.SnackbarConfiguration.VisibleStateDuration = 4000;
+    config.SnackbarConfiguration.HideTransitionDuration = 500;
+    config.SnackbarConfiguration.ShowTransitionDuration = 500;
+    config.SnackbarConfiguration.SnackbarVariant = Variant.Filled;
+});
 
 // Configure HttpClient for API communication
 builder.Services.AddHttpClient("BookingScheduleAPI", client =>
@@ -24,6 +41,11 @@ builder.Services.AddScoped(sp =>
     var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
     return httpClientFactory.CreateClient("BookingScheduleAPI");
 });
+
+// Register authentication and storage services
+builder.Services.AddScoped<ILocalStorageService, LocalStorageService>();
+builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
+builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 
 var app = builder.Build();
 

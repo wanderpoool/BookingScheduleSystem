@@ -1,0 +1,184 @@
+﻿@page "/dashboard"
+@rendermode InteractiveServer
+@using BookingScheduleSystem.Web.Components.Shared
+@using Microsoft.AspNetCore.Components.Authorization
+
+<PageTitle>Dashboard - Booking Schedule System</PageTitle>
+
+<AuthorizeView>
+    <Authorized>
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+            <MudStack Spacing="3">
+                @* Welcome Section *@
+                <MudPaper Elevation="2" Class="pa-4">
+                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="flex-wrap">
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.h4">Welcome back, @_userName! 👋</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                Here's what's happening with your bookings today
+                            </MudText>
+                        </MudStack>
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Add"
+                                   Href="/bookings/new">
+                            New Booking
+                        </MudButton>
+                    </MudStack>
+                </MudPaper>
+
+                @* Quick Stats *@
+                <MudGrid Spacing="3">
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudPaper Elevation="2" Class="pa-4">
+                            <MudStack Spacing="2">
+                                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                    <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Color="Color.Primary" Size="Size.Large" />
+                                    <MudText Typo="Typo.caption" Color="Color.Success" Style="font-weight: 600;">Today</MudText>
+                                </MudStack>
+                                <MudText Typo="Typo.h4">0</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">Bookings Today</MudText>
+                            </MudStack>
+                        </MudPaper>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudPaper Elevation="2" Class="pa-4">
+                            <MudStack Spacing="2">
+                                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                    <MudIcon Icon="@Icons.Material.Filled.Schedule" Color="Color.Info" Size="Size.Large" />
+                                    <MudText Typo="Typo.caption" Color="Color.Info" Style="font-weight: 600;">Upcoming</MudText>
+                                </MudStack>
+                                <MudText Typo="Typo.h4">0</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">Upcoming Bookings</MudText>
+                            </MudStack>
+                        </MudPaper>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudPaper Elevation="2" Class="pa-4">
+                            <MudStack Spacing="2">
+                                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                    <MudIcon Icon="@Icons.Material.Filled.People" Color="Color.Warning" Size="Size.Large" />
+                                    <MudText Typo="Typo.caption" Color="Color.Default" Style="font-weight: 600;">Active</MudText>
+                                </MudStack>
+                                <MudText Typo="Typo.h4">0</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">Active Providers</MudText>
+                            </MudStack>
+                        </MudPaper>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudPaper Elevation="2" Class="pa-4">
+                            <MudStack Spacing="2">
+                                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                    <MudIcon Icon="@Icons.Material.Filled.EventAvailable" Color="Color.Success" Size="Size.Large" />
+                                    <MudText Typo="Typo.caption" Color="Color.Success" Style="font-weight: 600;">This Month</MudText>
+                                </MudStack>
+                                <MudText Typo="Typo.h4">0</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">Completed</MudText>
+                            </MudStack>
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+
+                @* Quick Actions *@
+                <MudText Typo="Typo.h6" Class="mt-2">Quick Actions</MudText>
+                <MudGrid Spacing="2">
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudCard>
+                            <MudCardContent>
+                                <MudStack Spacing="2" AlignItems="AlignItems.Center">
+                                    <MudIcon Icon="@Icons.Material.Filled.AddCircle" Color="Color.Primary" Size="Size.Large" />
+                                    <MudText Typo="Typo.h6" Align="Align.Center">Create Booking</MudText>
+                                    <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+                                        Schedule a new booking for your services
+                                    </MudText>
+                                </MudStack>
+                            </MudCardContent>
+                            <MudCardActions Class="justify-center">
+                                <MudButton Variant="Variant.Text" Color="Color.Primary" Href="/bookings/new">
+                                    Get Started
+                                </MudButton>
+                            </MudCardActions>
+                        </MudCard>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudCard>
+                            <MudCardContent>
+                                <MudStack Spacing="2" AlignItems="AlignItems.Center">
+                                    <MudIcon Icon="@Icons.Material.Filled.PersonAdd" Color="Color.Info" Size="Size.Large" />
+                                    <MudText Typo="Typo.h6" Align="Align.Center">Invite Provider</MudText>
+                                    <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+                                        Add a new service provider to your team
+                                    </MudText>
+                                </MudStack>
+                            </MudCardContent>
+                            <MudCardActions Class="justify-center">
+                                <MudButton Variant="Variant.Text" Color="Color.Primary" Href="/providers/invite">
+                                    Invite Now
+                                </MudButton>
+                            </MudCardActions>
+                        </MudCard>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudCard>
+                            <MudCardContent>
+                                <MudStack Spacing="2" AlignItems="AlignItems.Center">
+                                    <MudIcon Icon="@Icons.Material.Filled.AccessTime" Color="Color.Warning" Size="Size.Large" />
+                                    <MudText Typo="Typo.h6" Align="Align.Center">Manage Hours</MudText>
+                                    <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+                                        Update your operating hours and availability
+                                    </MudText>
+                                </MudStack>
+                            </MudCardContent>
+                            <MudCardActions Class="justify-center">
+                                <MudButton Variant="Variant.Text" Color="Color.Primary" Href="/organization/hours">
+                                    Manage
+                                </MudButton>
+                            </MudCardActions>
+                        </MudCard>
+                    </MudItem>
+                </MudGrid>
+
+                @* Recent Activity Placeholder *@
+                <MudText Typo="Typo.h6" Class="mt-2">Recent Activity</MudText>
+                <MudPaper Elevation="2" Class="pa-6">
+                    <MudStack Spacing="2" AlignItems="AlignItems.Center">
+                        <MudIcon Icon="@Icons.Material.Filled.Inbox" Size="Size.Large" Color="Color.Default" />
+                        <MudText Typo="Typo.h6" Color="Color.Secondary">No recent activity</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            Your recent bookings and updates will appear here
+                        </MudText>
+                    </MudStack>
+                </MudPaper>
+            </MudStack>
+        </MudContainer>
+    </Authorized>
+    <NotAuthorized>
+        <RedirectToLogin />
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
+    private string _userName = "User";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthenticationStateTask != null)
+        {
+            var authState = await AuthenticationStateTask;
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated ?? false)
+            {
+                _userName = user.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? "User";
+            }
+        }
+    }
+}

@@ -1,0 +1,209 @@
+@page "/register"
+@rendermode InteractiveServer
+@using BookingScheduleSystem.Contracts.Auth
+@inject IAuthenticationService AuthService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@layout EmptyLayout
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="d-flex align-center justify-center py-4" Style="min-height: 100vh;">
+    <MudPaper Elevation="3" Class="pa-4 pa-sm-6 pa-md-8" Style="width: 100%; max-width: 500px;">
+        <MudStack Spacing="3">
+            @* Logo/Branding *@
+            <MudStack Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="2">
+                <img src="logo.png" alt="Book me App!" style="max-width: 200px; height: auto;" />
+            </MudStack>
+
+            <MudText Typo="Typo.h5" Align="Align.Center">Create Account</MudText>
+            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+                Join with an invitation code
+            </MudText>
+
+            <MudDivider />
+
+            @* Registration Form *@
+            <EditForm Model="@_registerModel" OnValidSubmit="HandleRegister">
+                <DataAnnotationsValidator />
+
+                <MudStack Spacing="2">
+                    @* Creation Code (Optional) *@
+                    <MudTextField @bind-Value="_registerModel.CreationCode"
+                                  Label="Invitation Code (Optional)"
+                                  Variant="Variant.Outlined"
+                                  HelperText="Enter if you have an invitation code from an organization"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.QrCode" />
+
+                    @* Name Fields - Side by side on larger screens *@
+                    <MudGrid Spacing="2">
+                        <MudItem xs="12" sm="6">
+                            <MudTextField @bind-Value="_registerModel.FirstName"
+                                          Label="First Name"
+                                          Variant="Variant.Outlined"
+                                          Required="true"
+                                          For="@(() => _registerModel.FirstName)" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudTextField @bind-Value="_registerModel.LastName"
+                                          Label="Last Name"
+                                          Variant="Variant.Outlined"
+                                          Required="true"
+                                          For="@(() => _registerModel.LastName)" />
+                        </MudItem>
+                    </MudGrid>
+
+                    <MudTextField @bind-Value="_registerModel.Email"
+                                  Label="Email"
+                                  Variant="Variant.Outlined"
+                                  InputType="InputType.Email"
+                                  Required="true"
+                                  For="@(() => _registerModel.Email)"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Email" />
+
+                    <MudTextField @bind-Value="_registerModel.Password"
+                                  Label="Password"
+                                  Variant="Variant.Outlined"
+                                  InputType="@(_showPassword ? InputType.Text : InputType.Password)"
+                                  Required="true"
+                                  For="@(() => _registerModel.Password)"
+                                  HelperText="Minimum 6 characters"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@(_showPassword ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
+                                  OnAdornmentClick="TogglePasswordVisibility" />
+
+                    <MudTextField @bind-Value="_registerModel.ConfirmPassword"
+                                  Label="Confirm Password"
+                                  Variant="Variant.Outlined"
+                                  InputType="@(_showPassword ? InputType.Text : InputType.Password)"
+                                  Required="true"
+                                  For="@(() => _registerModel.ConfirmPassword)"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@Icons.Material.Filled.Lock" />
+
+                    @* Philippine Data Privacy Act Compliance *@
+                    <MudPaper Elevation="0" Class="pa-3" Style="background-color: var(--mud-palette-background-grey);">
+                        <MudStack Spacing="2">
+                            <MudText Typo="Typo.subtitle2" Color="Color.Primary">
+                                <MudIcon Icon="@Icons.Material.Filled.PrivacyTip" Size="Size.Small" /> Legal Agreements
+                            </MudText>
+
+                            <MudCheckBox T="bool" @bind-Checked="_acceptTerms" Color="Color.Primary" Dense="true" Required="true">
+                                <MudText Typo="Typo.body2">
+                                    I have read and agree to the <MudLink Href="/terms" Target="_blank">Terms and Conditions</MudLink>
+                                </MudText>
+                            </MudCheckBox>
+
+                            <MudCheckBox T="bool" @bind-Checked="_acceptDataPrivacy" Color="Color.Primary" Dense="true" Required="true">
+                                <MudText Typo="Typo.body2">
+                                    I consent to the collection and processing of my personal data in accordance with the
+                                    <MudLink Href="/privacy" Target="_blank">Privacy Policy</MudLink> and the
+                                    <strong>Data Privacy Act of 2012 (Republic Act No. 10173)</strong> of the Philippines
+                                </MudText>
+                            </MudCheckBox>
+
+                            <MudAlert Severity="Severity.Info" Dense="true" Class="mt-2">
+                                <MudText Typo="Typo.caption">
+                                    Your data will be processed securely and in compliance with Philippine data protection laws.
+                                    You have the right to access, correct, and request deletion of your personal information.
+                                </MudText>
+                            </MudAlert>
+                        </MudStack>
+                    </MudPaper>
+
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               FullWidth="true"
+                               Size="Size.Large"
+                               ButtonType="ButtonType.Submit"
+                               Disabled="@(!_acceptTerms || !_acceptDataPrivacy || _isLoading)">
+                        @if (_isLoading)
+                        {
+                            <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
+                            <MudText>Creating Account...</MudText>
+                        }
+                        else
+                        {
+                            <MudText>Create Account</MudText>
+                        }
+                    </MudButton>
+
+                    <MudDivider />
+
+                    <MudStack Row="true" Justify="Justify.Center" Spacing="1" Class="flex-wrap">
+                        <MudText Typo="Typo.body2">Already have an account?</MudText>
+                        <MudLink Href="/login" Typo="Typo.body2">Sign in</MudLink>
+                    </MudStack>
+
+                    <MudStack Row="true" Justify="Justify.Center" Spacing="1" Class="flex-wrap">
+                        <MudText Typo="Typo.body2">Want to start your own?</MudText>
+                        <MudLink Href="/register-organization" Typo="Typo.body2">Create Organization</MudLink>
+                    </MudStack>
+                </MudStack>
+            </EditForm>
+        </MudStack>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private RegisterFormModel _registerModel = new();
+    private bool _showPassword = false;
+    private bool _acceptTerms = false;
+    private bool _acceptDataPrivacy = false;
+    private bool _isLoading = false;
+
+    private void TogglePasswordVisibility()
+    {
+        _showPassword = !_showPassword;
+    }
+
+    private async Task HandleRegister()
+    {
+        if (!_acceptTerms)
+        {
+            Snackbar.Add("Please accept the Terms and Conditions", Severity.Warning);
+            return;
+        }
+
+        if (!_acceptDataPrivacy)
+        {
+            Snackbar.Add("Please consent to the Data Privacy Policy", Severity.Warning);
+            return;
+        }
+
+        _isLoading = true;
+
+        try
+        {
+            // Convert form model to request
+            var registerRequest = new RegisterUserRequest
+            {
+                Email = _registerModel.Email,
+                Password = _registerModel.Password,
+                FirstName = _registerModel.FirstName,
+                LastName = _registerModel.LastName,
+                CreationCode = string.IsNullOrWhiteSpace(_registerModel.CreationCode) ? null : _registerModel.CreationCode
+            };
+
+            var result = await AuthService.RegisterAsync(registerRequest);
+
+            if (result != null)
+            {
+                Snackbar.Add($"Welcome, {result.FirstName}! Account created successfully.", Severity.Success);
+                Navigation.NavigateTo("/dashboard");
+            }
+            else
+            {
+                Snackbar.Add("Registration failed. Please check your information and try again.", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"An error occurred: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

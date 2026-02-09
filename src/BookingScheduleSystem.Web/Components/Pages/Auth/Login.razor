@@ -1,0 +1,142 @@
+@page "/login"
+@rendermode InteractiveServer
+@using BookingScheduleSystem.Contracts.Auth
+@using BookingScheduleSystem.Web.Models
+@inject IAuthenticationService AuthService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@layout EmptyLayout
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="d-flex align-center justify-center" Style="min-height: 100vh;">
+    <MudPaper Elevation="3" Class="pa-8" Style="width: 100%; max-width: 450px;">
+        <MudStack Spacing="4">
+            @* Logo/Branding *@
+            <MudStack Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="2">
+                <img src="logo.png" alt="Book me App!" style="max-width: 200px; height: auto;" />
+            </MudStack>
+
+            <MudText Typo="Typo.h5" Align="Align.Center">Welcome Back</MudText>
+            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+                Sign in to continue to your account
+            </MudText>
+
+            <MudDivider />
+
+            @* Login Form *@
+            <EditForm Model="@_loginModel" OnValidSubmit="HandleLogin">
+                <DataAnnotationsValidator />
+
+                <MudStack Spacing="3">
+                    <MudTextField @bind-Value="_loginModel.Email"
+                                  Label="Email"
+                                  Variant="Variant.Outlined"
+                                  InputType="InputType.Email"
+                                  Required="true"
+                                  RequiredError="Email is required"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Email" />
+
+                    <MudTextField @bind-Value="_loginModel.Password"
+                                  Label="Password"
+                                  Variant="Variant.Outlined"
+                                  InputType="@(_showPassword ? InputType.Text : InputType.Password)"
+                                  Required="true"
+                                  RequiredError="Password is required"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@(_showPassword ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
+                                  OnAdornmentClick="TogglePasswordVisibility" />
+
+                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                        <MudCheckBox T="bool" @bind-Checked="_rememberMe" Label="Remember me" Color="Color.Primary" />
+                        <MudLink Href="/forgot-password" Typo="Typo.body2">Forgot password?</MudLink>
+                    </MudStack>
+
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               FullWidth="true"
+                               Size="Size.Large"
+                               ButtonType="ButtonType.Submit"
+                               Disabled="@_isLoading">
+                        @if (_isLoading)
+                        {
+                            <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
+                            <MudText>Signing in...</MudText>
+                        }
+                        else
+                        {
+                            <MudText>Sign In</MudText>
+                        }
+                    </MudButton>
+
+                    <MudDivider />
+
+                    <MudStack Row="true" Justify="Justify.Center" Spacing="1">
+                        <MudText Typo="Typo.body2">Don't have an account?</MudText>
+                        <MudLink Href="/register" Typo="Typo.body2">Sign up</MudLink>
+                    </MudStack>
+
+                    <MudStack Row="true" Justify="Justify.Center" Spacing="1">
+                        <MudText Typo="Typo.body2">Want to create an organization?</MudText>
+                        <MudLink Href="/register-organization" Typo="Typo.body2">Get started</MudLink>
+                    </MudStack>
+                </MudStack>
+            </EditForm>
+        </MudStack>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
+    private LoginFormModel _loginModel = new();
+    private bool _showPassword = false;
+    private bool _rememberMe = false;
+    private bool _isLoading = false;
+
+    private void TogglePasswordVisibility()
+    {
+        _showPassword = !_showPassword;
+    }
+
+    private async Task HandleLogin()
+    {
+        _isLoading = true;
+
+        try
+        {
+            // Convert form model to request
+            var loginRequest = new LoginRequest
+            {
+                Email = _loginModel.Email,
+                Password = _loginModel.Password
+            };
+
+            var result = await AuthService.LoginAsync(loginRequest);
+
+            if (result != null)
+            {
+                Snackbar.Add($"Welcome back, {result.FirstName}!", Severity.Success);
+
+                // Navigate to return URL if provided, otherwise go to home
+                var navigationUrl = !string.IsNullOrWhiteSpace(ReturnUrl)
+                    ? Uri.UnescapeDataString(ReturnUrl)
+                    : "/";
+                Navigation.NavigateTo(navigationUrl);
+            }
+            else
+            {
+                Snackbar.Add("Invalid email or password", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"An error occurred: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

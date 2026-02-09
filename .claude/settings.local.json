@@ -12,7 +12,24 @@
       "Bash(dotnet build:*)",
       "Bash(dotnet list:*)",
       "Bash(git init:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nInitial multi-tenant booking system setup with tenant management\n\n- Set up .NET 9 solution with API \\(FastEndpoints\\), Web \\(Blazor Server\\), and Contracts projects\n- Implemented multi-tenancy foundation with tenant resolution middleware\n- Created tenant management endpoints \\(Create, Get, List\\) following vertical slice architecture\n- Configured Marten document store with PostgreSQL for tenant storage\n- Integrated Serilog for structured logging\n- Set up MudBlazor UI component library\n- Configured CORS for Blazor UI communication\n- Added FluentValidation for request validation\n- Established strongly-typed TenantId value object for type safety\n\nArchitecture follows SOLID principles, vertical slice architecture, and Microsoft C# coding conventions.\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(gh:*)",
+      "Bash(\"C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe\" auth login --web)",
+      "Bash(git remote set-url:*)",
+      "Bash(find:*)",
+      "Bash(dotnet run:*)",
+      "Bash(ping:*)",
+      "Bash(grep:*)",
+      "Bash(timeout:*)",
+      "Bash(taskkill:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(dir:*)",
+      "Bash(copy \"src\\\\initial_logo.png\" \"src\\\\BookingScheduleSystem.Web\\\\wwwroot\\\\logo.png\")"
     ]
   }
 }

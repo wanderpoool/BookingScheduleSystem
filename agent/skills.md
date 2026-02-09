@@ -90,6 +90,8 @@
   - Tenant list and user counts.
   - Tenant detail and user list.
   - Creation code generation and basic usage status.
+- Ui should strictly follow a mobile friendly.
+- Always follow the documentation in https://mudblazor.com/
 
 ## Authentication & Authorization
 - Use IdentityServer for identity and authorization server functionality.

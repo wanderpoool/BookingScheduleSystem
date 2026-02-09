@@ -1,7 +1,543 @@
-﻿@page "/"
+@page "/"
+@rendermode InteractiveServer
+@layout EmptyLayout
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Book me App! - Streamline Your Appointments & Bookings</PageTitle>
 
-<h1>Hello, world!</h1>
+<HeadContent>
+    <meta name="description" content="Transform your booking management with our powerful scheduling system. Perfect for salons, clinics, gyms, and service businesses in the Philippines. Start your 7-day free trial today!" />
+    <meta name="keywords" content="booking system, appointment scheduling, booking management, scheduling software, salon booking, clinic appointment, Philippines" />
+    <meta name="author" content="Book me App!" />
+    <meta property="og:title" content="Book me App! - Streamline Your Appointments" />
+    <meta property="og:description" content="Transform your booking management with our powerful scheduling system. 7-day free trial available!" />
+    <meta property="og:type" content="website" />
+    <link rel="canonical" href="https://bookmyapp.ph" />
+</HeadContent>
 
-Welcome to your new app.
+@* Simple Navigation Header *@
+<MudAppBar Elevation="1" Color="Color.Surface">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+        <img src="logo.png" alt="Book me App!" style="height: 40px; width: auto;" />
+    </MudStack>
+    <MudSpacer />
+
+    @* Desktop Navigation *@
+    <MudStack Row="true" Spacing="2" Class="d-none d-md-flex">
+        <MudButton Href="#features" Variant="Variant.Text" Color="Color.Default">Features</MudButton>
+        <MudButton Href="#pricing" Variant="Variant.Text" Color="Color.Default">Pricing</MudButton>
+        <MudButton Href="/login" Variant="Variant.Outlined" Color="Color.Primary">
+            Sign In
+        </MudButton>
+    </MudStack>
+
+    @* Mobile Navigation *@
+    <MudStack Row="true" Spacing="1" Class="d-flex d-md-none">
+        <MudButton Href="/login" Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small">
+            Sign In
+        </MudButton>
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Default" OnClick="@(() => _drawerOpen = !_drawerOpen)" />
+    </MudStack>
+</MudAppBar>
+
+@* Mobile Menu Drawer *@
+<MudDrawer @bind-Open="_drawerOpen" Anchor="Anchor.End" Elevation="2" Variant="@DrawerVariant.Temporary">
+    <MudDrawerHeader>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <img src="logo.png" alt="Book me App!" style="height: 40px; width: auto;" />
+        </MudStack>
+    </MudDrawerHeader>
+    <MudNavMenu>
+        <MudNavLink Href="#features" OnClick="@(() => _drawerOpen = false)">
+            <MudText>Features</MudText>
+        </MudNavLink>
+        <MudNavLink Href="#pricing" OnClick="@(() => _drawerOpen = false)">
+            <MudText>Pricing</MudText>
+        </MudNavLink>
+        <MudDivider Class="my-2" />
+        <MudNavLink Href="/login">
+            <MudText>Sign In</MudText>
+        </MudNavLink>
+        <MudNavLink Href="/register-organization">
+            <MudText Color="Color.Primary" Style="font-weight: 600;">Start Free Trial</MudText>
+        </MudNavLink>
+    </MudNavMenu>
+</MudDrawer>
+
+@* Hero Section *@
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="py-4 py-md-8 px-4" Style="margin-top: 64px;">
+    <MudGrid Spacing="4" Justify="Justify.Center">
+        <MudItem xs="12" md="6" Class="d-flex align-center">
+            <MudStack Spacing="3">
+                <MudText Class="fw-bold" Style="font-size: clamp(1.75rem, 5vw, 2.5rem); line-height: 1.2;">
+                    Simplify Your <span style="color: var(--mud-palette-primary);">Booking</span> Management
+                </MudText>
+                <MudText Style="font-size: clamp(1rem, 3vw, 1.25rem);" Color="Color.Secondary">
+                    All-in-one scheduling solution for businesses in the Philippines
+                </MudText>
+                <MudText Typo="Typo.body1">
+                    Say goodbye to double bookings and missed appointments. Our intuitive system helps you manage schedules,
+                    track bookings, and delight your customers - all in one place.
+                </MudText>
+                <MudStack Row="true" Spacing="2" Class="flex-wrap">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Size="Size.Large"
+                               Href="/register-organization"
+                               StartIcon="@Icons.Material.Filled.Rocket"
+                               Style="min-height: 48px;">
+                        Start Free Trial
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               Size="Size.Large"
+                               Href="#pricing"
+                               StartIcon="@Icons.Material.Filled.Visibility"
+                               Style="min-height: 48px;">
+                        View Pricing
+                    </MudButton>
+                </MudStack>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                    ✨ 7-day free trial • No credit card required • 2 bookings per day during trial
+                </MudText>
+            </MudStack>
+        </MudItem>
+        <MudItem xs="12" md="6" Class="d-flex align-center justify-center">
+            <MudPaper Elevation="8" Class="pa-4 pa-md-8" Style="background: linear-gradient(135deg, var(--mud-palette-primary) 0%, var(--mud-palette-secondary) 100%); border-radius: 24px; width: 100%;">
+                <MudStack Spacing="3" AlignItems="AlignItems.Center">
+                    <MudIcon Icon="@Icons.Material.Filled.CalendarMonth" Size="Size.Large" Style="font-size: clamp(80px, 15vw, 120px); color: white;" />
+                    <MudText Style="color: white; text-align: center; font-size: clamp(1.25rem, 4vw, 1.75rem); font-weight: 600;">Smart Scheduling</MudText>
+                    <MudText Typo="Typo.body1" Style="color: white; text-align: center;">
+                        Built for Filipino businesses
+                    </MudText>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@* Features Section *@
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="py-6 py-md-8 px-4" id="features" Style="background-color: var(--mud-palette-background-grey);">
+    <MudStack Spacing="4">
+        <MudStack Spacing="2" AlignItems="AlignItems.Center">
+            <MudText Align="Align.Center" Class="fw-bold" Style="font-size: clamp(1.5rem, 4vw, 2rem);">
+                Everything You Need to Succeed
+            </MudText>
+            <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary" Class="px-4">
+                Powerful features designed for service-based businesses
+            </MudText>
+        </MudStack>
+
+        <MudGrid Spacing="3">
+            <MudItem xs="12" sm="6" md="4">
+                <MudCard Elevation="4" Style="height: 100%;">
+                    <MudCardContent>
+                        <MudStack Spacing="3" AlignItems="AlignItems.Center">
+                            <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Color="Color.Primary" Size="Size.Large" />
+                            <MudText Typo="Typo.h6" Align="Align.Center">Smart Scheduling</MudText>
+                            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+                                Intelligent booking system that prevents conflicts and optimizes your time
+                            </MudText>
+                        </MudStack>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="4">
+                <MudCard Elevation="4" Style="height: 100%;">
+                    <MudCardContent>
+                        <MudStack Spacing="3" AlignItems="AlignItems.Center">
+                            <MudIcon Icon="@Icons.Material.Filled.Groups" Color="Color.Info" Size="Size.Large" />
+                            <MudText Typo="Typo.h6" Align="Align.Center">Multi-Provider Support</MudText>
+                            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+                                Manage multiple service providers with individual schedules and availability
+                            </MudText>
+                        </MudStack>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="4">
+                <MudCard Elevation="4" Style="height: 100%;">
+                    <MudCardContent>
+                        <MudStack Spacing="3" AlignItems="AlignItems.Center">
+                            <MudIcon Icon="@Icons.Material.Filled.Notifications" Color="Color.Warning" Size="Size.Large" />
+                            <MudText Typo="Typo.h6" Align="Align.Center">Automated Reminders</MudText>
+                            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+                                Reduce no-shows with automatic SMS and email notifications
+                            </MudText>
+                        </MudStack>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="4">
+                <MudCard Elevation="4" Style="height: 100%;">
+                    <MudCardContent>
+                        <MudStack Spacing="3" AlignItems="AlignItems.Center">
+                            <MudIcon Icon="@Icons.Material.Filled.Analytics" Color="Color.Success" Size="Size.Large" />
+                            <MudText Typo="Typo.h6" Align="Align.Center">Business Analytics</MudText>
+                            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+                                Track bookings, revenue, and performance with detailed reports
+                            </MudText>
+                        </MudStack>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="4">
+                <MudCard Elevation="4" Style="height: 100%;">
+                    <MudCardContent>
+                        <MudStack Spacing="3" AlignItems="AlignItems.Center">
+                            <MudIcon Icon="@Icons.Material.Filled.PhoneAndroid" Color="Color.Secondary" Size="Size.Large" />
+                            <MudText Typo="Typo.h6" Align="Align.Center">Mobile Friendly</MudText>
+                            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+                                Manage bookings on-the-go with our responsive mobile interface
+                            </MudText>
+                        </MudStack>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="4">
+                <MudCard Elevation="4" Style="height: 100%;">
+                    <MudCardContent>
+                        <MudStack Spacing="3" AlignItems="AlignItems.Center">
+                            <MudIcon Icon="@Icons.Material.Filled.Security" Color="Color.Error" Size="Size.Large" />
+                            <MudText Typo="Typo.h6" Align="Align.Center">DPA Compliant</MudText>
+                            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+                                Secure and compliant with Philippine Data Privacy Act of 2012
+                            </MudText>
+                        </MudStack>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        </MudGrid>
+    </MudStack>
+</MudContainer>
+
+@* Pricing Section *@
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="py-6 py-md-8 px-4" id="pricing">
+    <MudStack Spacing="4">
+        <MudStack Spacing="2" AlignItems="AlignItems.Center">
+            <MudText Align="Align.Center" Class="fw-bold" Style="font-size: clamp(1.5rem, 4vw, 2rem);">
+                Simple, Transparent Pricing
+            </MudText>
+            <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary" Class="px-4">
+                Choose the perfect plan for your business size
+            </MudText>
+        </MudStack>
+
+        <MudGrid Spacing="3" Justify="Justify.Center">
+            @* Starter Plan *@
+            <MudItem xs="12" sm="6" md="3">
+                <MudCard Elevation="8" Style="height: 100%; border: 2px solid var(--mud-palette-grey-lighten3);">
+                    <MudCardContent>
+                        <MudStack Spacing="3">
+                            <MudText Typo="Typo.h6" Color="Color.Primary">Starter</MudText>
+                            <MudStack Row="true" AlignItems="AlignItems.End" Spacing="1">
+                                <MudText Typo="Typo.h3" Class="fw-bold">₱499</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">/month</MudText>
+                            </MudStack>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                Perfect for solo practitioners
+                            </MudText>
+                            <MudDivider />
+                            <MudStack Spacing="2">
+                                <MudStack Row="true" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
+                                    <MudText Typo="Typo.body2">Up to 10 bookings/day</MudText>
+                                </MudStack>
+                                <MudStack Row="true" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
+                                    <MudText Typo="Typo.body2">1 service provider</MudText>
+                                </MudStack>
+                                <MudStack Row="true" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
+                                    <MudText Typo="Typo.body2">Basic analytics</MudText>
+                                </MudStack>
+                                <MudStack Row="true" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
+                                    <MudText Typo="Typo.body2">Email support</MudText>
+                                </MudStack>
+                            </MudStack>
+                        </MudStack>
+                    </MudCardContent>
+                    <MudCardActions Class="pa-4">
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Primary"
+                                   FullWidth="true"
+                                   Href="/register-organization">
+                            Start Free Trial
+                        </MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
+
+            @* Professional Plan (Popular) *@
+            <MudItem xs="12" sm="6" md="3">
+                <MudCard Elevation="12" Style="height: 100%; border: 3px solid var(--mud-palette-primary);" Class="professional-plan-card">
+                    <MudCardContent>
+                        <MudStack Spacing="3">
+                            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                <MudText Typo="Typo.h6" Color="Color.Primary">Professional</MudText>
+                                <MudChip T="string" Color="Color.Primary" Size="Size.Small" Text="Popular" />
+                            </MudStack>
+                            <MudStack Row="true" AlignItems="AlignItems.End" Spacing="1">
+                                <MudText Typo="Typo.h3" Class="fw-bold">₱999</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">/month</MudText>
+                            </MudStack>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                For growing businesses
+                            </MudText>
+                            <MudDivider />
+                            <MudStack Spacing="2">
+                                <MudStack Row="true" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
+                                    <MudText Typo="Typo.body2">Up to 30 bookings/day</MudText>
+                                </MudStack>
+                                <MudStack Row="true" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
+                                    <MudText Typo="Typo.body2">Up to 3 providers</MudText>
+                                </MudStack>
+                                <MudStack Row="true" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
+                                    <MudText Typo="Typo.body2">Advanced analytics</MudText>
+                                </MudStack>
+                                <MudStack Row="true" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
+                                    <MudText Typo="Typo.body2">Priority email support</MudText>
+                                </MudStack>
+                                <MudStack Row="true" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
+                                    <MudText Typo="Typo.body2">SMS notifications</MudText>
+                                </MudStack>
+                            </MudStack>
+                        </MudStack>
+                    </MudCardContent>
+                    <MudCardActions Class="pa-4">
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   FullWidth="true"
+                                   Href="/register-organization">
+                            Start Free Trial
+                        </MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
+
+            @* Business Plan *@
+            <MudItem xs="12" sm="6" md="3">
+                <MudCard Elevation="8" Style="height: 100%; border: 2px solid var(--mud-palette-grey-lighten3);">
+                    <MudCardContent>
+                        <MudStack Spacing="3">
+                            <MudText Typo="Typo.h6" Color="Color.Primary">Business</MudText>
+                            <MudStack Row="true" AlignItems="AlignItems.End" Spacing="1">
+                                <MudText Typo="Typo.h3" Class="fw-bold">₱1,999</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">/month</MudText>
+                            </MudStack>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                For established businesses
+                            </MudText>
+                            <MudDivider />
+                            <MudStack Spacing="2">
+                                <MudStack Row="true" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
+                                    <MudText Typo="Typo.body2">Up to 100 bookings/day</MudText>
+                                </MudStack>
+                                <MudStack Row="true" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
+                                    <MudText Typo="Typo.body2">Up to 10 providers</MudText>
+                                </MudStack>
+                                <MudStack Row="true" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
+                                    <MudText Typo="Typo.body2">Premium analytics</MudText>
+                                </MudStack>
+                                <MudStack Row="true" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
+                                    <MudText Typo="Typo.body2">Priority support</MudText>
+                                </MudStack>
+                                <MudStack Row="true" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
+                                    <MudText Typo="Typo.body2">SMS + Email notifications</MudText>
+                                </MudStack>
+                                <MudStack Row="true" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
+                                    <MudText Typo="Typo.body2">Custom branding</MudText>
+                                </MudStack>
+                            </MudStack>
+                        </MudStack>
+                    </MudCardContent>
+                    <MudCardActions Class="pa-4">
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Primary"
+                                   FullWidth="true"
+                                   Href="/register-organization">
+                            Start Free Trial
+                        </MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
+
+            @* Enterprise Plan *@
+            <MudItem xs="12" sm="6" md="3">
+                <MudCard Elevation="8" Style="height: 100%; border: 2px solid var(--mud-palette-grey-lighten3);">
+                    <MudCardContent>
+                        <MudStack Spacing="3">
+                            <MudText Typo="Typo.h6" Color="Color.Primary">Enterprise</MudText>
+                            <MudStack Row="true" AlignItems="AlignItems.End" Spacing="1">
+                                <MudText Typo="Typo.h3" Class="fw-bold">₱3,999</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">/month</MudText>
+                            </MudStack>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                For large organizations
+                            </MudText>
+                            <MudDivider />
+                            <MudStack Spacing="2">
+                                <MudStack Row="true" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
+                                    <MudText Typo="Typo.body2">Unlimited bookings</MudText>
+                                </MudStack>
+                                <MudStack Row="true" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
+                                    <MudText Typo="Typo.body2">Unlimited providers</MudText>
+                                </MudStack>
+                                <MudStack Row="true" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
+                                    <MudText Typo="Typo.body2">Enterprise analytics</MudText>
+                                </MudStack>
+                                <MudStack Row="true" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
+                                    <MudText Typo="Typo.body2">24/7 phone support</MudText>
+                                </MudStack>
+                                <MudStack Row="true" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
+                                    <MudText Typo="Typo.body2">Multi-location support</MudText>
+                                </MudStack>
+                                <MudStack Row="true" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
+                                    <MudText Typo="Typo.body2">API access</MudText>
+                                </MudStack>
+                                <MudStack Row="true" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
+                                    <MudText Typo="Typo.body2">Dedicated account manager</MudText>
+                                </MudStack>
+                            </MudStack>
+                        </MudStack>
+                    </MudCardContent>
+                    <MudCardActions Class="pa-4">
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Primary"
+                                   FullWidth="true"
+                                   Href="/register-organization">
+                            Start Free Trial
+                        </MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
+        </MudGrid>
+    </MudStack>
+</MudContainer>
+
+@* CTA Section *@
+<MudContainer MaxWidth="MaxWidth.Large" Class="py-6 py-md-8 px-4">
+    <MudPaper Elevation="8" Class="pa-4 pa-md-8" Style="background: linear-gradient(135deg, var(--mud-palette-primary) 0%, var(--mud-palette-secondary) 100%); border-radius: 16px;">
+        <MudStack Spacing="3" AlignItems="AlignItems.Center">
+            <MudText Align="Align.Center" Style="color: white; font-size: clamp(1.5rem, 4vw, 2rem); font-weight: 700;">
+                Ready to Transform Your Business?
+            </MudText>
+            <MudText Align="Align.Center" Style="color: white; font-size: clamp(1rem, 3vw, 1.25rem);">
+                Join hundreds of Filipino businesses already using our platform
+            </MudText>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Surface"
+                       Size="Size.Large"
+                       Href="/register-organization"
+                       StartIcon="@Icons.Material.Filled.Rocket"
+                       Style="min-height: 48px;">
+                Start Your Free 7-Day Trial
+            </MudButton>
+            <MudText Typo="Typo.body2" Align="Align.Center" Style="color: white;">
+                No credit card required • Cancel anytime
+            </MudText>
+        </MudStack>
+    </MudPaper>
+</MudContainer>
+
+@* Footer *@
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="py-4 py-md-6 px-4" Style="background-color: var(--mud-palette-background-grey);">
+    <MudGrid Spacing="3">
+        <MudItem xs="12" md="4">
+            <MudStack Spacing="2">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <img src="logo.png" alt="Book me App!" style="height: 40px; width: auto;" />
+                </MudStack>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    Empowering Filipino businesses with smart scheduling solutions.
+                </MudText>
+            </MudStack>
+        </MudItem>
+        <MudItem xs="12" sm="4" md="2">
+            <MudStack Spacing="2">
+                <MudText Typo="Typo.h6">Product</MudText>
+                <MudLink Href="#features" Typo="Typo.body2">Features</MudLink>
+                <MudLink Href="#pricing" Typo="Typo.body2">Pricing</MudLink>
+                <MudLink Href="/login" Typo="Typo.body2">Sign In</MudLink>
+            </MudStack>
+        </MudItem>
+        <MudItem xs="12" sm="4" md="2">
+            <MudStack Spacing="2">
+                <MudText Typo="Typo.h6">Legal</MudText>
+                <MudLink Href="/privacy" Typo="Typo.body2">Privacy Policy</MudLink>
+                <MudLink Href="/terms" Typo="Typo.body2">Terms of Service</MudLink>
+            </MudStack>
+        </MudItem>
+        <MudItem xs="12" sm="4" md="4">
+            <MudStack Spacing="2">
+                <MudText Typo="Typo.h6">Compliant</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    🛡️ Data Privacy Act of 2012 (RA 10173) Compliant
+                </MudText>
+            </MudStack>
+        </MudItem>
+    </MudGrid>
+    <MudDivider Class="my-4" />
+    <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+        © @DateTime.Now.Year Book me App!. All rights reserved.
+    </MudText>
+</MudContainer>
+
+<style>
+    /* Professional plan card scale effect - desktop only */
+    @@media (min-width: 960px) {
+        .professional-plan-card {
+            transform: scale(1.05);
+        }
+    }
+
+    /* Ensure touch-friendly tap targets on mobile */
+    @@media (max-width: 959px) {
+        .mud-button {
+            min-height: 44px !important;
+        }
+    }
+
+    /* Smooth scrolling for anchor links */
+    html {
+        scroll-behavior: smooth;
+    }
+
+    /* Improve readability on mobile */
+    @@media (max-width: 599px) {
+        .mud-typography-body1 {
+            font-size: 0.95rem !important;
+        }
+
+        .mud-typography-body2 {
+            font-size: 0.85rem !important;
+        }
+    }
+</style>
+
+@code {
+    private bool _drawerOpen = false;
+}

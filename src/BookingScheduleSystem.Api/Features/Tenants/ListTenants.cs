@@ -1,5 +1,5 @@
 using BookingScheduleSystem.Api.Infrastructure.MultiTenancy;
-using BookingScheduleSystem.Contracts.Responses;
+using BookingScheduleSystem.Contracts.Tenants;
 using FastEndpoints;
 using Marten;
 
@@ -57,7 +57,14 @@ public sealed class ListTenants : Endpoint<ListTenantsRequest, ListTenantsRespon
                 Subdomain = t.Subdomain,
                 Description = t.Description,
                 CreatedAt = t.CreatedAt,
-                IsActive = t.IsActive
+                IsActive = t.IsActive,
+                IsInTrial = t.IsInTrial,
+                TrialStartDate = t.TrialStartDate,
+                TrialEndDate = t.TrialEndDate,
+                OwnerId = t.OwnerId,
+                OperatingHours = t.OperatingHours,
+                BannerUrl = t.BannerUrl,
+                Location = t.Location
             }).ToList(),
             TotalCount = (int)totalCount,
             PageNumber = pageNumber,

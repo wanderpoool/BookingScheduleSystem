@@ -1,6 +1,6 @@
 using BookingScheduleSystem.Contracts.Common;
 
-namespace BookingScheduleSystem.Contracts.Responses;
+namespace BookingScheduleSystem.Contracts.Tenants;
 
 public sealed record TenantResponse
 {
@@ -10,4 +10,11 @@ public sealed record TenantResponse
     public string? Description { get; init; }
     public required DateTime CreatedAt { get; init; }
     public required bool IsActive { get; init; }
+    public bool IsInTrial { get; init; }
+    public DateTime? TrialStartDate { get; init; }
+    public DateTime? TrialEndDate { get; init; }
+    public UserId? OwnerId { get; init; }
+    public string? OperatingHours { get; init; }
+    public string? BannerUrl { get; init; }
+    public string? Location { get; init; }
 }

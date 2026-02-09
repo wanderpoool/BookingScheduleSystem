@@ -1,0 +1,12 @@
+@inherits LayoutComponentBase
+
+<MudThemeProvider IsDarkMode="@_isDarkMode" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+@Body
+
+@code {
+    private bool _isDarkMode = false;
+}

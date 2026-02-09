@@ -1,4 +1,4 @@
-using BookingScheduleSystem.Contracts.Requests;
+using BookingScheduleSystem.Contracts.Tenants;
 using FluentValidation;
 
 namespace BookingScheduleSystem.Contracts.Validators;

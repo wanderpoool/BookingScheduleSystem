@@ -1,7 +1,6 @@
 using BookingScheduleSystem.Api.Infrastructure.MultiTenancy;
 using BookingScheduleSystem.Contracts.Common;
-using BookingScheduleSystem.Contracts.Requests;
-using BookingScheduleSystem.Contracts.Responses;
+using BookingScheduleSystem.Contracts.Tenants;
 using FastEndpoints;
 using Marten;
 
@@ -41,7 +40,10 @@ public sealed class CreateTenant : Endpoint<CreateTenantRequest, TenantResponse>
             Subdomain = req.Subdomain.ToLowerInvariant(),
             Description = req.Description,
             CreatedAt = DateTime.UtcNow,
-            IsActive = true
+            IsActive = true,
+            OperatingHours = req.OperatingHours,
+            BannerUrl = req.BannerUrl,
+            Location = req.Location
         };
 
         session.Store(tenant);
@@ -57,7 +59,14 @@ public sealed class CreateTenant : Endpoint<CreateTenantRequest, TenantResponse>
             Subdomain = tenant.Subdomain,
             Description = tenant.Description,
             CreatedAt = tenant.CreatedAt,
-            IsActive = tenant.IsActive
+            IsActive = tenant.IsActive,
+            IsInTrial = tenant.IsInTrial,
+            TrialStartDate = tenant.TrialStartDate,
+            TrialEndDate = tenant.TrialEndDate,
+            OwnerId = tenant.OwnerId,
+            OperatingHours = tenant.OperatingHours,
+            BannerUrl = tenant.BannerUrl,
+            Location = tenant.Location
         };
     }
 }
