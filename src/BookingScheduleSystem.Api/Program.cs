@@ -50,6 +50,8 @@ builder.Services.AddScoped<ITenantContext, TenantContext>();
 // Register authentication services
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 builder.Services.AddSingleton<IJwtTokenService, JwtTokenService>();
+builder.Services.AddSingleton<OtpService>();
+builder.Services.AddSingleton<OtpNotificationService>();
 
 // Configure JWT authentication
 var jwtSecretKey = builder.Configuration["Jwt:SecretKey"]

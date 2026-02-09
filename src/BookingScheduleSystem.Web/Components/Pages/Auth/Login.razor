@@ -47,7 +47,7 @@
                                   OnAdornmentClick="TogglePasswordVisibility" />
 
                     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-                        <MudCheckBox T="bool" @bind-Checked="_rememberMe" Label="Remember me" Color="Color.Primary" />
+                        <MudCheckBox T="bool" @bind-Value="_rememberMe" Label="Remember me" Color="Color.Primary" />
                         <MudLink Href="/forgot-password" Typo="Typo.body2">Forgot password?</MudLink>
                     </MudStack>
 

@@ -46,6 +46,7 @@ builder.Services.AddScoped(sp =>
 builder.Services.AddScoped<ILocalStorageService, LocalStorageService>();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
+builder.Services.AddScoped<IOtpService, OtpService>();
 
 var app = builder.Build();
 

@@ -1,0 +1,56 @@
+graph TB
+    subgraph "Client Layer"
+        Browser[Web Browser]
+    end
+
+    subgraph "Web Application - BookingScheduleSystem.Web"
+        BlazorApp[Blazor Server App<br/>Port: 5288]
+        WebServices[Services]
+        OtpWebService[OtpService]
+        WebServices --> OtpWebService
+    end
+
+    subgraph "API Layer - BookingScheduleSystem.Api"
+        APIServer[API Server<br/>Port: 5059]
+
+        subgraph "FastEndpoints"
+            SendOtpEP["/api/auth/send-otp"]
+            VerifyOtpEP["/api/auth/verify-otp"]
+            RegisterEP["/api/auth/register"]
+        end
+
+        subgraph "Infrastructure Services"
+            OtpSvc[OtpService<br/>In-Memory Store]
+            NotifSvc[OtpNotificationService<br/>Email/SMS]
+        end
+
+        APIServer --> SendOtpEP
+        APIServer --> VerifyOtpEP
+        APIServer --> RegisterEP
+        SendOtpEP --> OtpSvc
+        VerifyOtpEP --> OtpSvc
+        OtpSvc --> NotifSvc
+    end
+
+    subgraph "Data Layer"
+        PostgreSQL[(PostgreSQL<br/>Database<br/>Port: 5432)]
+        Marten[Marten ORM<br/>Document Store]
+        PostgreSQL --> Marten
+    end
+
+    subgraph "Infrastructure"
+        Docker[Docker Container<br/>bookingschedule_postgres]
+        Docker --> PostgreSQL
+    end
+
+    Browser <-->|HTTP| BlazorApp
+    BlazorApp <-->|REST API| APIServer
+    APIServer <-->|Npgsql| Marten
+    NotifSvc -.->|Future: SendGrid| Email[Email Service]
+    NotifSvc -.->|Future: Twilio| SMS[SMS Service]
+
+    style OtpSvc fill:#e1f5ff
+    style OtpWebService fill:#e1f5ff
+    style NotifSvc fill:#fff4e1
+    style PostgreSQL fill:#336791,color:#fff
+    style Docker fill:#0db7ed,color:#fff

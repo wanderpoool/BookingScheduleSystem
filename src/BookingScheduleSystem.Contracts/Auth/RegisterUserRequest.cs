@@ -4,7 +4,8 @@ namespace BookingScheduleSystem.Contracts.Auth;
 
 public sealed record RegisterUserRequest
 {
-    public required string Email { get; init; }
+    public string? Email { get; init; }
+    public string? PhoneNumber { get; init; }
     public required string Password { get; init; }
     public required string FirstName { get; init; }
     public required string LastName { get; init; }
@@ -23,4 +24,9 @@ public sealed record RegisterUserRequest
     /// Must be within organization operating hours
     /// </summary>
     public string? WorkingHours { get; init; }
+
+    /// <summary>
+    /// OTP verification token (must be verified before registration)
+    /// </summary>
+    public string? OtpVerificationToken { get; init; }
 }

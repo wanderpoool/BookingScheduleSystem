@@ -170,7 +170,7 @@
                                 Default: Monday-Friday 9:00 AM - 5:00 PM
                             </MudAlert>
 
-                            <MudCheckBox T="bool" @bind-Checked="_useDefaultHours" Label="Use default hours for now" Color="Color.Primary" />
+                            <MudCheckBox T="bool" @bind-Value="_useDefaultHours" Label="Use default hours for now" Color="Color.Primary" />
 
                             @if (!_useDefaultHours)
                             {
@@ -240,13 +240,13 @@
                                         <MudIcon Icon="@Icons.Material.Filled.PrivacyTip" Size="Size.Small" /> Legal Agreements
                                     </MudText>
 
-                                    <MudCheckBox T="bool" @bind-Checked="_acceptTerms" Color="Color.Primary" Dense="true" Required="true">
+                                    <MudCheckBox T="bool" @bind-Value="_acceptTerms" Color="Color.Primary" Dense="true" Required="true">
                                         <MudText Typo="Typo.body2">
                                             I have read and agree to the <MudLink Href="/terms" Target="_blank">Terms and Conditions</MudLink>
                                         </MudText>
                                     </MudCheckBox>
 
-                                    <MudCheckBox T="bool" @bind-Checked="_acceptDataPrivacy" Color="Color.Primary" Dense="true" Required="true">
+                                    <MudCheckBox T="bool" @bind-Value="_acceptDataPrivacy" Color="Color.Primary" Dense="true" Required="true">
                                         <MudText Typo="Typo.body2">
                                             I consent to the collection and processing of my personal data in accordance with the
                                             <MudLink Href="/privacy" Target="_blank">Privacy Policy</MudLink> and the
