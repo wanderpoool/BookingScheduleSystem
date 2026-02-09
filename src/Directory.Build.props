@@ -1,0 +1,32 @@
+<Project>
+  <PropertyGroup>
+    <!-- Target Framework -->
+    <TargetFramework>net9.0</TargetFramework>
+
+    <!-- Language Version -->
+    <LangVersion>13.0</LangVersion>
+
+    <!-- Nullable Reference Types -->
+    <Nullable>enable</Nullable>
+
+    <!-- Implicit Usings -->
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Code Analysis -->
+    <AnalysisMode>Default</AnalysisMode>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+    <!-- Deterministic Build -->
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+
+    <!-- Assembly Info -->
+    <Company>BookingScheduleSystem</Company>
+    <Product>BookingScheduleSystem</Product>
+    <Copyright>Copyright © $(Company) $([System.DateTime]::Now.Year)</Copyright>
+
+    <!-- Documentation -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,62 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BookingScheduleSystem.Api", "BookingScheduleSystem.Api\BookingScheduleSystem.Api.csproj", "{6152976C-B6B9-4576-9980-39F0E25268DA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BookingScheduleSystem.Web", "BookingScheduleSystem.Web\BookingScheduleSystem.Web.csproj", "{EDF8F2CA-7C99-4D32-99C2-E649658F9BAC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BookingScheduleSystem.Contracts", "BookingScheduleSystem.Contracts\BookingScheduleSystem.Contracts.csproj", "{5B864EE9-2930-494A-930B-995A43B360DF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6152976C-B6B9-4576-9980-39F0E25268DA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6152976C-B6B9-4576-9980-39F0E25268DA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6152976C-B6B9-4576-9980-39F0E25268DA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{6152976C-B6B9-4576-9980-39F0E25268DA}.Debug|x64.Build.0 = Debug|Any CPU
+		{6152976C-B6B9-4576-9980-39F0E25268DA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{6152976C-B6B9-4576-9980-39F0E25268DA}.Debug|x86.Build.0 = Debug|Any CPU
+		{6152976C-B6B9-4576-9980-39F0E25268DA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6152976C-B6B9-4576-9980-39F0E25268DA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6152976C-B6B9-4576-9980-39F0E25268DA}.Release|x64.ActiveCfg = Release|Any CPU
+		{6152976C-B6B9-4576-9980-39F0E25268DA}.Release|x64.Build.0 = Release|Any CPU
+		{6152976C-B6B9-4576-9980-39F0E25268DA}.Release|x86.ActiveCfg = Release|Any CPU
+		{6152976C-B6B9-4576-9980-39F0E25268DA}.Release|x86.Build.0 = Release|Any CPU
+		{EDF8F2CA-7C99-4D32-99C2-E649658F9BAC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EDF8F2CA-7C99-4D32-99C2-E649658F9BAC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EDF8F2CA-7C99-4D32-99C2-E649658F9BAC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{EDF8F2CA-7C99-4D32-99C2-E649658F9BAC}.Debug|x64.Build.0 = Debug|Any CPU
+		{EDF8F2CA-7C99-4D32-99C2-E649658F9BAC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{EDF8F2CA-7C99-4D32-99C2-E649658F9BAC}.Debug|x86.Build.0 = Debug|Any CPU
+		{EDF8F2CA-7C99-4D32-99C2-E649658F9BAC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EDF8F2CA-7C99-4D32-99C2-E649658F9BAC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EDF8F2CA-7C99-4D32-99C2-E649658F9BAC}.Release|x64.ActiveCfg = Release|Any CPU
+		{EDF8F2CA-7C99-4D32-99C2-E649658F9BAC}.Release|x64.Build.0 = Release|Any CPU
+		{EDF8F2CA-7C99-4D32-99C2-E649658F9BAC}.Release|x86.ActiveCfg = Release|Any CPU
+		{EDF8F2CA-7C99-4D32-99C2-E649658F9BAC}.Release|x86.Build.0 = Release|Any CPU
+		{5B864EE9-2930-494A-930B-995A43B360DF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5B864EE9-2930-494A-930B-995A43B360DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5B864EE9-2930-494A-930B-995A43B360DF}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{5B864EE9-2930-494A-930B-995A43B360DF}.Debug|x64.Build.0 = Debug|Any CPU
+		{5B864EE9-2930-494A-930B-995A43B360DF}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{5B864EE9-2930-494A-930B-995A43B360DF}.Debug|x86.Build.0 = Debug|Any CPU
+		{5B864EE9-2930-494A-930B-995A43B360DF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5B864EE9-2930-494A-930B-995A43B360DF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5B864EE9-2930-494A-930B-995A43B360DF}.Release|x64.ActiveCfg = Release|Any CPU
+		{5B864EE9-2930-494A-930B-995A43B360DF}.Release|x64.Build.0 = Release|Any CPU
+		{5B864EE9-2930-494A-930B-995A43B360DF}.Release|x86.ActiveCfg = Release|Any CPU
+		{5B864EE9-2930-494A-930B-995A43B360DF}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,55 @@
+---
+query: "Add worfklow based on roles : customer workflow\r
+
+  1. Customer Scan the QR code of tenant, then registration page to register
+  email password, or mobile number and password, then receive otp for success
+  account.\r
+
+  2. Once success, can schedule for appointment, but the schedule should be
+  based on the tenant user availability, or working hours.\r
+
+  \r
+
+  tenant user workflow :\r
+
+  1. Manage it's own calendar for availability, working hours.\r
+
+  2. take note, tenant user can have multiple tenant to handle."
+generationTime: 2026-02-09T14:56:31.731Z
+---
+flowchart TD
+    subgraph GlobalAdmin ["Global admin workflow"]
+        A[Global admin signs in] --> B[Create tenant and locations]
+        B --> C[Generate tenant-scoped creation codes]
+        I --> N[Global admin views tenant list and metrics]
+        N --> O[Inspect tenant users and activity summary]
+    end
+
+    subgraph TenantUser ["Tenant user workflow"]
+        C --> D[Company user opens onboarding page]
+        D --> E[Enter creation code and details]
+        E --> F[API validates code and creates tenant user]
+        TU1[Tenant user manages calendar: availability and working hours]
+        TU2[Tenant user can handle multiple tenants] --> TU1
+    end
+
+    subgraph Customer ["Customer workflow"]
+        B --> CU1[Customer scans tenant QR code]
+        CU1 --> CU2[Open tenant registration page]
+        CU2 --> CU3[Register with email/mobile and password]
+        CU3 --> CU4[Receive OTP and activate account]
+        CU4 --> G["User (tenant or customer) signs in via IdentityServer"]
+    end
+
+    subgraph System ["Shared system interactions"]
+        F --> G
+        G --> H[UI sends API calls with JWT and tenant info]
+        H --> I[Tenant middleware resolves tenant and checks roles]
+        I --> J[User views schedule calendar]
+        J --> K[Select time slot and fill booking form]
+        K --> L[API validates rules, tenant availability, and creates booking]
+        L --> M[Notifications sent and calendar updated]
+    end
+
+    %% Tenant user availability feeds booking validation
+    TU1 --> L
