@@ -55,9 +55,8 @@ Reset daily and monthly usage counters at appropriate intervals.
 Integrate with a payment provider for actual subscription payments.
 
 **Options to Consider**:
-- Stripe (recommended - best developer experience)
-- PayPal (wider merchant acceptance)
-- Square (good for SMBs)
+- GCASH
+- MAYA
 
 **Requirements**:
 - Create payment endpoint for subscribing to plans

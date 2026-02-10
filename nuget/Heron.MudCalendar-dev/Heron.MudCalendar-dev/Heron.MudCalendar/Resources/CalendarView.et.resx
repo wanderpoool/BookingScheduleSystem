@@ -1,0 +1,14 @@
+<root>
+    <data name="Day" xml:space="preserve">
+        <value>Päev</value>
+    </data>
+    <data name="Month" xml:space="preserve">
+        <value>Kuu</value>
+    </data>
+    <data name="Week" xml:space="preserve">
+        <value>Nädal</value>
+    </data>
+    <data name="WorkWeek" xml:space="preserve">
+        <value>Töönädal</value>
+    </data>
+</root>

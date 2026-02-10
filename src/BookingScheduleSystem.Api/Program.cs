@@ -3,6 +3,7 @@ using BookingScheduleSystem.Api.Infrastructure.Auth;
 using BookingScheduleSystem.Api.Infrastructure.Bookings;
 using BookingScheduleSystem.Api.Infrastructure.MultiTenancy;
 using BookingScheduleSystem.Api.Infrastructure.Schedules;
+using BookingScheduleSystem.Api.Infrastructure.Notifications;
 using BookingScheduleSystem.Api.Infrastructure.Subscriptions;
 using FastEndpoints;
 using Marten;
@@ -42,6 +43,9 @@ builder.Services.AddMarten(options =>
 
     // Configure TenantSubscription document with TenantSubscriptionId as identity
     options.Schema.For<TenantSubscription>().Identity(s => s.Id);
+
+    // Configure InAppNotification document
+    options.Schema.For<InAppNotification>().Identity(n => n.Id);
 });
 
 // Register multi-tenancy services
@@ -52,6 +56,7 @@ builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 builder.Services.AddSingleton<IJwtTokenService, JwtTokenService>();
 builder.Services.AddSingleton<OtpService>();
 builder.Services.AddSingleton<OtpNotificationService>();
+builder.Services.AddScoped<BookingNotificationService>();
 
 // Configure JWT authentication
 var jwtSecretKey = builder.Configuration["Jwt:SecretKey"]
@@ -106,7 +111,10 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
 }
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseCors("AllowBlazorUI");
 

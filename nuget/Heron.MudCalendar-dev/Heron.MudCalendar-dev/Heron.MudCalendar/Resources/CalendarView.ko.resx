@@ -1,0 +1,14 @@
+<root>
+    <data name="Day" xml:space="preserve">
+        <value>일</value>
+    </data>
+    <data name="Month" xml:space="preserve">
+        <value>월</value>
+    </data>
+    <data name="Week" xml:space="preserve">
+        <value>주</value>
+    </data>
+    <data name="WorkWeek" xml:space="preserve">
+        <value>근무주</value>
+    </data>
+</root>

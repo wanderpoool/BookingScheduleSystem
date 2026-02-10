@@ -1,0 +1,175 @@
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+@inject INotificationService NotificationService
+@inject AuthenticationStateProvider AuthStateProvider
+@implements IDisposable
+
+<MudBadge Content="@_unreadCount" Visible="@(_unreadCount > 0)" Color="Color.Error" Overlap="true">
+    <MudIconButton Icon="@Icons.Material.Filled.Notifications"
+                   Color="Color.Inherit"
+                   OnClick="TogglePopover" />
+</MudBadge>
+
+<MudPopover Open="@_isOpen" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight"
+            Class="pa-0" Style="width: min(360px, calc(100vw - 32px));">
+    <MudPaper Elevation="4">
+        <MudStack Spacing="0">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="pa-3">
+                <MudText Typo="Typo.subtitle1"><strong>Notifications</strong></MudText>
+                @if (_unreadCount > 0)
+                {
+                    <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small"
+                               OnClick="MarkAllRead">Mark all read</MudButton>
+                }
+            </MudStack>
+
+            <MudDivider />
+
+            @if (_notifications == null || _notifications.Count == 0)
+            {
+                <MudStack AlignItems="AlignItems.Center" Class="pa-6">
+                    <MudIcon Icon="@Icons.Material.Filled.NotificationsNone" Size="Size.Large" Color="Color.Secondary" />
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">No notifications</MudText>
+                </MudStack>
+            }
+            else
+            {
+                <MudList T="string" Dense="true" Class="overflow-y-auto" Style="max-height: min(400px, 60vh);">
+                    @foreach (var notification in _notifications)
+                    {
+                        <MudListItem OnClick="@(() => MarkRead(notification))"
+                                     Style="@(!notification.IsRead ? "background-color: var(--mud-palette-primary-lighten); opacity: 0.9;" : "")">
+                            <MudStack Spacing="0">
+                                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                    <MudText Typo="Typo.body2"><strong>@notification.Title</strong></MudText>
+                                    <MudIcon Icon="@GetNotificationIcon(notification.Type)"
+                                             Size="Size.Small"
+                                             Color="@GetNotificationColor(notification.Type)" />
+                                </MudStack>
+                                <MudText Typo="Typo.caption">@notification.Message</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                    @GetTimeAgo(notification.CreatedAt)
+                                </MudText>
+                            </MudStack>
+                        </MudListItem>
+                    }
+                </MudList>
+            }
+        </MudStack>
+    </MudPaper>
+</MudPopover>
+
+@code {
+    private int _unreadCount = 0;
+    private bool _isOpen = false;
+    private List<NotificationResponse>? _notifications;
+    private System.Timers.Timer? _pollTimer;
+    private bool _isAuthenticated = false;
+    private bool _hasTenant = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        _isAuthenticated = user.Identity?.IsAuthenticated == true;
+        _hasTenant = !string.IsNullOrEmpty(user.FindFirst("TenantId")?.Value);
+
+        if (_isAuthenticated && _hasTenant)
+        {
+            await RefreshUnreadCount();
+
+            _pollTimer = new System.Timers.Timer(30000);
+            _pollTimer.Elapsed += async (_, _) =>
+            {
+                await RefreshUnreadCount();
+                await InvokeAsync(StateHasChanged);
+            };
+            _pollTimer.Start();
+        }
+    }
+
+    private async Task RefreshUnreadCount()
+    {
+        try
+        {
+            _unreadCount = await NotificationService.GetUnreadCountAsync();
+        }
+        catch
+        {
+            // Silently fail for polling
+        }
+    }
+
+    private async Task TogglePopover()
+    {
+        _isOpen = !_isOpen;
+        if (_isOpen)
+        {
+            await LoadNotifications();
+        }
+    }
+
+    private async Task LoadNotifications()
+    {
+        try
+        {
+            var result = await NotificationService.GetNotificationsAsync(1, 10);
+            _notifications = result?.Notifications;
+        }
+        catch
+        {
+            _notifications = new();
+        }
+    }
+
+    private async Task MarkRead(NotificationResponse notification)
+    {
+        if (!notification.IsRead)
+        {
+            await NotificationService.MarkAsReadAsync(notification.Id);
+            _unreadCount = Math.Max(0, _unreadCount - 1);
+            await LoadNotifications();
+        }
+    }
+
+    private async Task MarkAllRead()
+    {
+        await NotificationService.MarkAllAsReadAsync();
+        _unreadCount = 0;
+        await LoadNotifications();
+    }
+
+    private string GetNotificationIcon(NotificationType type) => type switch
+    {
+        NotificationType.BookingCreated => Icons.Material.Filled.AddCircle,
+        NotificationType.BookingConfirmed => Icons.Material.Filled.CheckCircle,
+        NotificationType.BookingCancelled => Icons.Material.Filled.Cancel,
+        NotificationType.BookingRejected => Icons.Material.Filled.RemoveCircle,
+        _ => Icons.Material.Filled.Notifications
+    };
+
+    private Color GetNotificationColor(NotificationType type) => type switch
+    {
+        NotificationType.BookingCreated => Color.Info,
+        NotificationType.BookingConfirmed => Color.Success,
+        NotificationType.BookingCancelled => Color.Error,
+        NotificationType.BookingRejected => Color.Warning,
+        _ => Color.Default
+    };
+
+    private string GetTimeAgo(DateTime createdAt)
+    {
+        var diff = DateTime.UtcNow - createdAt;
+        if (diff.TotalMinutes < 1) return "Just now";
+        if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes}m ago";
+        if (diff.TotalHours < 24) return $"{(int)diff.TotalHours}h ago";
+        if (diff.TotalDays < 7) return $"{(int)diff.TotalDays}d ago";
+        return createdAt.ToString("MMM dd");
+    }
+
+    public void Dispose()
+    {
+        _pollTimer?.Stop();
+        _pollTimer?.Dispose();
+    }
+}

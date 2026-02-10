@@ -1,0 +1,42 @@
+/* Initially hide all month view items */
+.mud-cal-month-view .mud-cal-drop-item {
+    opacity: 0;
+    transition: opacity 0.05s ease-out;
+}
+
+    /* Fade visible month view items in after JavaScript positions them */
+    .mud-cal-month-view .mud-cal-drop-item.mud-cal-positioned {
+        opacity: 1;
+    }
+
+.mud-cal-drop-item .mud-drop-item {
+  height: 100%;
+  border: none;
+}
+
+.mud-cal-drop-item .mud-drop-item.disabled,
+.mud-cal-drop-item .mud-drop-item[draggable=false] {
+  cursor: inherit;
+}
+
+.mud-cal-drop-ok {
+  background-color: var(--mud-cal-cell-hover);
+}
+
+.mud-cal-resizer-x {
+  position: absolute;
+  right: 0;
+  height: 100%;
+  border-right: 10px solid transparent;
+  z-index: 1;
+  cursor: ew-resize;
+}
+
+.mud-cal-resizer-y {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  border-bottom: 10px solid transparent;
+  z-index: 1;
+  cursor: ns-resize;
+}

@@ -1,0 +1,14 @@
+<root>
+    <data name="Day" xml:space="preserve">
+        <value>Ημέρα</value>
+    </data>
+    <data name="Month" xml:space="preserve">
+        <value>Μήνας</value>
+    </data>
+    <data name="Week" xml:space="preserve">
+        <value>Εβδομάδα</value>
+    </data>
+    <data name="WorkWeek" xml:space="preserve">
+        <value>Εργάσιμη εβδομάδα</value>
+    </data>
+</root>

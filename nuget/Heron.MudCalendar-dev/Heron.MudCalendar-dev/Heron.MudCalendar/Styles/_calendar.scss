@@ -1,0 +1,89 @@
+.mud-calendar {
+  --mud-cal-cell-hover: color-mix(in srgb, var(--mud-palette-surface) 90%, black);
+  color: var(--mud-palette-text-primary);
+  background-color: var(--mud-palette-surface);
+  border-radius: var(--mud-default-borderradius);
+  transition: box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+  display: grid;
+  user-select: none;
+  width: 100%;
+  overflow: hidden;
+
+  &.mud-cal-square {
+    border-radius: 0;
+  }
+
+  &.mud-cal-outlined {
+    border: 1px solid var(--mud-palette-lines-default);
+  }
+  
+  .mud-cal-grid {
+    width: 100%;
+    height: 100%;
+    display: grid;
+
+    > div {
+      font-size: 0.875rem;
+      font-weight: 400;
+      line-height: 1.43;
+      letter-spacing: 0.01071em;
+      vertical-align: inherit;
+    }
+  }
+  
+  .mud-calendar-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .mud-cal-grid-header {
+    display: grid;
+    text-align: center;
+    font-weight: 500;
+    line-height: 1.5rem;
+  }
+  
+  .mud-picker {
+    display: inline;
+  }
+
+  .mud-cal-toolbar {
+    display: flex;
+    justify-content: space-between;
+    column-gap: 4px;
+    overflow-x: auto;
+    
+    .mud-button-label {
+      white-space: nowrap;
+    }
+  }
+  
+  .mud-cal-toolbar-nav {
+    display: flex;
+    justify-content: space-between;
+    column-gap: 4px;
+  }
+  
+  .mud-cal-overflow-message {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    padding-top: 0;
+    padding-bottom: 4px;
+    padding-left: 8px;
+    
+    .mud-cal-clickable {
+      cursor: pointer;
+    }
+  }
+  
+  .mud-cal-overflow-hidden {
+    visibility: hidden;
+  }
+  
+  .mud-cal-selectable {
+    touch-action: none;
+  }
+}

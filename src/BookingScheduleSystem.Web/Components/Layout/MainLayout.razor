@@ -1,23 +1,31 @@
 @inherits LayoutComponentBase
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
 @inject NavigationManager Navigation
+@inject IAuthenticationService AuthService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject HttpClient HttpClient
+@inject ITenantService TenantService
 
 <MudThemeProvider @ref="@_mudThemeProvider" IsDarkMode="@_isDarkMode" Theme="@_customTheme" />
 
 <MudLayout>
     <MudAppBar Elevation="1">
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
-        <MudText Typo="Typo.h5" Class="ml-3">Booking Schedule System</MudText>
+        <MudText Typo="Typo.h5" Class="ml-3">@_organizationName</MudText>
         <MudSpacer />
-
-        @* Theme Manager Button - Premium Feature *@
-        <MudTooltip Text="Customize Theme (Premium Feature)">
-            <MudIconButton Icon="@Icons.Material.Filled.Palette" Color="Color.Inherit" OnClick="@OpenThemeManager" />
-        </MudTooltip>
 
         <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
                        Color="Color.Inherit"
                        OnClick="@ToggleDarkMode" />
 
+        <AuthorizeView>
+            <Authorized>
+                <NotificationBell />
+            </Authorized>
+        </AuthorizeView>
+
+        <MudText Typo="Typo.body2" Color="Color.Inherit" Class="mr-2 d-none d-sm-flex">@_userName</MudText>
         <MudMenu Icon="@Icons.Material.Filled.Person" Color="Color.Inherit" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
             <MudMenuItem OnClick="@NavigateToProfile">Profile</MudMenuItem>
             <MudMenuItem OnClick="@NavigateToSettings">Settings</MudMenuItem>
@@ -26,7 +34,8 @@
         </MudMenu>
     </MudAppBar>
 
-    <MudDrawer Open="@_drawerOpen" OpenChanged="@((val) => _drawerOpen = val)" Elevation="2">
+    <MudDrawer Open="@_drawerOpen" OpenChanged="@((val) => _drawerOpen = val)"
+               Variant="DrawerVariant.Responsive" Breakpoint="Breakpoint.Md" Elevation="2">
         <MudDrawerHeader>
             <MudText Typo="Typo.h6">Navigation</MudText>
         </MudDrawerHeader>
@@ -34,16 +43,18 @@
     </MudDrawer>
 
     <MudMainContent>
-        <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+        <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 px-2 px-sm-4">
             @Body
         </MudContainer>
     </MudMainContent>
 </MudLayout>
 
 @code {
-    private bool _drawerOpen = true;
+    private bool _drawerOpen = false;
     private bool _isDarkMode = false;
     private MudThemeProvider? _mudThemeProvider;
+    private string _userName = string.Empty;
+    private string _organizationName = "Booking Schedule System";
 
     private MudTheme _customTheme = new MudTheme()
     {
@@ -187,6 +198,44 @@
         }
     };
 
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            _userName = user.FindFirst(ClaimTypes.GivenName)?.Value ?? user.FindFirst(ClaimTypes.Name)?.Value ?? "";
+
+            // Restore auth headers on page refresh
+            try
+            {
+                var token = await AuthService.GetTokenAsync();
+                if (!string.IsNullOrEmpty(token))
+                {
+                    HttpClient.DefaultRequestHeaders.Authorization =
+                        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                }
+
+                var tenantIdClaim = user.FindFirst("TenantId")?.Value;
+                if (!string.IsNullOrEmpty(tenantIdClaim))
+                {
+                    HttpClient.DefaultRequestHeaders.Remove("X-Tenant-Id");
+                    HttpClient.DefaultRequestHeaders.Add("X-Tenant-Id", tenantIdClaim);
+
+                    var tenant = await TenantService.GetTenantAsync(Guid.Parse(tenantIdClaim));
+                    if (tenant != null)
+                    {
+                        _organizationName = tenant.Name;
+                    }
+                }
+            }
+            catch
+            {
+                // localStorage may not be available during prerender
+            }
+        }
+    }
+
     private void ToggleDrawer()
     {
         _drawerOpen = !_drawerOpen;
@@ -195,11 +244,6 @@
     private void ToggleDarkMode()
     {
         _isDarkMode = !_isDarkMode;
-    }
-
-    private void OpenThemeManager()
-    {
-        // Theme manager will be opened via MudThemeManagerButton
     }
 
     private void NavigateToProfile()
@@ -212,9 +256,9 @@
         Navigation.NavigateTo("/settings");
     }
 
-    private void Logout()
+    private async Task Logout()
     {
-        // TODO: Implement logout logic
-        Navigation.NavigateTo("/login");
+        await AuthService.LogoutAsync();
+        Navigation.NavigateTo("/login", forceLoad: true);
     }
 }

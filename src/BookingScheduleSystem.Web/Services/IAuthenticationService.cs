@@ -9,6 +9,7 @@ namespace BookingScheduleSystem.Web.Services;
 public interface IAuthenticationService
 {
     Task<AuthenticationResponse?> LoginAsync(LoginRequest request);
+    Task<AuthenticationResponse?> LoginWithOtpAsync(LoginWithOtpRequest request);
     Task<AuthenticationResponse?> RegisterAsync(RegisterUserRequest request);
     Task<TenantResponse?> CreateOrganizationAsync(CreateOrganizationRequest request);
     Task LogoutAsync();

@@ -1,0 +1,94 @@
+﻿@page "/"
+
+<DocsPage>
+    <DocsPageHeader Title="MudCalendar" SubTitle="A simple but powerful calendar component for MudBlazor."/>
+
+    <DocsPageContent>
+
+        <DocsPageSection>
+            <SectionHeader Title="Features">
+                <Description>
+                    <ul style="list-style: disc; padding-inline-start: 20px;">
+                        <li>Mutiple views (month, week, work week, day)</li>
+                        <li>Customizable events</li>
+                        <li>Easy integration with your existing MudBlazor project</li>
+                        <li>Extendable</li>
+                    </ul>
+                </Description>
+            </SectionHeader>
+        </DocsPageSection>
+
+        <DocsPageSection>
+            <MudCalendar T="CalendarItem" />
+        </DocsPageSection>
+
+        <DocsPageSection>
+            <SectionHeader Title="Getting Started"/>
+            <SectionSubGroups>
+
+                <DocsPageSection>
+                    <SectionHeader Title="Setup MudBlazor">
+                        <Description>
+                            <p class="my-4">
+                                MudCalendar relies on MudBlazor. Follow the installation instructions for
+                                <MudLink Href="https://mudblazor.com/getting-started/installation" Target="_blank">
+                                    <b>MudBlazor</b>
+                                </MudLink>.
+                            </p>
+                        </Description>
+                    </SectionHeader>
+                </DocsPageSection>
+
+                <DocsPageSection>
+                    <SectionHeader Title="Install the package">
+                        <Description>
+                            Once your project is setup with MudBlazor you can install the MudCalendar nuget package.
+                        </Description>
+                    </SectionHeader>
+                    <SectionCode>
+                        <pre>dotnet add package Heron.MudCalendar</pre>
+                    </SectionCode>
+                </DocsPageSection>
+
+                <DocsPageSection>
+                    <SectionHeader Title="Add Imports">
+                        <Description>
+                            Add the following to <CodeInline>_Imports.razor</CodeInline>.
+                        </Description>
+                    </SectionHeader>
+                    <SectionCode>
+                        <pre>@@using Heron.MudCalendar</pre>
+                    </SectionCode>
+                </DocsPageSection>
+                
+                <DocsPageSection>
+                    <SectionHeader Title="Add style and script references (optional)">
+                        <Description>
+                            This step shouldn't be necessary as the component injects the references into the page as needed. However if you find
+                            that calendar is not displaying properly then add the following to your <CodeInline>index.html</CodeInline> or
+                            <CodeInline>_Layout.cshtml</CodeInline>/<CodeInline>_Host.cshtml</CodeInline>
+                        </Description>
+                    </SectionHeader>
+                    <SectionCode>
+                        <pre><span class="htmlTagDelimiter">&lt;</span><span class="htmlElementName">link</span> <span class="htmlAttributeName">href</span><span class="htmlOperator">=</span><span class="quot">"</span><span class="htmlAttributeValue">_content/Heron.MudCalendar/Heron.MudCalendar.min.css</span><span class="quot">"</span> <span class="htmlAttributeName">rel</span><span class="htmlOperator">=</span><span class="quot">"</span><span class="htmlAttributeValue">stylesheet</span><span class="quot">"</span> <span class="htmlTagDelimiter">/&gt;</span></pre>
+                        ...
+                        <pre><span class="htmlTagDelimiter">&lt;</span><span class="htmlElementName">script</span> <span class="htmlAttributeName">type</span><span class="htmlOperator">=</span><span class="quot">"</span><span class="htmlAttributeValue">module</span><span class="quot">"</span> <span class="htmlAttributeName">src</span><span class="htmlOperator">=</span><span class="quot">"</span><span class="htmlAttributeValue">_content/Heron.MudCalendar/Heron.MudCalendar.min.js</span><span class="quot">"</span><span class="htmlTagDelimiter">&gt;</span><span class="htmlTagDelimiter">&lt;</span><span class="htmlElementName">/script</span><span class="htmlTagDelimiter">&gt;</span></pre>
+                    </SectionCode>
+                </DocsPageSection>
+
+                <DocsPageSection>
+                    <SectionHeader Title="Add to page">
+                        <Description>
+                            Add the MudCalendar component to your razor page/component.
+                        </Description>
+                    </SectionHeader>
+                    <SectionCode>
+                        <pre><span class="htmlTagDelimiter">&lt;</span><span class="htmlElementName">MudCalendar</span> <span class="htmlAttributeName">T</span><span class="T">=</span><span class="quot">"</span><span class="htmlAttributeValue">CalendarItem</span><span class="quot">"</span><span class="htmlTagDelimiter">/&gt;</span></pre>
+                    </SectionCode>
+                </DocsPageSection>
+
+            </SectionSubGroups>
+        </DocsPageSection>
+
+    </DocsPageContent>
+</DocsPage>

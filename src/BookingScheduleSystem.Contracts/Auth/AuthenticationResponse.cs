@@ -12,4 +12,5 @@ public sealed record AuthenticationResponse
     public required string LastName { get; init; }
     public TenantId? TenantId { get; init; }
     public required bool IsGlobalAdmin { get; init; }
+    public bool IsProvider { get; init; }
 }

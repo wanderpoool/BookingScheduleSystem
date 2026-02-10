@@ -1,0 +1,11 @@
+@using Microsoft.JSInterop
+@namespace Heron.MudCalendar
+@inject IJSRuntime JsRuntime
+@typeparam T
+
+<div Class="@Classname" Style="@Style">
+	<MudDynamicDropItem T="T" Item="Position!.Item" Index="0" Disabled="Disabled" OnDragStarted="DragStarted" OnDragEnded="DragEnded">
+		@ChildContent
+	</MudDynamicDropItem>
+	 @ResizerContent
+</div>

@@ -1,0 +1,25 @@
+@namespace Heron.MudCalendar
+@using Heron.MudCalendar.Enums
+@typeparam T where T : Enum
+
+<div class="@Classname">
+    <MudButtonGroup OverrideStyles="false">
+        @foreach (int value in Enum.GetValues(Type))
+        {
+            if (AllowedValues == null || AllowedValues.Contains((T)Enum.ToObject(Type, value)))
+            {
+                <MudButton Color="@Color" Variant="@(value == Convert.ToInt32(Value) ? Variant.Filled : Variant.Outlined)" OnClick="@(_ => ButtonClicked((T)Enum.ToObject(Type, value)))">
+                    @if (typeof(T) == typeof(CalendarView))
+                    {
+                        // A bit of a hack has generic types don't work with StringLocalizer
+                        @CalendarViewName.GetText((CalendarView)Enum.ToObject(Type, value))
+                    }
+                    else
+                    {
+                        @Enum.GetName(Type, value)
+                    }
+                </MudButton>
+            }
+        }
+    </MudButtonGroup>
+</div>

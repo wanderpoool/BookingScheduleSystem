@@ -1,0 +1,25 @@
+@namespace Heron.MudCalendar
+@using Heron.MudCalendar.Enums
+@typeparam T where T : Enum
+
+<div>
+    <MudMenu Color="@Color" Variant="@Variant" EndIcon="@Icons.Material.Filled.KeyboardArrowDown" FullWidth="true" Label="@CalendarViewName.GetText((CalendarView)Enum.ToObject(Type, Value))">
+        @foreach (int value in Enum.GetValues(Type))
+        {
+            if (AllowedValues == null || AllowedValues.Contains((T)Enum.ToObject(Type, value)))
+            {
+                <MudMenuItem OnClick="@(_ => ButtonClicked((T)Enum.ToObject(Type, value)))">
+                    @if (typeof(T) == typeof(CalendarView))
+                    {
+                        // A bit of a hack has generic types don't work with StringLocalizer
+                        @CalendarViewName.GetText((CalendarView)Enum.ToObject(Type, value))
+                    }
+                    else
+                    {
+                        @Enum.GetName(Type, value)
+                    }
+                </MudMenuItem>
+            }
+        }
+    </MudMenu>
+</div>

@@ -1,0 +1,108 @@
+@inject IBookingService BookingService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudText Typo="Typo.h6">@Schedule.Title</MudText>
+
+            @if (!string.IsNullOrWhiteSpace(Schedule.ProviderName))
+            {
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                    <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Color="Color.Secondary" />
+                    <MudText Typo="Typo.body2">@Schedule.ProviderName</MudText>
+                </MudStack>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(Schedule.Description))
+            {
+                <MudText Typo="Typo.body2" Color="Color.Default">@Schedule.Description</MudText>
+            }
+
+            <MudDivider />
+
+            <MudStack Spacing="1">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                    <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Size="Size.Small" Color="Color.Primary" />
+                    <MudText Typo="Typo.body2">@Schedule.StartTime.ToString("dddd, MMM dd, yyyy")</MudText>
+                </MudStack>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                    <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Color="Color.Primary" />
+                    <MudText Typo="Typo.body2">@Schedule.StartTime.ToString("h:mm tt") - @Schedule.EndTime.ToString("h:mm tt")</MudText>
+                </MudStack>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                    <MudIcon Icon="@Icons.Material.Filled.EventSeat" Size="Size.Small"
+                             Color="@(Schedule.AvailableCapacity > 2 ? Color.Success : Color.Warning)" />
+                    <MudText Typo="Typo.body2">@Schedule.AvailableCapacity of @Schedule.MaxCapacity spots available</MudText>
+                </MudStack>
+            </MudStack>
+
+            @if (Schedule.AvailableCapacity <= 0)
+            {
+                <MudAlert Severity="Severity.Warning" Dense="true">This schedule is fully booked.</MudAlert>
+            }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Close</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                   OnClick="BookNow"
+                   Disabled="@(_isBooking || Schedule.AvailableCapacity <= 0)"
+                   StartIcon="@Icons.Material.Filled.BookOnline">
+            @if (_isBooking)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                <text>Booking...</text>
+            }
+            else
+            {
+                <text>Book Now</text>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public PublicScheduleResponse Schedule { get; set; } = default!;
+
+    private bool _isBooking = false;
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task BookNow()
+    {
+        _isBooking = true;
+        StateHasChanged();
+
+        try
+        {
+            var request = new CreateBookingRequest
+            {
+                ScheduleId = Schedule.Id.Value
+            };
+
+            var result = await BookingService.CreateBookingAsync(request);
+
+            if (result != null)
+            {
+                var statusMessage = result.Status == BookingStatus.Confirmed
+                    ? "Your booking has been confirmed!"
+                    : "Your booking is pending provider approval.";
+                Snackbar.Add($"Booking created! {statusMessage}", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isBooking = false;
+        }
+    }
+}

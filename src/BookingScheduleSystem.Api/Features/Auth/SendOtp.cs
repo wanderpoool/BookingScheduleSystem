@@ -1,11 +1,13 @@
 using BookingScheduleSystem.Api.Infrastructure.Auth;
 using BookingScheduleSystem.Contracts.Auth;
 using FastEndpoints;
+using Marten;
 
 namespace BookingScheduleSystem.Api.Features.Auth;
 
 public sealed class SendOtp : Endpoint<SendOtpRequest, OtpResponse>
 {
+    public required IDocumentStore DocumentStore { get; init; }
     public required OtpService OtpService { get; init; }
     public required OtpNotificationService NotificationService { get; init; }
 
@@ -52,6 +54,27 @@ public sealed class SendOtp : Endpoint<SendOtpRequest, OtpResponse>
                 return;
             }
             identifier = req.PhoneNumber;
+        }
+
+        // For login purpose, verify the user exists before sending OTP
+        if (string.Equals(req.Purpose, "login", StringComparison.OrdinalIgnoreCase))
+        {
+            await using var session = DocumentStore.LightweightSession();
+
+            User? user = req.ContactMethod.ToLower() switch
+            {
+                "email" => await session.Query<User>()
+                    .FirstOrDefaultAsync(u => u.Email == identifier, token: ct),
+                "phone" => await session.Query<User>()
+                    .FirstOrDefaultAsync(u => u.PhoneNumber == identifier, token: ct),
+                _ => null
+            };
+
+            if (user is null)
+            {
+                ThrowError("No account found with this contact information. Please register first.", 404);
+                return;
+            }
         }
 
         // Generate OTP

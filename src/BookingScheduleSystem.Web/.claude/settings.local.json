@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(dotnet run:*)",
+      "Bash(docker ps:*)",
+      "Bash(curl:*)",
+      "Bash(docker exec:*)",
+      "Bash(findstr:*)",
+      "Bash(gh api:*)",
+      "Bash(dotnet:*)",
+      "Bash(where:*)",
+      "Bash(del:*)",
+      "WebFetch(domain:www.nuget.org)",
+      "Bash(gh issue view:*)",
+      "Bash(/tmp/search_xml.ps1 << 'PSEOF'\n$xmlPath = \"$env:USERPROFILE\\\\.nuget\\\\packages\\\\mudblazor\\\\9.0.0-preview.2\\\\lib\\\\net9.0\\\\MudBlazor.xml\"\n$lines = Get-Content $xmlPath | Where-Object { $_ -match 'Palette' } | Select-Object -First 80\nforeach \\($line in $lines\\) {\n    Write-Output $line.Trim\\(\\)\n}\nPSEOF)",
+      "Bash(/tmp/strings_palette.ps1 << 'PSEOF'\n$dllPath = \"$env:USERPROFILE\\\\.nuget\\\\packages\\\\mudblazor\\\\9.0.0-preview.2\\\\lib\\\\net9.0\\\\MudBlazor.dll\"\n$bytes = [System.IO.File]::ReadAllBytes\\($dllPath\\)\n$text = [System.Text.Encoding]::UTF8.GetString\\($bytes\\)\n$matches = [regex]::Matches\\($text, '[A-Za-z\\\\.]+Palette[A-Za-z]*'\\)\n$unique = $matches | ForEach-Object { $_.Value } | Sort-Object -Unique\nforeach \\($m in $unique\\) {\n    Write-Output $m\n}\nPSEOF)",
+      "Bash(/tmp/search_xml2.ps1 << 'PSEOF'\n$xmlPath = \"$env:USERPROFILE\\\\.nuget\\\\packages\\\\mudblazor\\\\9.0.0-preview.2\\\\lib\\\\net9.0\\\\MudBlazor.xml\"\n$lines = Get-Content $xmlPath | Where-Object { $_ -match 'PaletteLight|PaletteDark' } | Select-Object -First 40\nforeach \\($line in $lines\\) {\n    Write-Output $line.Trim\\(\\)\n}\nPSEOF)",
+      "Bash(/tmp/search_theme.ps1 << 'PSEOF'\n$xmlPath = \"$env:USERPROFILE\\\\.nuget\\\\packages\\\\mudblazor\\\\9.0.0-preview.2\\\\lib\\\\net9.0\\\\MudBlazor.xml\"\n$lines = Get-Content $xmlPath | Where-Object { $_ -match 'MudTheme\\\\.' } | Select-Object -First 40\nforeach \\($line in $lines\\) {\n    Write-Output $line.Trim\\(\\)\n}\nPSEOF)",
+      "Bash(/tmp/search_theme.ps1:*)",
+      "Bash(/tmp/palette-check/Program.cs << 'EOF'\nusing System;\nusing System.Reflection;\n\nvar paletteType = typeof\\(MudBlazor.Palette\\);\nvar paletteLightType = typeof\\(MudBlazor.PaletteLight\\);\nvar paletteDarkType = typeof\\(MudBlazor.PaletteDark\\);\n\nConsole.WriteLine\\($\"Palette: IsAbstract={paletteType.IsAbstract}, IsClass={paletteType.IsClass}, IsSealed={paletteType.IsSealed}\"\\);\nConsole.WriteLine\\($\"PaletteLight: IsAbstract={paletteLightType.IsAbstract}, BaseType={paletteLightType.BaseType?.Name}\"\\);\nConsole.WriteLine\\($\"PaletteDark: IsAbstract={paletteDarkType.IsAbstract}, BaseType={paletteDarkType.BaseType?.Name}\"\\);\n\nConsole.WriteLine\\(\\);\nConsole.WriteLine\\(\"--- MudTheme properties ---\"\\);\nvar themeType = typeof\\(MudBlazor.MudTheme\\);\nforeach \\(var prop in themeType.GetProperties\\(\\)\\)\n{\n    if \\(prop.Name.Contains\\(\"Palette\"\\)\\)\n    {\n        Console.WriteLine\\($\"  MudTheme.{prop.Name} : {prop.PropertyType.Name}\"\\);\n    }\n}\n\nConsole.WriteLine\\(\\);\nConsole.WriteLine\\(\"--- PaletteLight can be instantiated? ---\"\\);\ntry\n{\n    var instance = new MudBlazor.PaletteLight\\(\\);\n    Console.WriteLine\\($\"  Yes! Created PaletteLight instance. Primary={instance.Primary}\"\\);\n}\ncatch \\(Exception ex\\)\n{\n    Console.WriteLine\\($\"  No: {ex.Message}\"\\);\n}\n\nConsole.WriteLine\\(\\);\nConsole.WriteLine\\(\"--- PaletteDark can be instantiated? ---\"\\);\ntry\n{\n    var instance = new MudBlazor.PaletteDark\\(\\);\n    Console.WriteLine\\($\"  Yes! Created PaletteDark instance. Primary={instance.Primary}\"\\);\n}\ncatch \\(Exception ex\\)\n{\n    Console.WriteLine\\($\"  No: {ex.Message}\"\\);\n}\nEOF)",
+      "Bash(__NEW_LINE_3f56ca7e8c25bab1__ cat)",
+      "Bash(/tmp/palette-check/palette-check.csproj << 'EOF'\n<Project Sdk=\"Microsoft.NET.Sdk\">\n  <PropertyGroup>\n    <OutputType>Exe</OutputType>\n    <TargetFramework>net9.0</TargetFramework>\n  </PropertyGroup>\n  <ItemGroup>\n    <PackageReference Include=\"MudBlazor\" Version=\"9.0.0-preview.2\" />\n  </ItemGroup>\n</Project>\nEOF)",
+      "Bash(__NEW_LINE_3f56ca7e8c25bab1__ cd /tmp/palette-check)",
+      "Bash(python:*)",
+      "Bash(git add:*)",
+      "Bash(git reset:*)"
+    ]
+  }
+}

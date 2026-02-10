@@ -496,13 +496,6 @@
 
             var authResult = await AuthService.RegisterAsync(registerRequest);
 
-            if (authResult == null)
-            {
-                Snackbar.Add("Failed to create user account", Severity.Error);
-                _isLoading = false;
-                return;
-            }
-
             // Step 2: Create the organization
             var defaultOperatingHours = _useDefaultHours ?
                 "{\"Monday\":{\"IsOpen\":true,\"OpenTime\":\"09:00\",\"CloseTime\":\"17:00\"},\"Tuesday\":{\"IsOpen\":true,\"OpenTime\":\"09:00\",\"CloseTime\":\"17:00\"},\"Wednesday\":{\"IsOpen\":true,\"OpenTime\":\"09:00\",\"CloseTime\":\"17:00\"},\"Thursday\":{\"IsOpen\":true,\"OpenTime\":\"09:00\",\"CloseTime\":\"17:00\"},\"Friday\":{\"IsOpen\":true,\"OpenTime\":\"09:00\",\"CloseTime\":\"17:00\"},\"Saturday\":{\"IsOpen\":false},\"Sunday\":{\"IsOpen\":false}}"
@@ -521,18 +514,14 @@
 
             if (orgResult != null)
             {
-                Snackbar.Add($"🎉 Welcome to {orgResult.Name}! Your 7-day trial has started.", Severity.Success);
-                await Task.Delay(1500); // Give user time to see the success message
+                Snackbar.Add($"Welcome to {orgResult.Name}! Your 7-day trial has started.", Severity.Success);
+                await Task.Delay(1500);
                 Navigation.NavigateTo("/dashboard");
-            }
-            else
-            {
-                Snackbar.Add("Failed to create organization. Please try again.", Severity.Error);
             }
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"An error occurred: {ex.Message}", Severity.Error);
+            Snackbar.Add(ex.Message, Severity.Error);
         }
         finally
         {

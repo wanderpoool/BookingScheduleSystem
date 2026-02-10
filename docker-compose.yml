@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:16
@@ -18,6 +16,39 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  api:
+    build:
+      context: ./src
+      dockerfile: BookingScheduleSystem.Api/Dockerfile
+    container_name: bookingschedule_api
+    ports:
+      - "5059:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__PostgreSQL: "Host=postgres;Database=bookingschedule;Username=postgres;Password=postgres"
+      Cors__AllowedOrigins: "http://localhost:5288"
+      Jwt__Issuer: "BookingScheduleSystem"
+      Jwt__Audience: "BookingScheduleSystem"
+      Jwt__SecretKey: "CHANGE_THIS_SECRET_KEY_IN_PRODUCTION_USE_SECURE_STORAGE"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./src
+      dockerfile: BookingScheduleSystem.Web/Dockerfile
+    container_name: bookingschedule_web
+    ports:
+      - "5288:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ApiSettings__BaseUrl: "http://api:8080"
+    depends_on:
+      - api
+    restart: unless-stopped
 
 volumes:
   postgres_data:

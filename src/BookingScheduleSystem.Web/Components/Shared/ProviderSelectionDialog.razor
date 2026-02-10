@@ -1,0 +1,251 @@
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IBookingService BookingService
+@inject IScheduleService ScheduleService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <MudIcon Icon="@Icons.Material.Filled.BookOnline" Color="Color.Primary" />
+            <MudText Typo="Typo.h6">Book Appointment</MudText>
+        </MudStack>
+    </TitleContent>
+    <DialogContent>
+        <MudStack Spacing="4">
+            <MudText Typo="Typo.h6" Class="mb-1">
+                @_bookingDate.ToString("dddd, MMMM dd, yyyy")
+            </MudText>
+
+            @* Time pickers — stacked vertically for mobile *@
+            <MudGrid Spacing="2">
+                <MudItem xs="12" sm="6">
+                    <MudTimePicker Label="Start Time" Time="_startTime"
+                                   TimeChanged="OnStartTimeChanged" AmPm="true"
+                                   PickerVariant="PickerVariant.Dialog" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTimePicker Label="End Time" Time="_endTime"
+                                   AmPm="true" ReadOnly="true"
+                                   PickerVariant="PickerVariant.Dialog" />
+                </MudItem>
+            </MudGrid>
+
+            @if (_availableProviders.Count == 0)
+            {
+                <MudAlert Severity="Severity.Info">No providers available for this time.</MudAlert>
+            }
+            else
+            {
+                <MudSelect T="ProviderOption" Label="Provider" @bind-Value="_selectedProvider"
+                           Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter"
+                           ToStringFunc="@(p => p?.Name ?? "")">
+                    @foreach (var provider in _availableProviders)
+                    {
+                        <MudSelectItem T="ProviderOption" Value="provider">
+                            @provider.Name
+                        </MudSelectItem>
+                    }
+                </MudSelect>
+            }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudStack Spacing="2" Style="width: 100%;" Class="pa-2">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       OnClick="ConfirmBooking"
+                       Disabled="@(_isBooking || _selectedProvider is null)"
+                       StartIcon="@Icons.Material.Filled.Check"
+                       FullWidth="true"
+                       Size="Size.Large">
+                @if (_isBooking)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-1" />
+                    <text>Booking...</text>
+                }
+                else
+                {
+                    <text>Confirm Booking</text>
+                }
+            </MudButton>
+            <MudButton OnClick="Cancel" Variant="Variant.Text" FullWidth="true">
+                Cancel
+            </MudButton>
+        </MudStack>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public DateTime SelectedTime { get; set; }
+
+    [Parameter]
+    public List<ScheduleCalendarItem> AllCalendarItems { get; set; } = new();
+
+    private DateTime _bookingDate;
+    private TimeSpan? _startTime;
+    private TimeSpan? _endTime;
+    private List<ProviderOption> _availableProviders = new();
+    private ProviderOption? _selectedProvider;
+    private bool _isBooking;
+
+    private sealed record ProviderOption(UserId ProviderId, string Name, ScheduleId? ScheduleId);
+
+    protected override void OnParametersSet()
+    {
+        _bookingDate = SelectedTime.Date;
+        _startTime = SelectedTime.TimeOfDay;
+        _endTime = _startTime?.Add(TimeSpan.FromHours(1));
+        FilterProviders();
+    }
+
+    private void OnStartTimeChanged(TimeSpan? newTime)
+    {
+        _startTime = newTime;
+        _endTime = newTime?.Add(TimeSpan.FromHours(1));
+        FilterProviders();
+    }
+
+    private void FilterProviders()
+    {
+        if (_startTime is null || _endTime is null)
+        {
+            _availableProviders = new();
+            _selectedProvider = null;
+            return;
+        }
+
+        var startDt = _bookingDate.Add(_startTime.Value);
+        var endDt = _bookingDate.Add(_endTime.Value);
+        var result = new List<ProviderOption>();
+
+        foreach (var group in AllCalendarItems.GroupBy(c => c.ProviderId))
+        {
+            var providerId = group.Key;
+            var providerName = group.First().ProviderName;
+            var items = group.ToList();
+
+            // 1. Exclude if provider has a fully-booked schedule overlapping this time
+            var hasFullyBookedOverlap = items.Any(c =>
+                !c.TimeBlock.IsAvailable
+                && c.TimeBlock.ScheduleId is not null
+                && c.TimeBlock.StartTime < endDt
+                && c.TimeBlock.EndTime > startDt);
+
+            if (hasFullyBookedOverlap) continue;
+
+            // 2. Prefer booking against an existing schedule that has capacity
+            var availableSchedule = items.FirstOrDefault(c =>
+                c.TimeBlock.IsAvailable
+                && c.TimeBlock.ScheduleId is not null
+                && c.TimeBlock.StartTime <= startDt
+                && c.TimeBlock.EndTime >= endDt);
+
+            if (availableSchedule is not null)
+            {
+                result.Add(new ProviderOption(
+                    providerId, providerName, availableSchedule.TimeBlock.ScheduleId));
+                continue;
+            }
+
+            // 3. Fall back to gap — only if no existing schedule overlaps at all
+            var hasAnyScheduleOverlap = items.Any(c =>
+                c.TimeBlock.ScheduleId is not null
+                && c.TimeBlock.StartTime < endDt
+                && c.TimeBlock.EndTime > startDt);
+
+            var hasGap = items.Any(c =>
+                c.TimeBlock.IsAvailable
+                && c.TimeBlock.ScheduleId is null
+                && c.TimeBlock.StartTime <= startDt
+                && c.TimeBlock.EndTime >= endDt);
+
+            if (hasGap && !hasAnyScheduleOverlap)
+            {
+                result.Add(new ProviderOption(providerId, providerName, null));
+            }
+        }
+
+        _availableProviders = result;
+
+        if (_selectedProvider is null || !_availableProviders.Any(p => p.ProviderId == _selectedProvider.ProviderId))
+        {
+            _selectedProvider = _availableProviders.FirstOrDefault();
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task ConfirmBooking()
+    {
+        if (_selectedProvider is null)
+        {
+            Snackbar.Add("Please select a provider.", Severity.Warning);
+            return;
+        }
+
+        _isBooking = true;
+        StateHasChanged();
+
+        try
+        {
+            var scheduleId = _selectedProvider.ScheduleId;
+
+            // If no existing schedule, create a 1-hour schedule for the selected provider
+            if (scheduleId is null)
+            {
+                var startDt = _bookingDate.Add(_startTime!.Value);
+                var endDt = _bookingDate.Add(_endTime!.Value);
+
+                var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+                var customerName = authState.User.FindFirst(ClaimTypes.Name)?.Value ?? "Customer";
+
+                var scheduleRequest = new CreateScheduleRequest
+                {
+                    ProviderId = _selectedProvider.ProviderId.Value,
+                    Title = $"Booking with {customerName} @{startDt:h:mmtt}",
+                    StartTime = startDt,
+                    EndTime = endDt,
+                    MaxCapacity = 1
+                };
+
+                var schedule = await ScheduleService.CreateScheduleAsync(scheduleRequest);
+                if (schedule is null)
+                {
+                    Snackbar.Add("Failed to create the schedule. Please try again.", Severity.Error);
+                    return;
+                }
+
+                scheduleId = schedule.Id;
+            }
+
+            var request = new CreateBookingRequest
+            {
+                ScheduleId = scheduleId.Value.Value
+            };
+
+            var result = await BookingService.CreateBookingAsync(request);
+
+            if (result != null)
+            {
+                var statusMessage = result.Status == BookingStatus.Confirmed
+                    ? "Your booking has been confirmed!"
+                    : "Your booking is pending provider approval.";
+                Snackbar.Add($"Booking created! {statusMessage}", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isBooking = false;
+        }
+    }
+}

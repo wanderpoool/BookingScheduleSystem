@@ -1,0 +1,8 @@
+<root>
+    <data name="Today" xml:space="preserve">
+        <value>오늘</value>
+    </data>
+    <data name="More" xml:space="preserve">
+        <value>자세히 보기</value>
+    </data>
+</root>

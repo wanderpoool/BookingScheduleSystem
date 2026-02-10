@@ -78,8 +78,9 @@ public sealed class VerifyOtp : Endpoint<VerifyOtpRequest, OtpResponse>
         Response = new OtpResponse
         {
             Success = true,
-            Message = "OTP verified successfully! You can now complete your registration.",
-            IsVerified = true
+            Message = "OTP verified successfully!",
+            IsVerified = true,
+            VerificationToken = verificationToken
         };
 
         await Task.CompletedTask;

@@ -1,0 +1,216 @@
+@inject IBookingService BookingService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudIcon Icon="@Icons.Material.Filled.EventNote" Color="Color.Primary" />
+                <MudText Typo="Typo.h6">Booking Details</MudText>
+            </MudStack>
+
+            <MudDivider />
+
+            @if (!string.IsNullOrWhiteSpace(Item.TimeBlock.CustomerName))
+            {
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                    <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Color="Color.Secondary" />
+                    <MudText Typo="Typo.body1">@Item.TimeBlock.CustomerName</MudText>
+                </MudStack>
+            }
+
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                <MudIcon Icon="@Icons.Material.Filled.Category" Size="Size.Small" Color="Color.Primary" />
+                <MudText Typo="Typo.body2">@(Item.TimeBlock.ScheduleTitle ?? "Schedule")</MudText>
+            </MudStack>
+
+            <MudStack Spacing="1">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                    <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Size="Size.Small" Color="Color.Primary" />
+                    <MudText Typo="Typo.body2">@Item.Start.ToString("dddd, MMM dd, yyyy")</MudText>
+                </MudStack>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                    <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Color="Color.Primary" />
+                    <MudText Typo="Typo.body2">@Item.Start.ToString("h:mm tt") - @(Item.End?.ToString("h:mm tt") ?? "")</MudText>
+                </MudStack>
+            </MudStack>
+
+            @if (!string.IsNullOrWhiteSpace(Item.TimeBlock.BookingNotes))
+            {
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                    <MudIcon Icon="@Icons.Material.Filled.Notes" Size="Size.Small" Color="Color.Default" />
+                    <MudText Typo="Typo.body2" Color="Color.Default">@Item.TimeBlock.BookingNotes</MudText>
+                </MudStack>
+            }
+
+            <MudChip T="string" Size="Size.Small"
+                     Color="@GetStatusColor()"
+                     Variant="Variant.Filled">
+                @GetStatusText()
+            </MudChip>
+
+            @if (_isPending && _showRejectReason)
+            {
+                <MudTextField @bind-Value="_rejectReason"
+                              Label="Rejection reason (optional)"
+                              Variant="Variant.Outlined"
+                              Lines="2"
+                              Placeholder="Let the customer know why..." />
+            }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Close">Close</MudButton>
+        @if (_isPending)
+        {
+            @if (_showRejectReason)
+            {
+                <MudButton Variant="Variant.Outlined" Color="Color.Error"
+                           OnClick="ConfirmReject"
+                           Disabled="_isProcessing"
+                           StartIcon="@Icons.Material.Filled.Close">
+                    @if (_isProcessing)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                        <text>Rejecting...</text>
+                    }
+                    else
+                    {
+                        <text>Confirm Reject</text>
+                    }
+                </MudButton>
+            }
+            else
+            {
+                <MudButton Variant="Variant.Outlined" Color="Color.Error"
+                           OnClick="ShowRejectReason"
+                           Disabled="_isProcessing"
+                           StartIcon="@Icons.Material.Filled.Close">
+                    Reject
+                </MudButton>
+            }
+            <MudButton Variant="Variant.Filled" Color="Color.Success"
+                       OnClick="Approve"
+                       Disabled="_isProcessing"
+                       StartIcon="@Icons.Material.Filled.Check">
+                @if (_isProcessing)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    <text>Approving...</text>
+                }
+                else
+                {
+                    <text>Approve</text>
+                }
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public ScheduleCalendarItem Item { get; set; } = default!;
+
+    [Parameter]
+    public Guid? BookingId { get; set; }
+
+    private bool _isProcessing;
+    private bool _showRejectReason;
+    private string? _rejectReason;
+
+    private bool _isPending => Item.TimeBlock.BookingStatus == BookingStatus.Pending
+                               || (!Item.TimeBlock.IsAvailable && Item.TimeBlock.BookingStatus is null && BookingId.HasValue);
+
+    private Color GetStatusColor() => Item.TimeBlock.BookingStatus switch
+    {
+        BookingStatus.Pending => Color.Warning,
+        BookingStatus.Confirmed => Color.Success,
+        BookingStatus.Cancelled => Color.Error,
+        BookingStatus.Completed => Color.Info,
+        _ => !Item.TimeBlock.IsAvailable ? Color.Warning : Color.Default
+    };
+
+    private string GetStatusText() => Item.TimeBlock.BookingStatus switch
+    {
+        BookingStatus.Pending => "Pending Approval",
+        BookingStatus.Confirmed => "Confirmed",
+        BookingStatus.Cancelled => "Cancelled",
+        BookingStatus.Completed => "Completed",
+        _ => !Item.TimeBlock.IsAvailable ? "Pending Approval" : "Available"
+    };
+
+    private Guid? GetEffectiveBookingId() =>
+        Item.TimeBlock.BookingId?.Value ?? BookingId;
+
+    private void Close() => MudDialog.Cancel();
+
+    private void ShowRejectReason()
+    {
+        _showRejectReason = true;
+    }
+
+    private async Task Approve()
+    {
+        var effectiveId = GetEffectiveBookingId();
+        if (effectiveId is null)
+        {
+            Snackbar.Add("Unable to identify this booking. The booking ID is not available yet.", Severity.Warning);
+            return;
+        }
+
+        _isProcessing = true;
+        StateHasChanged();
+
+        try
+        {
+            var result = await BookingService.ApproveBookingAsync(effectiveId.Value);
+            if (result != null)
+            {
+                Snackbar.Add("Booking approved successfully!", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+    }
+
+    private async Task ConfirmReject()
+    {
+        var effectiveId = GetEffectiveBookingId();
+        if (effectiveId is null)
+        {
+            Snackbar.Add("Unable to identify this booking. The booking ID is not available yet.", Severity.Warning);
+            return;
+        }
+
+        _isProcessing = true;
+        StateHasChanged();
+
+        try
+        {
+            var result = await BookingService.RejectBookingAsync(effectiveId.Value, _rejectReason);
+            if (result != null)
+            {
+                Snackbar.Add("Booking rejected.", Severity.Info);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+    }
+}

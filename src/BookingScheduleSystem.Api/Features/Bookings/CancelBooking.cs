@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using BookingScheduleSystem.Api.Infrastructure.Bookings;
 using BookingScheduleSystem.Api.Infrastructure.MultiTenancy;
+using BookingScheduleSystem.Api.Infrastructure.Notifications;
 using BookingScheduleSystem.Api.Infrastructure.Schedules;
 using BookingScheduleSystem.Contracts.Common;
 using BookingScheduleSystem.Contracts.Bookings;
@@ -19,6 +20,7 @@ public sealed class CancelBooking : Endpoint<CancelBookingRequestWithId, Booking
 {
     public required IDocumentStore DocumentStore { get; init; }
     public required ITenantContext TenantContext { get; init; }
+    public required BookingNotificationService NotificationService { get; init; }
 
     public override void Configure()
     {
@@ -94,6 +96,9 @@ public sealed class CancelBooking : Endpoint<CancelBookingRequestWithId, Booking
 
         session.Update(booking);
         session.Update(schedule);
+
+        NotificationService.NotifyBookingCancelled(session, booking, schedule);
+
         await session.SaveChangesAsync(ct);
 
         Logger.LogInformation(

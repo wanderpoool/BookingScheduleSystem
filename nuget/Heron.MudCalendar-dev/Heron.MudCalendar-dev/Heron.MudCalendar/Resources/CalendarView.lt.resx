@@ -1,0 +1,14 @@
+<root>
+    <data name="Day" xml:space="preserve">
+        <value>Diena</value>
+    </data>
+    <data name="Month" xml:space="preserve">
+        <value>Mėnuo</value>
+    </data>
+    <data name="Week" xml:space="preserve">
+        <value>Savaitė</value>
+    </data>
+    <data name="WorkWeek" xml:space="preserve">
+        <value>Darbo savaitė</value>
+    </data>
+</root>

@@ -1,0 +1,8 @@
+<root>
+    <data name="Today" xml:space="preserve">
+        <value>Dnes</value>
+    </data>
+    <data name="More" xml:space="preserve">
+        <value>Viac na</value>
+    </data>
+</root>

@@ -27,13 +27,16 @@ public sealed class Register : Endpoint<RegisterUserRequest, AuthenticationRespo
     {
         await using var session = DocumentStore.LightweightSession();
 
+        // Determine the identifier (email or phone)
+        var email = req.Email?.ToLowerInvariant() ?? req.PhoneNumber ?? "";
+
         // Check if user already exists
         var existingUser = await session.Query<User>()
-            .FirstOrDefaultAsync(u => u.Email == req.Email, token: ct);
+            .FirstOrDefaultAsync(u => u.Email == email || (req.PhoneNumber != null && u.PhoneNumber == req.PhoneNumber), token: ct);
 
         if (existingUser is not null)
         {
-            ThrowError("A user with this email already exists", 409);
+            ThrowError("A user with this email or phone number already exists", 409);
         }
 
         TenantId? tenantId = null;
@@ -131,7 +134,8 @@ public sealed class Register : Endpoint<RegisterUserRequest, AuthenticationRespo
         var user = new User
         {
             Id = UserId.New(),
-            Email = req.Email.ToLowerInvariant(),
+            Email = email,
+            PhoneNumber = req.PhoneNumber,
             PasswordHash = PasswordHasher.HashPassword(req.Password),
             FirstName = req.FirstName,
             LastName = req.LastName,
@@ -159,7 +163,8 @@ public sealed class Register : Endpoint<RegisterUserRequest, AuthenticationRespo
             FirstName = user.FirstName,
             LastName = user.LastName,
             TenantId = user.TenantId,
-            IsGlobalAdmin = user.IsGlobalAdmin
+            IsGlobalAdmin = user.IsGlobalAdmin,
+            IsProvider = user.IsProvider
         };
     }
 }

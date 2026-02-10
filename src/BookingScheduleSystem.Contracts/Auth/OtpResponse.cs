@@ -6,4 +6,5 @@ public sealed record OtpResponse
     public string? Message { get; init; }
     public DateTime? ExpiresAt { get; init; }
     public bool IsVerified { get; init; }
+    public string? VerificationToken { get; init; }
 }

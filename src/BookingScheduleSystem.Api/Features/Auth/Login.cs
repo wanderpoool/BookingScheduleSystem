@@ -53,7 +53,8 @@ public sealed class Login : Endpoint<LoginRequest, AuthenticationResponse>
             FirstName = user.FirstName,
             LastName = user.LastName,
             TenantId = user.TenantId,
-            IsGlobalAdmin = user.IsGlobalAdmin
+            IsGlobalAdmin = user.IsGlobalAdmin,
+            IsProvider = user.IsProvider
         };
     }
 }

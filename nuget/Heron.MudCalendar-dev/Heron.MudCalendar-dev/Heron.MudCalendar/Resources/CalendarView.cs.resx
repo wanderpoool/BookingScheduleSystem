@@ -1,0 +1,14 @@
+<root>
+    <data name="Day" xml:space="preserve">
+        <value>Den</value>
+    </data>
+    <data name="Month" xml:space="preserve">
+        <value>Měsíc</value>
+    </data>
+    <data name="Week" xml:space="preserve">
+        <value>Týden</value>
+    </data>
+    <data name="WorkWeek" xml:space="preserve">
+        <value>Pracovní týden</value>
+    </data>
+</root>

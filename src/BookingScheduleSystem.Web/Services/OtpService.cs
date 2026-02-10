@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Json;
 using BookingScheduleSystem.Contracts.Auth;
 
@@ -26,7 +27,7 @@ public class OtpService : IOtpService
                 return result ?? new OtpResponse
                 {
                     Success = false,
-                    Message = "Failed to parse response",
+                    Message = "We received an unexpected response. Please try again.",
                     IsVerified = false
                 };
             }
@@ -37,7 +38,7 @@ public class OtpService : IOtpService
             return new OtpResponse
             {
                 Success = false,
-                Message = $"Failed to send OTP: {response.StatusCode}",
+                Message = ApiErrorHelper.ExtractMessage(errorContent) ?? GetSendOtpError(response.StatusCode),
                 IsVerified = false
             };
         }
@@ -47,7 +48,7 @@ public class OtpService : IOtpService
             return new OtpResponse
             {
                 Success = false,
-                Message = $"Error: {ex.Message}",
+                Message = "Unable to connect to the server. Please check your connection and try again.",
                 IsVerified = false
             };
         }
@@ -65,7 +66,7 @@ public class OtpService : IOtpService
                 return result ?? new OtpResponse
                 {
                     Success = false,
-                    Message = "Failed to parse response",
+                    Message = "We received an unexpected response. Please try again.",
                     IsVerified = false
                 };
             }
@@ -76,7 +77,7 @@ public class OtpService : IOtpService
             return new OtpResponse
             {
                 Success = false,
-                Message = $"Invalid or expired OTP code",
+                Message = ApiErrorHelper.ExtractMessage(errorContent) ?? GetVerifyOtpError(response.StatusCode),
                 IsVerified = false
             };
         }
@@ -86,9 +87,28 @@ public class OtpService : IOtpService
             return new OtpResponse
             {
                 Success = false,
-                Message = $"Error: {ex.Message}",
+                Message = "Unable to connect to the server. Please check your connection and try again.",
                 IsVerified = false
             };
         }
     }
+
+    private static string GetSendOtpError(HttpStatusCode statusCode) => statusCode switch
+    {
+        HttpStatusCode.NotFound => "We couldn't find an account with that information. Please check and try again.",
+        HttpStatusCode.BadRequest => "Please check your email or phone number and try again.",
+        HttpStatusCode.TooManyRequests => "Too many attempts. Please wait a moment before requesting a new code.",
+        HttpStatusCode.Unauthorized => "Your session has expired. Please refresh the page and try again.",
+        _ => "We couldn't send your verification code right now. Please try again in a moment."
+    };
+
+    private static string GetVerifyOtpError(HttpStatusCode statusCode) => statusCode switch
+    {
+        HttpStatusCode.NotFound => "This verification code has expired. Please request a new one.",
+        HttpStatusCode.BadRequest => "The code you entered is invalid. Please check and try again.",
+        HttpStatusCode.TooManyRequests => "Too many attempts. Please wait a moment before trying again.",
+        HttpStatusCode.Gone => "This verification code has expired. Please request a new one.",
+        HttpStatusCode.Unauthorized => "The code you entered is incorrect or has expired. Please request a new one.",
+        _ => "We couldn't verify your code right now. Please try again in a moment."
+    };
 }

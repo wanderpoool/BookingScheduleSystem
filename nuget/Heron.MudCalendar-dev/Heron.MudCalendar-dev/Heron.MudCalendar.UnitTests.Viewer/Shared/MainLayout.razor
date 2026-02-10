@@ -1,0 +1,18 @@
+﻿@inherits LayoutComponentBase
+
+<HeadContent>
+    <meta name="description" content="@_description" />
+</HeadContent>
+
+<MudThemeProvider/>
+<MudPopoverProvider />
+<MudDialogProvider/>
+<MudSnackbarProvider/>
+
+@Body
+
+@code {
+
+    private string _description = "Description set by code";
+
+}

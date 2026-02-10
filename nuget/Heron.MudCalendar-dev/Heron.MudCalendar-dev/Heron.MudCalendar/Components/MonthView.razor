@@ -1,0 +1,208 @@
+@namespace Heron.MudCalendar
+@using Microsoft.JSInterop
+@inherits CalendarViewBase<T>
+@inject IJSRuntime JsRuntime
+@typeparam T
+
+@Render
+
+@code {
+
+    /// <summary>
+    /// Renders the month view.
+    /// </summary>
+    protected virtual RenderFragment Render =>
+        @<div class="mud-cal-month-table-holder mud-cal-month-view">
+            @RenderHeader
+            @* <div style="flex-grow: 1 !important; min-height: 100%;" class="d-block relative"> *@
+                @* @RenderDays *@
+                <MudDropContainer
+                    @ref="_dropContainer"
+                    T="T"
+                    Items="Calendar.Items.OrderBy(i => i.Start)"
+                    ItemsSelector="@((item, dropzone) => item.Id == dropzone)"
+                    ItemDisabled="@(item => !Calendar.EnableDragItems || (Calendar.CanDragItem != null && !Calendar.CanDragItem(item)))"
+                    ItemDropped="ItemDropped"
+                    CanDropClass="mud-cal-drop-ok"
+                    Class="@Classname">
+                    <ChildContent>
+                        @RenderCells
+                    </ChildContent>
+                    <ItemRenderer>
+                        @RenderTemplate(context)
+                    </ItemRenderer>
+                </MudDropContainer>
+            @* </div> *@
+        </div>;
+
+    /// <summary>
+    /// Renders the header of the grid.
+    /// </summary>
+    protected virtual RenderFragment RenderHeader =>
+        @<div class="mud-cal-grid-header mud-cal-month-grid-header" style="@GridStyle">
+            @for (var i = 0; i < Columns; i++)
+            {
+                <div class="mud-cal-month-header" aria-label="@Cells[i].Date.ToString("dddd")">
+                    @RenderDayTitle(i)
+                </div>
+            }
+        </div>;
+
+    /// <summary>
+    /// Renders the day name.
+    /// </summary>
+    protected virtual RenderFragment RenderDayTitle(int day) => __builder => { __builder.AddContent(1, Cells[day].Date.ToString("ddd", Calendar.Culture)); };
+
+    /// <summary>
+    /// Renders the cells of the grid.
+    /// </summary>
+    protected virtual RenderFragment RenderCells =>
+        @<div @ref="_monthGrid" class="mud-cal-grid" style="@ContentGridStyle">
+            @RenderContents
+        </div>;
+
+    /// <summary>
+    /// Renders the contents of the cells.
+    /// </summary>
+    protected virtual RenderFragment RenderContents => __builder =>
+    {
+        for (var row = 0; row < Rows; row++)
+        {
+            <div class="mud-cal-month-row-holder" style="@RowStyle">
+                @for (var cell = row * Columns; cell < (row * Columns) + Columns; cell++)
+                {
+                    var currentCell = Cells[cell];
+                    <MudDropZone T="T" OnlyZone="true" Identifier="@currentCell.Date.Date.ToString("d")"
+                                 Class="@CellClassname(currentCell)" Style="@DayStyle(currentCell, cell)"
+                                 CanDrop="@(item => Calendar.CanDropItem == null || Calendar.CanDropItem(item, currentCell.Date, CalendarView.Month))">
+                        @if (AllowCellLinkClick(currentCell) && AllowCellLinkContextMenuClick(currentCell))
+                        {
+                            <a @onclick="() => OnCellLinkClicked(currentCell)"
+                               @oncontextmenu="@(mouseEventArgs => OnCellLinkContextMenuClicked(mouseEventArgs, currentCell))" @oncontextmenu:preventDefault
+                               class="mud-cal-month-cell-link">
+                                <div class="@CellLinkClassname(false)" data-date="@currentCell.Date.ToString("yyyy-MM-dd")" data-row="0" data-selectable="@IsSelectable(currentCell).ToString().ToLower()">
+                                    @RenderCellDayNumber(currentCell)
+                                </div>
+                            </a>
+                        }
+                        else if (AllowCellLinkContextMenuClick(currentCell))
+                        {
+                            <a @oncontextmenu="@(mouseEventArgs => OnCellLinkContextMenuClicked(mouseEventArgs, currentCell))" @oncontextmenu:preventDefault
+                               class="mud-cal-month-cell-link">
+                                <div class="@CellLinkClassname(true)">
+                                    @RenderCellDayNumber(currentCell)
+                                </div>
+                            </a>
+                        }
+                        else if (AllowCellLinkClick(currentCell))
+                        {
+                            <a @onclick="() => OnCellLinkClicked(currentCell)"
+                               class="mud-cal-month-cell-link">
+                                <div class="@CellLinkClassname(false)" data-date="@currentCell.Date.ToString("yyyy-MM-dd")" data-row="0" data-selectable="@IsSelectable(currentCell).ToString().ToLower()">
+                                    @RenderCellDayNumber(currentCell)
+                                </div>
+                            </a>
+                        }
+                        else
+                        {
+                            @RenderCellDayNumber(currentCell)
+                        }
+                    </MudDropZone>
+                }
+                @RenderCellContents(row)
+            </div>
+        }
+    };
+
+    /// <summary>
+    /// Renders the day number of the cell.
+    /// </summary>
+    protected virtual RenderFragment RenderCellDayNumber(CalendarCell<T> cell) =>
+        @<div class="@DayClassname(cell)">
+            @cell.Date.ToString("dd", Calendar.Culture)
+        </div>;
+
+    /// <summary>
+    /// Renders the contents of the cell.
+    /// </summary>
+    protected virtual RenderFragment RenderCellContents(int row) => __builder =>
+    {
+        for (var cell = row * Columns; cell < (row * Columns) + Columns; cell++)
+        {
+            var currentCell = Cells[cell];
+            var positions = CalcPositions(currentCell.Items, DateOnly.FromDateTime(currentCell.Date), cell);
+            foreach (var position in positions)
+            {
+                if (position.Item.Start.Date == currentCell.Date.Date)
+                {
+                    <WeekDragItem T="T" 
+                                  Position="position" 
+                                  Style="@EventStyle(position)" 
+                                  Disabled="@(!Calendar.EnableDragItems || (Calendar.CanDragItem != null && !Calendar.CanDragItem(position.Item)))" 
+                                  @key="position.Item.Id">
+                        <ChildContent>
+                            @RenderTemplate(position.Item)
+                        </ChildContent>
+                        <ResizerContent>
+                            @RenderResizer(position, currentCell)
+                        </ResizerContent>
+                    </WeekDragItem>
+                }
+                else
+                {
+                    <div style="@EventStyle(position)" class="mud-cal-drop-item">
+                        @RenderResizer(position, currentCell)
+                        @RenderTemplate(position.Item)
+                    </div>
+                }
+            }
+        }
+    };
+
+    /// <summary>
+    /// Renders the resizer for the item if necessary.
+    /// </summary>
+    protected virtual RenderFragment RenderResizer(ItemPosition<T> position, CalendarCell<T> cell) => __builder =>
+    {
+        @if (Calendar.EnableResizeItems)
+        {
+            <Resizer ContainerClass="mud-cal-grid" CellCount="Columns" ResizeX="true"
+                     SizeChanged="@(days => ItemWidthChanged(position.Item, days, cell))"/>
+        }
+    };
+
+    /// <summary>
+    /// Renders the CellTemplate with a click handler if required.
+    /// </summary>
+    protected virtual RenderFragment RenderTemplate(T item) => __builder =>
+    {
+        @if (Calendar.ItemClicked.HasDelegate && Calendar.ItemContextMenuClicked.HasDelegate)
+        {
+            <div @onclick="() => OnItemClicked(item)" @onclick:stopPropagation="true" 
+                 @oncontextmenu="@(mouseEventArgs => OnItemContextMenuClicked(mouseEventArgs, item))" @oncontextmenu:preventDefault
+                 class="mud-cal-clickable">
+                @CellTemplate(item)
+            </div>
+        }
+        else if (Calendar.ItemClicked.HasDelegate)
+        {
+            <div @onclick="() => OnItemClicked(item)" @onclick:stopPropagation="true" class="mud-cal-clickable">
+                @CellTemplate(item)
+            </div>
+        }
+        else if (Calendar.ItemContextMenuClicked.HasDelegate)
+        {
+            <div @oncontextmenu="@(mouseEventArgs => OnItemContextMenuClicked(mouseEventArgs, item))" @oncontextmenu:preventDefault
+                 class="mud-cal-clickable">
+                @CellTemplate(item)
+            </div>
+        }
+        else
+        {
+            <div>
+                @CellTemplate(item)
+            </div>
+        }
+    };
+
+}

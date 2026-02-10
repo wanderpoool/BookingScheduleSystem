@@ -1,0 +1,37 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/dotnet
+{
+	"name": "Heron.MudCalendar Dev Container",
+	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+	"image": "mcr.microsoft.com/devcontainers/dotnet",
+
+	// Features to add to the dev container. More info: https://containers.dev/features.
+	//"features": { }
+
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// "forwardPorts": [5000, 5001],
+	// "portsAttributes": {
+	//		"5001": {
+	//			"protocol": "https"
+	//		}
+	// }
+
+	// Configure tool-specific properties.
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-dotnettools.csdevkit",
+				"PKief.material-icon-theme"
+			],
+			"settings": {
+				"editor.minimap.enabled": false
+			}
+		}
+	},
+
+  // Use 'postCreateCommand' to run commands after the container is created.
+	"postCreateCommand": "/bin/bash ./.devcontainer/post-create.sh > ~/post-create.log",
+
+	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+	"remoteUser": "vscode"
+}

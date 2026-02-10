@@ -1,0 +1,143 @@
+﻿@page "/"
+@using System.Reflection
+
+<MudRTLProvider RightToLeft="_isRtl">
+    <MudLayout>
+        <MudAppBar Elevation="0">
+            <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="DocsDrawerToggle" />
+            <MudText Typo="Typo.h6">@selectedType?.Name</MudText>
+            <MudSpacer />
+            <MudAutocomplete @ref="autocomplete" T="Type" Placeholder="Search" SearchFunc="Search" Variant="Variant.Outlined" ValueChanged="OnSearchResult" Class="docs-search-bar" AdornmentIcon="@Icons.Material.Filled.Search">
+                <ItemTemplate Context="result">
+                    <MudText>@result.Name</MudText> <MudText Typo="Typo.body2">@getDescription(result)</MudText>
+                </ItemTemplate>
+            </MudAutocomplete>
+            <MudSpacer />
+            <MudTooltip Text="@(_isRtl ? "Left-to-right" : "Right-to-left")">
+                <MudIconButton Icon="@(_isRtl ? @Icons.Material.Filled.FormatTextdirectionLToR : @Icons.Material.Filled.FormatTextdirectionRToL)" OnClick="RtlToggle" Color="Color.Inherit" />
+            </MudTooltip>
+        </MudAppBar>
+        <MudDrawer Open="@drawerOpen" Overlay="false" Variant="DrawerVariant.Responsive" ClipMode="DrawerClipMode.Always" Breakpoint="Breakpoint.Sm">
+            <MudDrawerHeader>
+                <MudText Typo="Typo.h6">TestComponents</MudText>
+            </MudDrawerHeader>
+            <MudList T="string">
+                @foreach (var type in availableComponentTypes)
+                {
+                    <MudListItem OnClick="@(() => selectedType = type)" @key="type.Name">@type.Name</MudListItem>
+                }
+            </MudList>
+        </MudDrawer>
+        <MudMainContent Class="mt-4">
+
+            <MudText Style="padding-left: 24px; margin-left: 24px;">
+                @getDescription(selectedType)
+            </MudText>
+            <MudPaper Elevation="5" Style="padding: 24px; margin: 24px;">
+                @if (@selectedType == null)
+                {
+                    <span>Select a component</span>
+                }
+                else
+                {
+                    @* Prevent double popovers! *@
+                    <CascadingValue Name="UsePopoverProvider" Value="false"  IsFixed="true">
+                        @TestComponent()
+                    </CascadingValue>
+                }
+            </MudPaper>
+
+        </MudMainContent>
+    </MudLayout>
+</MudRTLProvider>
+<style>
+    .docs-search-bar .mud-input{height:42px;}
+    .docs-search-bar.mud-input-control{background-color:rgba(255,255,255,.15);margin-bottom:5px;height:42px;border-radius:var(--mud-default-borderradius);}
+    .docs-search-bar.mud-input-control .mud-input-root,.docs-search-bar.mud-input-control .mud-icon-default{color:#fafafa;}
+    .docs-search-bar .mud-input.mud-input-outlined .mud-input-outlined-border{border:none;border-radius:var(--mud-default-borderradius);}
+</style>
+
+@code {
+    bool drawerOpen = true;
+    Type selectedType = null;
+    Type[] availableComponentTypes = new Type[0];
+    MudAutocomplete<Type> autocomplete;
+    private bool _isRtl;
+
+    void DocsDrawerToggle()
+    {
+        drawerOpen = !drawerOpen;
+    }
+    
+    void RtlToggle()
+    {
+        _isRtl = !_isRtl;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        availableComponentTypes = getTestComponenTypes().ToArray();
+    }
+
+    RenderFragment TestComponent() => builder =>
+    {
+        builder.OpenComponent(0, selectedType);
+        //builder.AddAttribute(1, "Title", "Some title");
+        builder.CloseComponent();
+    };
+
+    IEnumerable<Type> getTestComponenTypes()
+    {
+        foreach (var type in typeof(Program).Assembly.GetTypes().OrderBy(x => x.Name))
+        {
+            if (!type.Name.Contains("Test"))
+                continue;
+            if (type.Name.StartsWith("<"))
+                continue;
+            if (!type.GetInterfaces().Contains(typeof(IComponent)))
+                continue;
+            yield return type;
+        }
+        //foreach (var type in typeof(MudBlazor.Docs.Components.DocsPage).Assembly.GetTypes())
+        //{
+        //    if (!type.Name.EndsWith("Example"))
+        //        continue;
+        //    if (type.Name.StartsWith("<"))
+        //        continue;
+        //    yield return type;
+        //}
+    }
+
+    private string getDescription(Type type)
+    {
+        if (type == null)
+            return "";
+        try
+        {
+            var field = type.GetField("__description__", BindingFlags.Public | BindingFlags.Static | BindingFlags.GetField);
+            return (string)field.GetValue(null);
+        }
+        catch (Exception)
+        {
+            return "public static string __description__ = \"...\"; not found in this component.";
+        }
+    }
+
+    private Task<IEnumerable<Type>> Search(string text, CancellationToken token)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return Task.FromResult<IEnumerable<Type>>(new Type[0]);
+
+        return Task.FromResult<IEnumerable<Type>>(
+            availableComponentTypes.Where(type => type.Name.Contains(text, StringComparison.OrdinalIgnoreCase))
+        );
+    }
+
+    private async void OnSearchResult(Type entry)
+    {
+        selectedType = entry;
+        await Task.Delay(1000);
+        await autocomplete.ClearAsync();
+    }
+}

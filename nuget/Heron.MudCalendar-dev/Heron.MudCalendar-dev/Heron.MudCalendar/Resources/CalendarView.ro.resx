@@ -1,0 +1,14 @@
+<root>
+    <data name="Day" xml:space="preserve">
+        <value>Ziua</value>
+    </data>
+    <data name="Month" xml:space="preserve">
+        <value>Lună</value>
+    </data>
+    <data name="Week" xml:space="preserve">
+        <value>Săptămâna</value>
+    </data>
+    <data name="WorkWeek" xml:space="preserve">
+        <value>Săptămână de lucru</value>
+    </data>
+</root>

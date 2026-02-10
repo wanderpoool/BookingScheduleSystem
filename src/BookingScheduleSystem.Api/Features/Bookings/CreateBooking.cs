@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using BookingScheduleSystem.Api.Infrastructure.Bookings;
 using BookingScheduleSystem.Api.Infrastructure.MultiTenancy;
+using BookingScheduleSystem.Api.Infrastructure.Notifications;
 using BookingScheduleSystem.Api.Infrastructure.Schedules;
 using BookingScheduleSystem.Api.Infrastructure.Subscriptions;
 using BookingScheduleSystem.Contracts.Common;
@@ -14,6 +15,7 @@ public sealed class CreateBooking : Endpoint<CreateBookingRequest, BookingRespon
 {
     public required IDocumentStore DocumentStore { get; init; }
     public required ITenantContext TenantContext { get; init; }
+    public required BookingNotificationService NotificationService { get; init; }
 
     public override void Configure()
     {
@@ -93,7 +95,8 @@ public sealed class CreateBooking : Endpoint<CreateBookingRequest, BookingRespon
         if (planLimits is not null)
         {
             // Check daily booking limit
-            var today = DateTime.UtcNow.Date;
+            // Marten uses 'timestamp without time zone' — must use DateTime with Kind=Unspecified
+            var today = DateTime.SpecifyKind(DateTimeOffset.UtcNow.Date, DateTimeKind.Unspecified);
             var tomorrow = today.AddDays(1);
 
             var todayBookingCount = await session.Query<Booking>()
@@ -108,7 +111,8 @@ public sealed class CreateBooking : Endpoint<CreateBookingRequest, BookingRespon
             }
 
             // Check monthly booking limit
-            var firstDayOfMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+            var now = DateTimeOffset.UtcNow;
+            var firstDayOfMonth = DateTime.SpecifyKind(new DateTime(now.Year, now.Month, 1), DateTimeKind.Unspecified);
             var firstDayOfNextMonth = firstDayOfMonth.AddMonths(1);
 
             var monthlyBookingCount = await session.Query<Booking>()
@@ -141,7 +145,7 @@ public sealed class CreateBooking : Endpoint<CreateBookingRequest, BookingRespon
             ThrowError("Schedule is not active", 400);
         }
 
-        if (schedule.StartTime <= DateTime.UtcNow)
+        if (schedule.StartTime <= DateTime.SpecifyKind(DateTimeOffset.UtcNow.DateTime, DateTimeKind.Unspecified))
         {
             ThrowError("Cannot book a schedule that has already started or passed", 400);
         }
@@ -173,7 +177,7 @@ public sealed class CreateBooking : Endpoint<CreateBookingRequest, BookingRespon
             TenantId = tenantId.Value,
             Status = requiresApproval ? BookingStatus.Pending : BookingStatus.Confirmed,
             Notes = req.Notes,
-            BookedAt = DateTime.UtcNow
+            BookedAt = DateTime.SpecifyKind(DateTimeOffset.UtcNow.DateTime, DateTimeKind.Unspecified)
         };
 
         schedule.CurrentBookings++;
@@ -186,9 +190,12 @@ public sealed class CreateBooking : Endpoint<CreateBookingRequest, BookingRespon
         {
             subscription.CurrentUsage.BookingsToday++;
             subscription.CurrentUsage.BookingsThisMonth++;
-            subscription.CurrentUsage.LastUpdated = DateTime.UtcNow;
+            subscription.CurrentUsage.LastUpdated = DateTime.SpecifyKind(DateTimeOffset.UtcNow.DateTime, DateTimeKind.Unspecified);
             session.Update(subscription);
         }
+
+        // Create notifications
+        NotificationService.NotifyBookingCreated(session, booking, schedule);
 
         await session.SaveChangesAsync(ct);
 

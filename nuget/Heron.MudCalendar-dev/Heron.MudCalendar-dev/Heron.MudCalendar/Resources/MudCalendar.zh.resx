@@ -1,0 +1,8 @@
+<root>
+    <data name="Today" xml:space="preserve">
+        <value>今天</value>
+    </data>
+    <data name="More" xml:space="preserve">
+        <value>更多信息</value>
+    </data>
+</root>

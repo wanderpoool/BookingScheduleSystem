@@ -1,0 +1,403 @@
+@page "/browse-schedules"
+@rendermode InteractiveServer
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+@using BookingScheduleSystem.Contracts.Bookings
+@inject IScheduleService ScheduleService
+@inject IBookingService BookingService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject NavigationManager Navigation
+@inject ITenantService TenantService
+@inject ILogger<BrowseSchedules> _logger
+
+<AuthorizeView>
+    <Authorized>
+        @if (string.IsNullOrEmpty(_tenantId))
+        {
+            <MudText Typo="Typo.h5" Class="mb-4">Available Schedules</MudText>
+            <MudAlert Severity="Severity.Warning" Class="mb-4">
+                You are not associated with any organization. Ask your organization for an invitation link to get started.
+            </MudAlert>
+        }
+        else if (_isCustomer)
+        {
+            @* Customer view: calendar card with header inside *@
+            <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-lines-default); border-radius: 12px; overflow: hidden; position: relative;">
+                @* Header bar *@
+                <div class="d-flex align-center pa-3" style="border-bottom: 1px solid var(--mud-palette-lines-default);">
+                    <div class="mr-auto">
+                        <MudText Typo="Typo.subtitle1" Style="font-weight: 600;">Select a Schedule</MudText>
+                        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Tap a time slot to book</MudText>
+                    </div>
+                    <span class="d-flex align-center gap-1 mr-3">
+                        <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--mud-palette-success); display: inline-block;"></span>
+                        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Available</MudText>
+                    </span>
+                    <span class="d-flex align-center gap-1">
+                        <span style="width: 8px; height: 8px; border-radius: 50%; background: #EF4444; display: inline-block;"></span>
+                        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Booked</MudText>
+                    </span>
+                </div>
+
+                @if (_isLoading)
+                {
+                    <div style="position: absolute; inset: 0; z-index: 10; background: rgba(255,255,255,0.7); display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" />
+                        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2">Loading schedules...</MudText>
+                    </div>
+                }
+
+                <MudCalendar T="ScheduleCalendarItem"
+                             Items="@_calendarItems"
+                             View="CalendarView.Day"
+                             MinVisibleTime="@_businessStartTime"
+                             ShowMonth="false"
+                             ShowWeek="false"
+                             ShowWorkWeek="false"
+                             ItemClicked="@OnItemClicked"
+                             CellClicked="@OnCellClicked"
+                             DateRangeChanged="@OnDateRangeChanged"
+                             Use24HourClock="false"
+                             ShowPrevNextButtons="false"
+                             Style="height: calc(100vh - 220px); min-height: 300px;">
+                    <CellTemplate Context="calItem">
+                        @if (!calItem.TimeBlock.IsAvailable && calItem.TimeBlock.CustomerName == _userFullName)
+                        {
+                            @* Current user's booking — show details *@
+                            <div style="width: 100%; height: 100%; border: 2px solid #2563EB; background: #DBEAFE;">
+                                <div style="background: #2563EB; padding: 2px 6px;">
+                                    <MudText Style="color: #fff; font-size: 12px; font-weight: 600;" Align="Align.Center">Your Booking</MudText>
+                                </div>
+                                <div class="pa-2">
+                                    <MudText Typo="Typo.caption">Provider Name : @calItem.ProviderName</MudText>
+                                </div>
+                            </div>
+                        }
+                        else if (!calItem.TimeBlock.IsAvailable)
+                        {
+                            @* Someone else's booking — just red, no info *@
+                            <div style="width: 100%; height: 100%; background: #EF4444; display: flex; align-items: center; justify-content: center;">
+                                <span style="color: #fff; font-size: 12px; font-weight: 600;">Booked</span>
+                            </div>
+                        }
+                        else
+                        {
+                            @* Available slot *@
+                            <div style="width: 100%; height: 100%; background: #D1FAE5; border-left: 3px solid #10B981;">
+                            </div>
+                        }
+                    </CellTemplate>
+                </MudCalendar>
+            </MudPaper>
+        }
+        else
+        {
+            @* Provider/Admin view: calendar card with header inside *@
+            <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-lines-default); border-radius: 12px; overflow: hidden; position: relative;">
+                @* Header bar *@
+                <div class="d-flex align-center pa-3" style="border-bottom: 1px solid var(--mud-palette-lines-default);">
+                    <div class="mr-auto">
+                        <MudText Typo="Typo.subtitle1" Style="font-weight: 600;">@(_isProvider ? "My Schedule" : "All Schedules")</MudText>
+                        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Click a booking to manage it</MudText>
+                    </div>
+                    <span class="d-flex align-center gap-1 mr-3">
+                        <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--mud-palette-success); display: inline-block;"></span>
+                        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Available</MudText>
+                    </span>
+                    <span class="d-flex align-center gap-1">
+                        <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--mud-palette-error); display: inline-block;"></span>
+                        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Booked</MudText>
+                    </span>
+                </div>
+
+                <MudCalendar T="ScheduleCalendarItem"
+                             Items="@_calendarItems"
+                             View="CalendarView.Week"
+                             MinVisibleTime="@_businessStartTime"
+                             ItemClicked="@OnItemClicked"
+                             DateRangeChanged="@OnDateRangeChanged"
+                             Use24HourClock="false"
+                             Style="height: calc(100vh - 220px); min-height: 500px;">
+                    <CellTemplate Context="item">
+                        <div style="width: 100%; height: 100%; border: 2px solid @GetColor(item.Color, true)">
+                            <div style="background-color: @GetColor(item.Color, true)">
+                                <MudText Style="color: #ffffff;" Typo="Typo.body1" Align="Align.Center">@item.Title</MudText>
+                            </div>
+                            <div class="pa-2">
+                                <MudText Typo="Typo.body2">@item.Text</MudText>
+                            </div>
+                        </div>
+                    </CellTemplate>
+                </MudCalendar>
+            </MudPaper>
+        }
+    </Authorized>
+    <NotAuthorized>
+        <MudAlert Severity="Severity.Warning">
+            Please <MudLink Href="/login">sign in</MudLink> to browse and book schedules.
+        </MudAlert>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private List<ScheduleCalendarItem> _calendarItems = new();
+    private Dictionary<Guid, BookingResponse> _pendingBookingsBySchedule = new();
+    private string? _tenantId;
+    private string? _userId;
+    private string _userFullName = "";
+    private bool _isCustomer;
+    private bool _isProvider;
+    private bool _isLoading;
+    private DateRange? _lastDateRange;
+    private TimeOnly _businessStartTime = new(9, 0);
+
+    private string GetColor(Color color, bool solid = false)
+    {
+        var (hex, light) = color switch
+        {
+            Color.Success => ("#10B981", "#D1FAE5"),
+            Color.Error => ("#EF4444", "#FEE2E2"),
+            Color.Warning => ("#F59E0B", "#FEF3C7"),
+            Color.Info => ("#3B82F6", "#DBEAFE"),
+            _ => ("#6B7280", "#F3F4F6")
+        };
+        return solid ? hex : light;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        _tenantId = user.FindFirst("TenantId")?.Value;
+        _userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var firstName = user.FindFirst(ClaimTypes.GivenName)?.Value ?? "";
+        var lastName = user.FindFirst(ClaimTypes.Surname)?.Value ?? "";
+        _userFullName = $"{firstName} {lastName}".Trim();
+
+        var role = user.FindFirst(ClaimTypes.Role)?.Value;
+        _isCustomer = role is not ("Provider" or "GlobalAdmin");
+        _isProvider = role is "Provider";
+
+        // Compute earliest business start time from tenant operating hours
+        if (!string.IsNullOrEmpty(_tenantId))
+        {
+            try
+            {
+                var tenant = await TenantService.GetTenantAsync(Guid.Parse(_tenantId));
+                var hours = OperatingHoursHelper.Parse(tenant?.OperatingHours)
+                            ?? OperatingHoursHelper.GetDefaultHours();
+
+                var earliest = hours.Values
+                    .Where(d => d.IsOpen && !string.IsNullOrWhiteSpace(d.OpenTime))
+                    .Select(d => TimeOnly.TryParse(d.OpenTime, out var t) ? t : (TimeOnly?)null)
+                    .Where(t => t.HasValue)
+                    .Select(t => t!.Value)
+                    .DefaultIfEmpty(new TimeOnly(9, 0))
+                    .Min();
+
+                _businessStartTime = earliest;
+            }
+            catch
+            {
+                // Fall back to default 9:00 AM
+            }
+        }
+    }
+
+    private async Task OnDateRangeChanged(DateRange dateRange)
+    {
+        if (string.IsNullOrEmpty(_tenantId)) return;
+        if (dateRange.Start is null || dateRange.End is null) return;
+
+        _lastDateRange = dateRange;
+        _isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var tenantGuid = Guid.Parse(_tenantId);
+            // Pass dates as-is — schedule times are stored without timezone
+            // Strip timezone — schedule times are stored without timezone
+            var s = dateRange.Start.Value;
+            var e = dateRange.End.Value;
+            var startDate = new DateTime(s.Year, s.Month, s.Day, 0, 0, 0, DateTimeKind.Utc);
+            var endDate = new DateTime(e.Year, e.Month, e.Day, 0, 0, 0, DateTimeKind.Utc);
+            // Day view sends Start==End, so expand to cover the full day
+            if (endDate <= startDate)
+                endDate = startDate.AddDays(1);
+
+            var result = await ScheduleService.ListPublicSchedulesAsync(
+                tenantGuid, startDate, endDate, 1, 200);
+
+            var items = result?.Providers != null
+                ? ScheduleCalendarItem.FromProviders(result.Providers)
+                : new();
+
+            if (_isCustomer)
+            {
+                _calendarItems = items;
+            }
+            else if (_isProvider && Guid.TryParse(_userId, out var providerGuid))
+            {
+                // Provider view: only show their own schedule items
+                _calendarItems = items
+                    .Where(i => i.ProviderId.Value == providerGuid)
+                    .ToList();
+
+                // Fallback: fetch pending bookings to map ScheduleId → BookingId
+                // (until the backend populates BookingId on TimeBlock)
+                await LoadPendingBookingsLookup();
+            }
+            else
+            {
+                // Admin view: show all
+                _calendarItems = items;
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task OnCellClicked(DateTime clickedTime)
+    {
+        if (_isCustomer)
+        {
+            await ShowBookingForm(clickedTime);
+        }
+    }
+
+    private async Task OnItemClicked(ScheduleCalendarItem item)
+    {
+        if (_isCustomer)
+        {
+            await ShowBookingForm(item.Start);
+        }
+        else
+        {
+            await OnProviderItemClicked(item);
+        }
+    }
+
+    private async Task ShowBookingForm(DateTime selectedTime)
+    {
+        var parameters = new DialogParameters<ProviderSelectionDialog>
+        {
+            { x => x.SelectedTime, selectedTime },
+            { x => x.AllCalendarItems, _calendarItems }
+        };
+
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
+        };
+
+        var dialog = await DialogService.ShowAsync<ProviderSelectionDialog>("Book Appointment", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false } && _lastDateRange is not null)
+        {
+            await OnDateRangeChanged(_lastDateRange);
+        }
+    }
+
+    private static List<ScheduleCalendarItem> SplitIntoHourlySlots(List<ScheduleCalendarItem> items)
+    {
+        var result = new List<ScheduleCalendarItem>();
+
+        foreach (var item in items)
+        {
+            var duration = (item.End ?? item.Start.AddHours(1)) - item.Start;
+            if (duration.TotalHours <= 1)
+            {
+                result.Add(item);
+                continue;
+            }
+
+            // Split into 1-hour chunks
+            var current = item.Start;
+            var endTime = item.End ?? item.Start.AddHours(1);
+            while (current.AddHours(1) <= endTime)
+            {
+                result.Add(new ScheduleCalendarItem
+                {
+                    TimeBlock = item.TimeBlock,
+                    ProviderId = item.ProviderId,
+                    ProviderName = item.ProviderName,
+                    Title = item.Title,
+                    Text = item.Text,
+                    Start = current,
+                    End = current.AddHours(1),
+                    Color = item.Color
+                });
+                current = current.AddHours(1);
+            }
+        }
+
+        return result;
+    }
+
+    private async Task LoadPendingBookingsLookup()
+    {
+        try
+        {
+            var result = await BookingService.ListBookingsAsync(status: BookingStatus.Pending, pageSize: 100);
+            _pendingBookingsBySchedule = result?.Bookings
+                ?.ToDictionary(b => b.ScheduleId.Value, b => b)
+                ?? new();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to load pending bookings for lookup");
+        }
+    }
+
+    private async Task OnProviderItemClicked(ScheduleCalendarItem item)
+    {
+        if (item.TimeBlock.IsAvailable && item.TimeBlock.CustomerName is null)
+        {
+            Snackbar.Add($"Available slot: {item.TimeBlock.ScheduleTitle ?? "Schedule"}", Severity.Info);
+            return;
+        }
+
+        // Resolve BookingId: prefer from TimeBlock, fallback to pending bookings lookup
+        Guid? bookingId = item.TimeBlock.BookingId?.Value;
+        if (bookingId is null && item.TimeBlock.ScheduleId.HasValue)
+        {
+            _pendingBookingsBySchedule.TryGetValue(item.TimeBlock.ScheduleId.Value.Value, out var pending);
+            bookingId = pending?.Id.Value;
+        }
+
+        var parameters = new DialogParameters<BookingActionDialog>
+        {
+            { x => x.Item, item },
+            { x => x.BookingId, bookingId }
+        };
+
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
+        };
+
+        var dialog = await DialogService.ShowAsync<BookingActionDialog>("Booking Details", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false } && _lastDateRange is not null)
+        {
+            await OnDateRangeChanged(_lastDateRange);
+        }
+    }
+}

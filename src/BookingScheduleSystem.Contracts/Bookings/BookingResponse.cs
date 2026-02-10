@@ -13,4 +13,7 @@ public sealed record BookingResponse
     public DateTime BookedAt { get; init; }
     public DateTime? CancelledAt { get; init; }
     public string? CancellationReason { get; init; }
+    public string? ScheduleTitle { get; init; }
+    public DateTime? ScheduleStartTime { get; init; }
+    public DateTime? ScheduleEndTime { get; init; }
 }

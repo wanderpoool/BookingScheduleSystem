@@ -1,5 +1,9 @@
 @page "/"
+@rendermode InteractiveServer
 @layout EmptyLayout
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
 
 <PageTitle>Book me App! - Streamline Your Appointments & Bookings</PageTitle>
 
@@ -539,4 +543,20 @@
 
 @code {
     private bool _drawerOpen = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            if (authState.User.Identity?.IsAuthenticated == true)
+            {
+                Navigation.NavigateTo("/dashboard");
+            }
+        }
+        catch
+        {
+            // Ignore during prerender
+        }
+    }
 }

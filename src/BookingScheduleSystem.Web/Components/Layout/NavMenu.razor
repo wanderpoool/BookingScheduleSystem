@@ -1,37 +1,39 @@
+@using Microsoft.AspNetCore.Components.Authorization
 @inject NavigationManager Navigation
 
 <MudNavMenu>
-    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Dashboard</MudNavLink>
+    <MudNavLink Href="/dashboard" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
+    <MudNavLink Href="/browse-schedules" Icon="@Icons.Material.Filled.BookOnline">Book a Schedule</MudNavLink>
+    <MudNavLink Href="/my-bookings" Icon="@Icons.Material.Filled.EventNote">My Bookings</MudNavLink>
 
-    <MudNavGroup Title="Bookings" Icon="@Icons.Material.Filled.EventNote" Expanded="true">
-        <MudNavLink Href="/bookings" Icon="@Icons.Material.Filled.CalendarMonth">My Bookings</MudNavLink>
-        <MudNavLink Href="/bookings/new" Icon="@Icons.Material.Filled.Add">New Booking</MudNavLink>
-    </MudNavGroup>
+    <AuthorizeView Roles="Provider,GlobalAdmin">
+        <Authorized>
+            <MudDivider Class="my-2" />
 
-    <MudNavGroup Title="Schedules" Icon="@Icons.Material.Filled.Schedule">
-        <MudNavLink Href="/schedules" Icon="@Icons.Material.Filled.List">All Schedules</MudNavLink>
-        <MudNavLink Href="/schedules/create" Icon="@Icons.Material.Filled.AddCircle">Create Schedule</MudNavLink>
-    </MudNavGroup>
+            <MudNavGroup Title="Schedules" Icon="@Icons.Material.Filled.CalendarMonth" Expanded="false">
+                <MudNavLink Href="/schedules" Icon="@Icons.Material.Filled.ViewList">Manage Schedules</MudNavLink>
+                <MudNavLink Href="/schedules/create" Icon="@Icons.Material.Filled.AddCircle">Create Schedule</MudNavLink>
+            </MudNavGroup>
 
-    <MudNavGroup Title="Providers" Icon="@Icons.Material.Filled.People">
-        <MudNavLink Href="/providers" Icon="@Icons.Material.Filled.PeopleAlt">View Providers</MudNavLink>
-        <MudNavLink Href="/providers/invite" Icon="@Icons.Material.Filled.PersonAdd">Invite Provider</MudNavLink>
-    </MudNavGroup>
+            <MudNavGroup Title="Providers" Icon="@Icons.Material.Filled.Group" Expanded="false">
+                <MudNavLink Href="/providers" Icon="@Icons.Material.Filled.People">Manage Providers</MudNavLink>
+            </MudNavGroup>
 
-    <MudDivider Class="my-2" />
+            <MudNavGroup Title="Organization" Icon="@Icons.Material.Filled.Business" Expanded="false">
+                <MudNavLink Href="/organization" Icon="@Icons.Material.Filled.Settings">Organization Settings</MudNavLink>
+                <MudNavLink Href="/subscription" Icon="@Icons.Material.Filled.CreditCard">Subscription</MudNavLink>
+            </MudNavGroup>
 
-    <MudNavGroup Title="Organization" Icon="@Icons.Material.Filled.Business">
-        <MudNavLink Href="/organization/settings" Icon="@Icons.Material.Filled.Settings">Settings</MudNavLink>
-        <MudNavLink Href="/organization/operating-hours" Icon="@Icons.Material.Filled.AccessTime">Operating Hours</MudNavLink>
-        <MudNavLink Href="/organization/subscription" Icon="@Icons.Material.Filled.CardMembership">Subscription</MudNavLink>
-    </MudNavGroup>
+            <MudDivider Class="my-2" />
 
-    <MudNavLink Href="/analytics" Icon="@Icons.Material.Filled.Analytics">Analytics</MudNavLink>
+            <MudNavLink Href="/analytics" Icon="@Icons.Material.Filled.BarChart">Analytics</MudNavLink>
+            <MudNavLink Href="/settings" Icon="@Icons.Material.Filled.Tune">Settings</MudNavLink>
+        </Authorized>
+    </AuthorizeView>
 
     <MudDivider Class="my-2" />
 
     <MudNavLink Href="/profile" Icon="@Icons.Material.Filled.Person">My Profile</MudNavLink>
-    <MudNavLink Href="/settings" Icon="@Icons.Material.Filled.Settings">Settings</MudNavLink>
 </MudNavMenu>
 
 @code {

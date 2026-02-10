@@ -1,13 +1,17 @@
 @page "/register"
 @rendermode InteractiveServer
 @using BookingScheduleSystem.Contracts.Auth
+@using BookingScheduleSystem.Contracts.Tenants
 @using BookingScheduleSystem.Web.Services
 @inject IAuthenticationService AuthService
 @inject IOtpService OtpService
+@inject ITenantService TenantService
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IJSRuntime JS
 
 @layout EmptyLayout
+@implements IDisposable
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="d-flex align-center justify-center py-4" Style="min-height: 100vh;">
     <MudPaper Elevation="3" Class="pa-4 pa-sm-6 pa-md-8" Style="width: 100%; max-width: 500px;">
@@ -16,6 +20,19 @@
             <MudStack Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="2">
                 <img src="logo.png" alt="Book me App!" style="max-width: 200px; height: auto;" />
             </MudStack>
+
+            @if (_companyInfo != null)
+            {
+                <MudAlert Severity="Severity.Info" Icon="@Icons.Material.Filled.Business" Dense="true">
+                    Registering with <strong>@_companyInfo.Name</strong>
+                </MudAlert>
+            }
+            else if (_currentStep == RegistrationStep.PersonalInfo)
+            {
+                <MudAlert Severity="Severity.Warning" Icon="@Icons.Material.Filled.Warning" Dense="true">
+                    All customers must belong to a company. Enter an invitation code below or ask your organization for an invitation link.
+                </MudAlert>
+            }
 
             <MudText Typo="Typo.h5" Align="Align.Center">Create Account</MudText>
             <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
@@ -44,11 +61,13 @@
                     {
                         @* Step 1: Personal Information *@
                         <MudTextField @bind-Value="_registerModel.CreationCode"
-                                      Label="Invitation Code (Optional)"
+                                      Label="@(_companyInfo != null ? "Invitation Code (Optional)" : "Invitation Code (Required)")"
                                       Variant="Variant.Outlined"
-                                      HelperText="Enter if you have an invitation code from an organization"
+                                      Required="@(_companyInfo == null)"
+                                      HelperText="@(_companyInfo != null ? "Enter if you have an invitation code from an organization" : "Required — enter the code provided by your organization")"
                                       Adornment="Adornment.Start"
-                                      AdornmentIcon="@Icons.Material.Filled.QrCode" />
+                                      AdornmentIcon="@Icons.Material.Filled.QrCode"
+                                      Immediate="true" />
 
                         <MudGrid Spacing="2">
                             <MudItem xs="12" sm="6">
@@ -96,15 +115,21 @@
                         }
                         else
                         {
-                            <MudTextField @bind-Value="_registerModel.PhoneNumber"
-                                          Label="Phone Number"
-                                          Variant="Variant.Outlined"
-                                          InputType="InputType.Telephone"
-                                          Required="true"
-                                          HelperText="Format: +63XXXXXXXXXX (Philippines)"
-                                          Placeholder="+639171234567"
-                                          Adornment="Adornment.Start"
-                                          AdornmentIcon="@Icons.Material.Filled.Phone" />
+                            <div id="register-phone-input">
+                                <MudTextField T="string"
+                                              Value="@_registerModel.PhoneNumber"
+                                              ValueChanged="@OnPhoneInput"
+                                              Immediate="true"
+                                              Label="Phone Number"
+                                              Variant="Variant.Outlined"
+                                              InputType="InputType.Telephone"
+                                              Required="true"
+                                              Placeholder="9XX-XXX-XXXX"
+                                              MaxLength="12"
+                                              Adornment="Adornment.Start"
+                                              AdornmentText="+63"
+                                              OnBlur="FormatPhoneNumber" />
+                            </div>
                         }
 
                         <MudTextField @bind-Value="_registerModel.Password"
@@ -132,7 +157,7 @@
                                    FullWidth="true"
                                    Size="Size.Large"
                                    ButtonType="ButtonType.Submit"
-                                   Disabled="@_isLoading">
+                                   Disabled="@(_isLoading || !HasTenantContext)">
                             @if (_isLoading)
                             {
                                 <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
@@ -158,7 +183,7 @@
                             }
                             else
                             {
-                                <text>Check your phone: <strong>@_registerModel.PhoneNumber</strong>
+                                <text>Check your phone: <strong>+63 @_registerModel.PhoneNumber</strong>
                                 </text>
                             }
                         </MudText>
@@ -278,7 +303,7 @@
 
                     <MudStack Row="true" Justify="Justify.Center" Spacing="1" Class="flex-wrap">
                         <MudText Typo="Typo.body2">Already have an account?</MudText>
-                        <MudLink Href="/login" Typo="Typo.body2">Sign in</MudLink>
+                        <MudLink Href="@($"/login{(_companyInfo != null ? $"?company={Company}" : "")}")" Typo="Typo.body2">Sign in</MudLink>
                     </MudStack>
 
                     <MudStack Row="true" Justify="Justify.Center" Spacing="1" Class="flex-wrap">
@@ -292,6 +317,10 @@
 </MudContainer>
 
 @code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Company { get; set; }
+
     private RegisterFormModel _registerModel = new();
     private bool _showPassword = false;
     private bool _acceptTerms = false;
@@ -300,6 +329,9 @@
     private RegistrationStep _currentStep = RegistrationStep.PersonalInfo;
     private DateTime? _otpExpiresAt;
     private System.Timers.Timer? _timer;
+    private TenantResponse? _companyInfo;
+
+    private bool HasTenantContext => _companyInfo != null || !string.IsNullOrWhiteSpace(_registerModel.CreationCode);
 
     private enum RegistrationStep
     {
@@ -308,12 +340,27 @@
         TermsAndConditions
     }
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         // Start a timer to update OTP countdown
-        _timer = new System.Timers.Timer(1000); // Update every second
+        _timer = new System.Timers.Timer(1000);
         _timer.Elapsed += (s, e) => InvokeAsync(StateHasChanged);
         _timer.Start();
+
+        // Load company info if company GUID is provided
+        if (!string.IsNullOrWhiteSpace(Company) && Guid.TryParse(Company, out var companyGuid))
+        {
+            _companyInfo = await TenantService.GetTenantAsync(companyGuid);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_registerModel.ContactMethod == "phone" && _currentStep == RegistrationStep.PersonalInfo)
+        {
+            await Task.Delay(50);
+            await JS.InvokeVoidAsync("phoneInput.restrict", null, "register-phone-input");
+        }
     }
 
     public void Dispose()
@@ -325,6 +372,30 @@
     private void TogglePasswordVisibility()
     {
         _showPassword = !_showPassword;
+    }
+
+    private string CleanPhone => "+63" + new string((_registerModel.PhoneNumber ?? "").Where(char.IsDigit).ToArray());
+
+    private void OnPhoneInput(string value)
+    {
+        var digits = new string((value ?? "").Where(char.IsDigit).ToArray());
+        if (digits.Length > 10)
+            digits = digits[..10];
+        _registerModel.PhoneNumber = digits;
+    }
+
+    private void FormatPhoneNumber()
+    {
+        var digits = new string((_registerModel.PhoneNumber ?? "").Where(char.IsDigit).ToArray());
+        if (digits.Length > 10)
+            digits = digits[..10];
+
+        _registerModel.PhoneNumber = digits.Length switch
+        {
+            > 6 => $"{digits[..3]}-{digits[3..6]}-{digits[6..]}",
+            > 3 => $"{digits[..3]}-{digits[3..]}",
+            _ => digits
+        };
     }
 
     private async Task HandleRegistrationStep()
@@ -368,7 +439,7 @@
             {
                 ContactMethod = _registerModel.ContactMethod,
                 Email = _registerModel.Email,
-                PhoneNumber = _registerModel.PhoneNumber,
+                PhoneNumber = _registerModel.ContactMethod == "phone" ? CleanPhone : null,
                 Purpose = "registration"
             };
 
@@ -382,12 +453,12 @@
             }
             else
             {
-                Snackbar.Add(response.Message ?? "Failed to send OTP", Severity.Error);
+                Snackbar.Add(response.Message ?? "We couldn't send your verification code. Please try again.", Severity.Error);
             }
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+            Snackbar.Add(ex.Message, Severity.Error);
         }
         finally
         {
@@ -405,7 +476,7 @@
             {
                 ContactMethod = _registerModel.ContactMethod,
                 Email = _registerModel.Email,
-                PhoneNumber = _registerModel.PhoneNumber,
+                PhoneNumber = _registerModel.ContactMethod == "phone" ? CleanPhone : null,
                 OtpCode = _registerModel.OtpCode,
                 Purpose = "registration"
             };
@@ -414,17 +485,18 @@
 
             if (response.Success && response.IsVerified)
             {
+                _registerModel.OtpVerificationToken = response.VerificationToken;
                 _currentStep = RegistrationStep.TermsAndConditions;
                 Snackbar.Add("Verification successful! Please accept the terms to continue.", Severity.Success);
             }
             else
             {
-                Snackbar.Add(response.Message ?? "Invalid OTP code", Severity.Error);
+                Snackbar.Add(response.Message ?? "The code you entered is incorrect. Please try again.", Severity.Error);
             }
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+            Snackbar.Add(ex.Message, Severity.Error);
         }
         finally
         {
@@ -452,12 +524,14 @@
         {
             var registerRequest = new RegisterUserRequest
             {
-                Email = _registerModel.Email,
-                PhoneNumber = _registerModel.PhoneNumber,
+                Email = _registerModel.ContactMethod == "email" ? _registerModel.Email : null,
+                PhoneNumber = _registerModel.ContactMethod == "phone" ? CleanPhone : null,
                 Password = _registerModel.Password,
                 FirstName = _registerModel.FirstName,
                 LastName = _registerModel.LastName,
-                CreationCode = string.IsNullOrWhiteSpace(_registerModel.CreationCode) ? null : _registerModel.CreationCode
+                CreationCode = string.IsNullOrWhiteSpace(_registerModel.CreationCode) ? null : _registerModel.CreationCode,
+                TenantId = _companyInfo?.Id,
+                OtpVerificationToken = _registerModel.OtpVerificationToken
             };
 
             var result = await AuthService.RegisterAsync(registerRequest);
@@ -465,16 +539,12 @@
             if (result != null)
             {
                 Snackbar.Add($"Welcome, {result.FirstName}! Account created successfully.", Severity.Success);
-                Navigation.NavigateTo("/dashboard");
-            }
-            else
-            {
-                Snackbar.Add("Registration failed. Please check your information and try again.", Severity.Error);
+                Navigation.NavigateTo(_companyInfo != null ? "/browse-schedules" : "/dashboard");
             }
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"An error occurred: {ex.Message}", Severity.Error);
+            Snackbar.Add(ex.Message, Severity.Error);
         }
         finally
         {

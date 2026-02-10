@@ -1,0 +1,14 @@
+<root>
+    <data name="Day" xml:space="preserve">
+        <value>Dag</value>
+    </data>
+    <data name="Month" xml:space="preserve">
+        <value>Måned</value>
+    </data>
+    <data name="Week" xml:space="preserve">
+        <value>Uge</value>
+    </data>
+    <data name="WorkWeek" xml:space="preserve">
+        <value>Arbejdsuge</value>
+    </data>
+</root>

@@ -1,0 +1,14 @@
+<root>
+    <data name="Day" xml:space="preserve">
+        <value>Nap</value>
+    </data>
+    <data name="Month" xml:space="preserve">
+        <value>Hónap</value>
+    </data>
+    <data name="Week" xml:space="preserve">
+        <value>Hét</value>
+    </data>
+    <data name="WorkWeek" xml:space="preserve">
+        <value>Munkahét</value>
+    </data>
+</root>

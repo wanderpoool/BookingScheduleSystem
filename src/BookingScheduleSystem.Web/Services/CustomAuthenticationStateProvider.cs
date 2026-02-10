@@ -44,14 +44,18 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
                 new Claim(ClaimTypes.Surname, user.LastName)
             };
 
-            // Add role claim based on IsGlobalAdmin
+            // Add role claims based on admin/provider status
             if (user.IsGlobalAdmin)
             {
                 claims.Add(new Claim(ClaimTypes.Role, "GlobalAdmin"));
             }
+            else if (user.IsProvider)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, "Provider"));
+            }
             else
             {
-                claims.Add(new Claim(ClaimTypes.Role, "User"));
+                claims.Add(new Claim(ClaimTypes.Role, "Customer"));
             }
 
             // Add tenant ID claim if available

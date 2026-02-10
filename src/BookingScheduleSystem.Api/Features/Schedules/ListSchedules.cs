@@ -1,3 +1,5 @@
+using BookingScheduleSystem.Api.Infrastructure.Auth;
+using BookingScheduleSystem.Api.Infrastructure.Bookings;
 using BookingScheduleSystem.Api.Infrastructure.MultiTenancy;
 using BookingScheduleSystem.Api.Infrastructure.Schedules;
 using BookingScheduleSystem.Contracts.Common;
@@ -17,14 +19,6 @@ public sealed class ListSchedulesRequest
     public int PageSize { get; set; } = 20;
 }
 
-public sealed class ListSchedulesResponse
-{
-    public required List<ScheduleResponse> Schedules { get; init; }
-    public required int TotalCount { get; init; }
-    public required int PageNumber { get; init; }
-    public required int PageSize { get; init; }
-}
-
 public sealed class ListSchedules : Endpoint<ListSchedulesRequest, ListSchedulesResponse>
 {
     public required IDocumentStore DocumentStore { get; init; }
@@ -36,8 +30,8 @@ public sealed class ListSchedules : Endpoint<ListSchedulesRequest, ListSchedules
         Policies("TenantUser");
         Description(d => d
             .WithTags("Schedules")
-            .WithSummary("List schedules")
-            .WithDescription("Retrieves paginated list of schedules for the authenticated tenant with optional filters."));
+            .WithSummary("List provider availability")
+            .WithDescription("Returns per-provider availability blocks for the authenticated tenant with optional filters."));
     }
 
     public override async Task HandleAsync(ListSchedulesRequest req, CancellationToken ct)
@@ -53,55 +47,94 @@ public sealed class ListSchedules : Endpoint<ListSchedulesRequest, ListSchedules
         var pageNumber = Math.Max(1, req.PageNumber);
         var pageSize = Math.Clamp(req.PageSize, 1, 100);
 
-        IQueryable<Schedule> query = session.Query<Schedule>()
-            .Where(s => s.TenantId == tenantId);
+        var now = DateTimeOffset.UtcNow;
+        // Marten uses 'timestamp without time zone' — must use DateTime with Kind=Unspecified
+        var startDate = req.StartDate.HasValue
+            ? DateTime.SpecifyKind(req.StartDate.Value, DateTimeKind.Unspecified)
+            : DateTime.SpecifyKind(now.UtcDateTime, DateTimeKind.Unspecified);
+        var endDate = req.EndDate.HasValue
+            ? DateTime.SpecifyKind(req.EndDate.Value, DateTimeKind.Unspecified)
+            : DateTime.SpecifyKind(now.AddDays(30).UtcDateTime, DateTimeKind.Unspecified);
+
+        // Load tenant for fallback operating hours
+        var tenant = await session.LoadAsync<Tenant>(tenantId, ct);
+
+        // Query providers for this tenant
+        var providersQuery = session.Query<User>()
+            .Where(u => u.TenantId == tenantId && u.IsProvider && u.IsActive);
 
         if (req.ProviderId.HasValue)
         {
             var providerId = new UserId(req.ProviderId.Value);
-            query = query.Where(s => s.ProviderId == providerId);
+            providersQuery = providersQuery.Where(u => u.Id == providerId);
         }
 
-        if (req.StartDate.HasValue)
-        {
-            query = query.Where(s => s.StartTime >= req.StartDate.Value);
-        }
+        var totalProviders = await providersQuery.CountAsync(ct);
 
-        if (req.EndDate.HasValue)
-        {
-            query = query.Where(s => s.EndTime <= req.EndDate.Value);
-        }
-
-        if (req.IsActive.HasValue)
-        {
-            query = query.Where(s => s.IsActive == req.IsActive.Value);
-        }
-
-        var totalCount = await query.CountAsync(ct);
-
-        var schedules = await query
-            .OrderBy(s => s.StartTime)
+        var providers = await providersQuery
+            .OrderBy(u => u.LastName)
+            .ThenBy(u => u.FirstName)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(ct);
 
+        // Load schedules for this tenant in the date range
+        IQueryable<Schedule> schedulesQuery = session.Query<Schedule>()
+            .Where(s => s.TenantId == tenantId
+                && s.StartTime < endDate
+                && s.EndTime > startDate);
+
+        if (req.IsActive.HasValue)
+        {
+            schedulesQuery = schedulesQuery.Where(s => s.IsActive == req.IsActive.Value);
+        }
+
+        var allSchedules = await schedulesQuery.ToListAsync(ct);
+
+        // Filter to only schedules belonging to our page of providers
+        var providerIdSet = providers.Select(p => p.Id).ToHashSet();
+        var relevantSchedules = allSchedules
+            .Where(s => s.ProviderId.HasValue && providerIdSet.Contains(s.ProviderId.Value))
+            .ToList();
+
+        // Load bookings for the relevant schedules to enrich time blocks
+        // Note: Marten can't serialize List<ScheduleId> for SQL arrays, so filter in-memory
+        var scheduleIdSet = relevantSchedules.Select(s => s.Id).ToHashSet();
+        var tenantBookings = await session.Query<Booking>()
+            .Where(b => b.TenantId == tenantId
+                && b.Status != BookingStatus.Cancelled)
+            .ToListAsync(ct);
+        var allBookings = tenantBookings
+            .Where(b => scheduleIdSet.Contains(b.ScheduleId))
+            .ToList();
+
+        // Load customer names for the bookings
+        var bookingUserIdSet = allBookings.Select(b => b.UserId).ToHashSet();
+        var missingUserIds = bookingUserIdSet.Except(providers.Select(p => p.Id)).ToHashSet();
+        var additionalUsers = missingUserIds.Count > 0
+            ? (await session.Query<User>()
+                .Where(u => u.TenantId == tenantId)
+                .ToListAsync(ct))
+                .Where(u => missingUserIds.Contains(u.Id))
+                .ToList()
+            : new List<User>();
+        var userNamesById = providers.Concat(additionalUsers)
+            .Where(u => bookingUserIdSet.Contains(u.Id))
+            .ToDictionary(u => u.Id, u => $"{u.FirstName} {u.LastName}");
+
+        var availability = AvailabilityCalculator.BuildProviderAvailability(
+            providers,
+            relevantSchedules,
+            tenant?.OperatingHours,
+            DateOnly.FromDateTime(startDate),
+            DateOnly.FromDateTime(endDate),
+            allBookings,
+            userNamesById);
+
         Response = new ListSchedulesResponse
         {
-            Schedules = schedules.Select(s => new ScheduleResponse
-            {
-                Id = s.Id,
-                TenantId = s.TenantId,
-                ProviderId = s.ProviderId,
-                Title = s.Title,
-                Description = s.Description,
-                StartTime = s.StartTime,
-                EndTime = s.EndTime,
-                MaxCapacity = s.MaxCapacity,
-                CurrentBookings = s.CurrentBookings,
-                IsActive = s.IsActive,
-                CreatedAt = s.CreatedAt
-            }).ToList(),
-            TotalCount = (int)totalCount,
+            Providers = availability,
+            TotalCount = (int)totalProviders,
             PageNumber = pageNumber,
             PageSize = pageSize
         };

@@ -1,0 +1,47 @@
+<MudCard Elevation="2" Class="available-schedule-card" Style="height: 100%;">
+    <MudCardContent Class="pa-4">
+        <MudStack Spacing="2">
+            <MudText Typo="Typo.subtitle1" Style="font-weight: 600;">@Schedule.Title</MudText>
+
+            @if (!string.IsNullOrWhiteSpace(Schedule.ProviderName))
+            {
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                    <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Color="Color.Secondary" />
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@Schedule.ProviderName</MudText>
+                </MudStack>
+            }
+
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Size="Size.Small" Color="Color.Primary" />
+                <MudText Typo="Typo.body2">@Schedule.StartTime.ToString("ddd, MMM dd")</MudText>
+            </MudStack>
+
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Color="Color.Primary" />
+                <MudText Typo="Typo.body2">@Schedule.StartTime.ToString("h:mm tt") - @Schedule.EndTime.ToString("h:mm tt")</MudText>
+            </MudStack>
+
+            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined"
+                     Color="@(Schedule.AvailableCapacity > 2 ? Color.Success : Color.Warning)"
+                     Icon="@Icons.Material.Filled.EventSeat">
+                @Schedule.AvailableCapacity spots left
+            </MudChip>
+        </MudStack>
+    </MudCardContent>
+    <MudCardActions Class="pa-4 pt-0">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
+                   StartIcon="@Icons.Material.Filled.BookOnline"
+                   OnClick="@(() => OnBookNow.InvokeAsync(Schedule))"
+                   Disabled="@(Schedule.AvailableCapacity <= 0)">
+            Book Now
+        </MudButton>
+    </MudCardActions>
+</MudCard>
+
+@code {
+    [Parameter]
+    public PublicScheduleResponse Schedule { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<PublicScheduleResponse> OnBookNow { get; set; }
+}

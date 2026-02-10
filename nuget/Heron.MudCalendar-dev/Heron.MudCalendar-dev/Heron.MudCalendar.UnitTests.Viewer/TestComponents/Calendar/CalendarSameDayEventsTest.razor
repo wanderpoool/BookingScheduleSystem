@@ -1,0 +1,41 @@
+<MudPopoverProvider />
+
+<MudCalendar T="CalendarItem" Items="_events" Height="1000" />
+
+<MudButton Class="add-item" OnClick="AddItem">Add Item</MudButton>
+
+@code {
+    public static string __description__ = "Calendar Same Day Events Tests";
+    
+    private List<CalendarItem> _events = new()
+    {
+        new CalendarItem
+        {
+            Start = DateTime.Today.AddHours(10),
+            End = DateTime.Today.AddHours(11),
+            Text = "Event 2"
+        },
+        new CalendarItem
+        {
+            Start = DateTime.Today.AddHours(9),
+            End = DateTime.Today.AddHours(10),
+            Text = "Event 1"
+        },
+        new CalendarItem
+        {
+            Start = DateTime.Today.AddHours(12),
+            End = DateTime.Today.AddHours(13),
+            Text = "Event 3"
+        }
+    };
+
+    private void AddItem()
+    {
+        _events.Add(new CalendarItem
+        {
+            Start = DateTime.Today.AddHours(10.5),
+            End = DateTime.Today.AddHours(11.5),
+            Text = "Event 2.5"
+        });
+    }
+}

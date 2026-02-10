@@ -1,11 +1,16 @@
 @page "/login"
 @rendermode InteractiveServer
 @using BookingScheduleSystem.Contracts.Auth
+@using BookingScheduleSystem.Contracts.Tenants
 @using BookingScheduleSystem.Web.Models
 @inject IAuthenticationService AuthService
+@inject IOtpService OtpService
+@inject ITenantService TenantService
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IJSRuntime JS
 @layout EmptyLayout
+@implements IDisposable
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="d-flex align-center justify-center" Style="min-height: 100vh;">
     <MudPaper Elevation="3" Class="pa-8" Style="width: 100%; max-width: 450px;">
@@ -15,6 +20,13 @@
                 <img src="logo.png" alt="Book me App!" style="max-width: 200px; height: auto;" />
             </MudStack>
 
+            @if (_companyInfo != null)
+            {
+                <MudAlert Severity="Severity.Info" Icon="@Icons.Material.Filled.Business" Dense="true">
+                    Signing in to <strong>@_companyInfo.Name</strong>
+                </MudAlert>
+            }
+
             <MudText Typo="Typo.h5" Align="Align.Center">Welcome Back</MudText>
             <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
                 Sign in to continue to your account
@@ -22,65 +34,211 @@
 
             <MudDivider />
 
-            @* Login Form *@
-            <EditForm Model="@_loginModel" OnValidSubmit="HandleLogin">
-                <DataAnnotationsValidator />
+            @* Login Method Toggle *@
+            <MudStack Row="true" Justify="Justify.Center">
+                <MudButton Variant="@(_activeTab == 0 ? Variant.Filled : Variant.Outlined)"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Lock"
+                           OnClick="@(() => _activeTab = 0)"
+                           Style="flex: 1;">
+                    Password
+                </MudButton>
+                <MudButton Variant="@(_activeTab == 1 ? Variant.Filled : Variant.Outlined)"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Sms"
+                           OnClick="@(() => _activeTab = 1)"
+                           Style="flex: 1;">
+                    OTP
+                </MudButton>
+            </MudStack>
 
-                <MudStack Spacing="3">
-                    <MudTextField @bind-Value="_loginModel.Email"
-                                  Label="Email"
-                                  Variant="Variant.Outlined"
-                                  InputType="InputType.Email"
-                                  Required="true"
-                                  RequiredError="Email is required"
-                                  Adornment="Adornment.Start"
-                                  AdornmentIcon="@Icons.Material.Filled.Email" />
+            @if (_activeTab == 0)
+            {
+                @* Password Login Form *@
+                <EditForm Model="@_loginModel" OnValidSubmit="HandlePasswordLogin">
+                    <DataAnnotationsValidator />
 
-                    <MudTextField @bind-Value="_loginModel.Password"
-                                  Label="Password"
-                                  Variant="Variant.Outlined"
-                                  InputType="@(_showPassword ? InputType.Text : InputType.Password)"
-                                  Required="true"
-                                  RequiredError="Password is required"
-                                  Adornment="Adornment.End"
-                                  AdornmentIcon="@(_showPassword ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
-                                  OnAdornmentClick="TogglePasswordVisibility" />
+                    <MudStack Spacing="3">
+                        <MudTextField @bind-Value="_loginModel.Email"
+                                      Label="Email"
+                                      Variant="Variant.Outlined"
+                                      InputType="InputType.Email"
+                                      Required="true"
+                                      RequiredError="Email is required"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Email" />
 
-                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-                        <MudCheckBox T="bool" @bind-Value="_rememberMe" Label="Remember me" Color="Color.Primary" />
-                        <MudLink Href="/forgot-password" Typo="Typo.body2">Forgot password?</MudLink>
+                        <MudTextField @bind-Value="_loginModel.Password"
+                                      Label="Password"
+                                      Variant="Variant.Outlined"
+                                      InputType="@(_showPassword ? InputType.Text : InputType.Password)"
+                                      Required="true"
+                                      RequiredError="Password is required"
+                                      Adornment="Adornment.End"
+                                      AdornmentIcon="@(_showPassword ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
+                                      OnAdornmentClick="TogglePasswordVisibility" />
+
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                            <MudCheckBox T="bool" @bind-Value="_rememberMe" Label="Remember me" Color="Color.Primary" />
+                            <MudLink Href="/forgot-password" Typo="Typo.body2">Forgot password?</MudLink>
+                        </MudStack>
+
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   FullWidth="true"
+                                   Size="Size.Large"
+                                   ButtonType="ButtonType.Submit"
+                                   Disabled="@_isLoading">
+                            @if (_isLoading)
+                            {
+                                <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
+                                <MudText>Signing in...</MudText>
+                            }
+                            else
+                            {
+                                <MudText>Sign In</MudText>
+                            }
+                        </MudButton>
                     </MudStack>
+                </EditForm>
+            }
+            else
+            {
+                @* OTP Login Form *@
+                <MudStack Spacing="3">
+                    @if (_otpStep == OtpLoginStep.SendOtp)
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            We'll send a verification code to your email or phone
+                        </MudText>
 
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Primary"
-                               FullWidth="true"
-                               Size="Size.Large"
-                               ButtonType="ButtonType.Submit"
-                               Disabled="@_isLoading">
-                        @if (_isLoading)
+                        <MudRadioGroup @bind-Value="_otpContactMethod">
+                            <MudRadio Value="@("email")" Color="Color.Primary">Email</MudRadio>
+                            <MudRadio Value="@("phone")" Color="Color.Primary">Phone</MudRadio>
+                        </MudRadioGroup>
+
+                        @if (_otpContactMethod == "email")
                         {
-                            <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
-                            <MudText>Signing in...</MudText>
+                            <MudTextField @bind-Value="_otpEmail"
+                                          Label="Email"
+                                          Variant="Variant.Outlined"
+                                          InputType="InputType.Email"
+                                          Adornment="Adornment.Start"
+                                          AdornmentIcon="@Icons.Material.Filled.Email" />
                         }
                         else
                         {
-                            <MudText>Sign In</MudText>
+                            <div id="login-phone-input">
+                                <MudTextField T="string"
+                                              Value="@_otpPhone"
+                                              ValueChanged="@OnPhoneInput"
+                                              Immediate="true"
+                                              Label="Phone Number"
+                                              Variant="Variant.Outlined"
+                                              Placeholder="9XX-XXX-XXXX"
+                                              MaxLength="12"
+                                              InputType="InputType.Telephone"
+                                              Adornment="Adornment.Start"
+                                              AdornmentText="+63"
+                                              OnBlur="FormatPhoneNumber" />
+                            </div>
                         }
-                    </MudButton>
 
-                    <MudDivider />
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   FullWidth="true"
+                                   Size="Size.Large"
+                                   OnClick="SendLoginOtp"
+                                   Disabled="@_isLoading">
+                            @if (_isLoading)
+                            {
+                                <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
+                                <MudText>Sending code...</MudText>
+                            }
+                            else
+                            {
+                                <MudText>Send Verification Code</MudText>
+                            }
+                        </MudButton>
+                    }
+                    else if (_otpStep == OtpLoginStep.VerifyOtp)
+                    {
+                        <MudAlert Severity="Severity.Info" Dense="true">
+                            Code sent to @(_otpContactMethod == "email" ? _otpEmail : $"+63 {_otpPhone}")
+                        </MudAlert>
 
-                    <MudStack Row="true" Justify="Justify.Center" Spacing="1">
-                        <MudText Typo="Typo.body2">Don't have an account?</MudText>
-                        <MudLink Href="/register" Typo="Typo.body2">Sign up</MudLink>
-                    </MudStack>
+                        @if (_otpExpiresAt.HasValue)
+                        {
+                            var remaining = _otpExpiresAt.Value - DateTime.UtcNow;
+                            @if (remaining.TotalSeconds > 0)
+                            {
+                                <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+                                    Code expires in @($"{(int)remaining.TotalMinutes}:{remaining.Seconds:D2}")
+                                </MudText>
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Error">
+                                    Code expired. Please request a new one.
+                                </MudText>
+                            }
+                        }
 
-                    <MudStack Row="true" Justify="Justify.Center" Spacing="1">
-                        <MudText Typo="Typo.body2">Want to create an organization?</MudText>
-                        <MudLink Href="/register-organization" Typo="Typo.body2">Get started</MudLink>
-                    </MudStack>
+                        <MudTextField @bind-Value="_otpCode"
+                                      Label="Enter 6-digit code"
+                                      Variant="Variant.Outlined"
+                                      MaxLength="6"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Pin"
+                                      Style="letter-spacing: 8px; font-size: 1.5rem; text-align: center;" />
+
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   FullWidth="true"
+                                   Size="Size.Large"
+                                   OnClick="VerifyLoginOtp"
+                                   Disabled="@(_isLoading || string.IsNullOrWhiteSpace(_otpCode) || _otpCode.Length < 6)">
+                            @if (_isLoading)
+                            {
+                                <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
+                                <MudText>Verifying...</MudText>
+                            }
+                            else
+                            {
+                                <MudText>Verify & Sign In</MudText>
+                            }
+                        </MudButton>
+
+                        <MudStack Row="true" Justify="Justify.SpaceBetween">
+                            <MudButton Variant="Variant.Text" Color="Color.Default"
+                                       OnClick="@(() => _otpStep = OtpLoginStep.SendOtp)"
+                                       StartIcon="@Icons.Material.Filled.ArrowBack"
+                                       Size="Size.Small">
+                                Back
+                            </MudButton>
+                            <MudButton Variant="Variant.Text" Color="Color.Primary"
+                                       OnClick="SendLoginOtp"
+                                       StartIcon="@Icons.Material.Filled.Refresh"
+                                       Size="Size.Small"
+                                       Disabled="@_isLoading">
+                                Resend Code
+                            </MudButton>
+                        </MudStack>
+                    }
                 </MudStack>
-            </EditForm>
+            }
+
+            <MudDivider />
+
+            <MudStack Row="true" Justify="Justify.Center" Spacing="1">
+                <MudText Typo="Typo.body2">Don't have an account?</MudText>
+                <MudLink Href="@($"/register{(_companyInfo != null ? $"?company={Company}" : "")}")" Typo="Typo.body2">Sign up</MudLink>
+            </MudStack>
+
+            <MudStack Row="true" Justify="Justify.Center" Spacing="1">
+                <MudText Typo="Typo.body2">Want to create an organization?</MudText>
+                <MudLink Href="/register-organization" Typo="Typo.body2">Get started</MudLink>
+            </MudStack>
         </MudStack>
     </MudPaper>
 </MudContainer>
@@ -90,23 +248,85 @@
     [SupplyParameterFromQuery]
     public string? ReturnUrl { get; set; }
 
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Company { get; set; }
+
+    // Password login state
     private LoginFormModel _loginModel = new();
     private bool _showPassword = false;
     private bool _rememberMe = false;
     private bool _isLoading = false;
+    private int _activeTab = 0;
+    private TenantResponse? _companyInfo;
+
+    // OTP login state
+    private OtpLoginStep _otpStep = OtpLoginStep.SendOtp;
+    private string _otpContactMethod = "email";
+    private string _otpEmail = string.Empty;
+    private string _otpPhone = string.Empty;
+    private string CleanPhone => "+63" + new string(_otpPhone.Where(char.IsDigit).ToArray());
+    private string _otpCode = string.Empty;
+    private DateTime? _otpExpiresAt;
+    private System.Timers.Timer? _timer;
+
+    private enum OtpLoginStep
+    {
+        SendOtp,
+        VerifyOtp
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(Company) && Guid.TryParse(Company, out var companyGuid))
+        {
+            _companyInfo = await TenantService.GetTenantAsync(companyGuid);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_activeTab == 1 && _otpContactMethod == "phone")
+        {
+            await Task.Delay(50);
+            await JS.InvokeVoidAsync("phoneInput.restrict", null, "login-phone-input");
+        }
+    }
 
     private void TogglePasswordVisibility()
     {
         _showPassword = !_showPassword;
     }
 
-    private async Task HandleLogin()
+    private void OnPhoneInput(string value)
+    {
+        // Strip non-digits immediately, limit to 10
+        var digits = new string((value ?? "").Where(char.IsDigit).ToArray());
+        if (digits.Length > 10)
+            digits = digits[..10];
+        _otpPhone = digits;
+    }
+
+    private void FormatPhoneNumber()
+    {
+        var digits = new string((_otpPhone ?? "").Where(char.IsDigit).ToArray());
+        if (digits.Length > 10)
+            digits = digits[..10];
+
+        _otpPhone = digits.Length switch
+        {
+            > 6 => $"{digits[..3]}-{digits[3..6]}-{digits[6..]}",
+            > 3 => $"{digits[..3]}-{digits[3..]}",
+            _ => digits
+        };
+    }
+
+    private async Task HandlePasswordLogin()
     {
         _isLoading = true;
 
         try
         {
-            // Convert form model to request
             var loginRequest = new LoginRequest
             {
                 Email = _loginModel.Email,
@@ -118,25 +338,140 @@
             if (result != null)
             {
                 Snackbar.Add($"Welcome back, {result.FirstName}!", Severity.Success);
-
-                // Navigate to return URL if provided, otherwise go to home
-                var navigationUrl = !string.IsNullOrWhiteSpace(ReturnUrl)
-                    ? Uri.UnescapeDataString(ReturnUrl)
-                    : "/";
-                Navigation.NavigateTo(navigationUrl);
-            }
-            else
-            {
-                Snackbar.Add("Invalid email or password", Severity.Error);
+                NavigateAfterLogin();
             }
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"An error occurred: {ex.Message}", Severity.Error);
+            Snackbar.Add(ex.Message, Severity.Error);
         }
         finally
         {
             _isLoading = false;
         }
+    }
+
+    private async Task SendLoginOtp()
+    {
+        var identifier = _otpContactMethod == "email" ? _otpEmail : _otpPhone;
+        if (string.IsNullOrWhiteSpace(identifier))
+        {
+            Snackbar.Add($"Please enter your {_otpContactMethod}.", Severity.Warning);
+            return;
+        }
+
+        _isLoading = true;
+
+        try
+        {
+            var request = new SendOtpRequest
+            {
+                ContactMethod = _otpContactMethod,
+                Email = _otpContactMethod == "email" ? _otpEmail : null,
+                PhoneNumber = _otpContactMethod == "phone" ? CleanPhone : null,
+                Purpose = "login"
+            };
+
+            var result = await OtpService.SendOtpAsync(request);
+
+            if (result.Success)
+            {
+                _otpExpiresAt = result.ExpiresAt;
+                _otpStep = OtpLoginStep.VerifyOtp;
+                _otpCode = string.Empty;
+                StartCountdownTimer();
+                Snackbar.Add("Verification code sent!", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add(result.Message ?? "We couldn't send your verification code. Please try again.", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task VerifyLoginOtp()
+    {
+        _isLoading = true;
+
+        try
+        {
+            var verifyRequest = new VerifyOtpRequest
+            {
+                ContactMethod = _otpContactMethod,
+                Email = _otpContactMethod == "email" ? _otpEmail : null,
+                PhoneNumber = _otpContactMethod == "phone" ? CleanPhone : null,
+                OtpCode = _otpCode,
+                Purpose = "login"
+            };
+
+            var verifyResult = await OtpService.VerifyOtpAsync(verifyRequest);
+
+            if (!verifyResult.Success || !verifyResult.IsVerified)
+            {
+                Snackbar.Add(verifyResult.Message ?? "The code you entered is incorrect. Please try again.", Severity.Error);
+                return;
+            }
+
+            var loginRequest = new LoginWithOtpRequest
+            {
+                ContactMethod = _otpContactMethod,
+                Email = _otpContactMethod == "email" ? _otpEmail : null,
+                PhoneNumber = _otpContactMethod == "phone" ? CleanPhone : null,
+                OtpVerificationToken = verifyResult.VerificationToken ?? ""
+            };
+
+            var result = await AuthService.LoginWithOtpAsync(loginRequest);
+
+            if (result != null)
+            {
+                Snackbar.Add($"Welcome back, {result.FirstName}!", Severity.Success);
+                NavigateAfterLogin();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void NavigateAfterLogin()
+    {
+        if (_companyInfo != null)
+        {
+            Navigation.NavigateTo("/browse-schedules");
+            return;
+        }
+
+        var navigationUrl = !string.IsNullOrWhiteSpace(ReturnUrl)
+            ? Uri.UnescapeDataString(ReturnUrl)
+            : "/dashboard";
+        Navigation.NavigateTo(navigationUrl);
+    }
+
+    private void StartCountdownTimer()
+    {
+        _timer?.Stop();
+        _timer?.Dispose();
+        _timer = new System.Timers.Timer(1000);
+        _timer.Elapsed += (_, _) => InvokeAsync(StateHasChanged);
+        _timer.Start();
+    }
+
+    public void Dispose()
+    {
+        _timer?.Stop();
+        _timer?.Dispose();
     }
 }

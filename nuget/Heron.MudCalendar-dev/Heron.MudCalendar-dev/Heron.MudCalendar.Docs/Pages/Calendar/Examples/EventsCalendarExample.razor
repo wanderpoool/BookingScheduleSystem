@@ -1,0 +1,70 @@
+@namespace Heron.MudCalendar.Docs.Examples
+
+<MudCalendar T="CalendarItem" Items="_events" CellClicked="CellClicked" ItemClicked="ItemClicked" CellRangeSelected="CellRangeSelected" CellContextMenuClicked="OpenMenuContent" DayTimeInterval="CalendarTimeInterval.Minutes15" />
+
+<MudMenu PositionAtCursor="true" @ref="_contextMenu">
+    <MudMenuItem Icon="@Icons.Material.Filled.Add" OnClick="AddEvent">
+        Add an event
+    </MudMenuItem>
+    <MudMenuItem Icon="@Icons.Material.Filled.Delete" OnClick="RemoveAllEvents">
+        Delete all events in this cell
+    </MudMenuItem>
+</MudMenu>
+
+@code {
+
+    [Inject]
+    private IDialogService DialogService { get; set; }
+
+    private Task CellClicked(DateTime dateTime)
+    {
+        return DialogService.ShowMessageBoxAsync("Cell Clicked", dateTime.ToString(Thread.CurrentThread.CurrentCulture));
+    }
+
+    private Task ItemClicked(CalendarItem item)
+    {
+        return DialogService.ShowMessageBoxAsync("Item Clicked", item.Text);
+    }
+
+    private DateTime? _contextMenuDate;
+    private MudMenu _contextMenu = null!;
+
+    private async Task OpenMenuContent(CalendarClickEventArgs args)
+    {
+        _contextMenuDate = args.DateTime;
+        await _contextMenu.OpenMenuAsync(args.MouseEventArgs);
+    }
+
+    private Task AddEvent()
+    {
+        return DialogService.ShowMessageBoxAsync("Adding an event", _contextMenuDate.Value.ToString(Thread.CurrentThread.CurrentCulture));
+    }
+
+
+    private Task RemoveAllEvents()
+    {
+        return DialogService.ShowMessageBoxAsync("Removing all events", _contextMenuDate.Value.ToString(Thread.CurrentThread.CurrentCulture));
+    }
+
+
+    private Task CellRangeSelected(MudBlazor.DateRange dateRange)
+    {
+        return DialogService.ShowMessageBoxAsync("Cell Range Selected", $"Start: {dateRange.Start?.ToString(Thread.CurrentThread.CurrentCulture)} End: {dateRange.End?.ToString(Thread.CurrentThread.CurrentCulture)}");
+    }
+
+    private List<CalendarItem> _events = new()
+    {
+        new CalendarItem
+        {
+            Start = DateTime.Today.AddHours(10),
+            End = DateTime.Today.AddHours(11),
+            Text = "Event today"
+        },
+        new CalendarItem
+        {
+            Start = DateTime.Today.AddDays(1).AddHours(11),
+            End = DateTime.Today.AddDays(1).AddHours(12.5),
+            Text = "Event tomorrow"
+        }
+    };
+}

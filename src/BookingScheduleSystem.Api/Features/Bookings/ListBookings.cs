@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using BookingScheduleSystem.Api.Infrastructure.Bookings;
 using BookingScheduleSystem.Api.Infrastructure.MultiTenancy;
+using BookingScheduleSystem.Api.Infrastructure.Schedules;
 using BookingScheduleSystem.Contracts.Common;
 using BookingScheduleSystem.Contracts.Bookings;
 using FastEndpoints;
@@ -15,14 +16,6 @@ public sealed class ListBookingsRequest
     public BookingStatus? Status { get; set; }
     public int PageNumber { get; set; } = 1;
     public int PageSize { get; set; } = 20;
-}
-
-public sealed class ListBookingsResponse
-{
-    public required List<BookingResponse> Bookings { get; init; }
-    public required int TotalCount { get; init; }
-    public required int PageNumber { get; init; }
-    public required int PageSize { get; init; }
 }
 
 public sealed class ListBookings : Endpoint<ListBookingsRequest, ListBookingsResponse>
@@ -96,19 +89,36 @@ public sealed class ListBookings : Endpoint<ListBookingsRequest, ListBookingsRes
             .Take(pageSize)
             .ToListAsync(ct);
 
+        // Load related schedules for enrichment
+        var scheduleIds = bookings.Select(b => b.ScheduleId).Distinct().ToList();
+        var schedules = new Dictionary<ScheduleId, Schedule>();
+        foreach (var sid in scheduleIds)
+        {
+            var schedule = await session.LoadAsync<Schedule>(sid, ct);
+            if (schedule != null)
+                schedules[sid] = schedule;
+        }
+
         Response = new ListBookingsResponse
         {
-            Bookings = bookings.Select(b => new BookingResponse
+            Bookings = bookings.Select(b =>
             {
-                Id = b.Id,
-                ScheduleId = b.ScheduleId,
-                UserId = b.UserId,
-                TenantId = b.TenantId,
-                Status = b.Status,
-                Notes = b.Notes,
-                BookedAt = b.BookedAt,
-                CancelledAt = b.CancelledAt,
-                CancellationReason = b.CancellationReason
+                schedules.TryGetValue(b.ScheduleId, out var schedule);
+                return new BookingResponse
+                {
+                    Id = b.Id,
+                    ScheduleId = b.ScheduleId,
+                    UserId = b.UserId,
+                    TenantId = b.TenantId,
+                    Status = b.Status,
+                    Notes = b.Notes,
+                    BookedAt = b.BookedAt,
+                    CancelledAt = b.CancelledAt,
+                    CancellationReason = b.CancellationReason,
+                    ScheduleTitle = schedule?.Title,
+                    ScheduleStartTime = schedule?.StartTime,
+                    ScheduleEndTime = schedule?.EndTime
+                };
             }).ToList(),
             TotalCount = (int)totalCount,
             PageNumber = pageNumber,

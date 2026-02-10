@@ -100,9 +100,9 @@ graph TB
         APIServer[API Server<br/>Port: 5059]
 
         subgraph "FastEndpoints"
-            SendOtpEP["/api/auth/send-otp"]
-            VerifyOtpEP["/api/auth/verify-otp"]
-            RegisterEP["/api/auth/register"]
+            SendOtpEP[/api/auth/send-otp]
+            VerifyOtpEP[/api/auth/verify-otp]
+            RegisterEP[/api/auth/register]
         end
 
         subgraph "Infrastructure Services"
