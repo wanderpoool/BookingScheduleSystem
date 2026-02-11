@@ -129,7 +129,7 @@ public class BookingService : IBookingService
     {
         try
         {
-            var response = await _httpClient.PostAsync($"/api/bookings/{bookingId}/approve", null);
+            var response = await _httpClient.PostAsJsonAsync($"/api/bookings/{bookingId}/approve", new { });
             if (response.IsSuccessStatusCode)
             {
                 return await response.Content.ReadFromJsonAsync<BookingResponse>();

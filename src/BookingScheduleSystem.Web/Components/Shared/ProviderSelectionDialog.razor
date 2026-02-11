@@ -9,7 +9,7 @@
     <TitleContent>
         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
             <MudIcon Icon="@Icons.Material.Filled.BookOnline" Color="Color.Primary" />
-            <MudText Typo="Typo.h6">Book Appointment</MudText>
+            <MudText Typo="Typo.h6" Style="font-weight: 700; letter-spacing: -0.02em;">Book Appointment</MudText>
         </MudStack>
     </TitleContent>
     <DialogContent>
@@ -207,7 +207,7 @@
                 var scheduleRequest = new CreateScheduleRequest
                 {
                     ProviderId = _selectedProvider.ProviderId.Value,
-                    Title = $"Booking with {customerName} @{startDt:h:mmtt}",
+                    Title = $"Booking with {customerName}",
                     StartTime = startDt,
                     EndTime = endDt,
                     MaxCapacity = 1

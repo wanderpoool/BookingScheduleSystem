@@ -1,0 +1,226 @@
+@page "/organization"
+@rendermode InteractiveServer
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+@inject ITenantService TenantService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject ISnackbar Snackbar
+
+<AuthorizeView Roles="Provider,GlobalAdmin">
+    <Authorized>
+        <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden;">
+            <div class="d-flex align-center pa-4 px-5" style="border-bottom: 1px solid var(--mud-palette-divider);">
+                <div class="mr-auto">
+                    <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">Organization Settings</MudText>
+                    <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Manage your organization details</MudText>
+                </div>
+            </div>
+
+            <div class="pa-5">
+                @if (_isLoading)
+                {
+                    <MudStack AlignItems="AlignItems.Center" Class="pa-8">
+                        <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                        <MudText>Loading organization...</MudText>
+                    </MudStack>
+                }
+                else if (_tenant == null)
+                {
+                    <MudAlert Severity="Severity.Warning">Organization not found.</MudAlert>
+                }
+                else
+                {
+                    <MudStack Spacing="3">
+                        @if (!_isEditing)
+                        {
+                            @* View mode *@
+                            <MudStack Spacing="2">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Business" Size="Size.Small" Color="Color.Primary" />
+                                    <MudText Typo="Typo.body1" Style="font-weight: 700;">@_tenant.Name</MudText>
+                                </MudStack>
+
+                                @if (!string.IsNullOrWhiteSpace(_tenant.Description))
+                                {
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@_tenant.Description</MudText>
+                                }
+
+                                @if (!string.IsNullOrWhiteSpace(_tenant.Location))
+                                {
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                        <MudIcon Icon="@Icons.Material.Filled.LocationOn" Size="Size.Small" Color="Color.Secondary" />
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@_tenant.Location</MudText>
+                                    </MudStack>
+                                }
+
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Link" Size="Size.Small" Color="Color.Secondary" />
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@_tenant.Subdomain</MudText>
+                                </MudStack>
+
+                                <MudStack Row="true" Spacing="2">
+                                    <MudChip T="string" Size="Size.Small"
+                                             Color="@(_tenant.IsActive ? Color.Success : Color.Error)"
+                                             Variant="Variant.Filled">
+                                        @(_tenant.IsActive ? "Active" : "Inactive")
+                                    </MudChip>
+                                    @if (_tenant.IsInTrial)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Filled">
+                                            Trial ends @(_tenant.TrialEndDate?.ToString("MMM dd") ?? "soon")
+                                        </MudChip>
+                                    }
+                                </MudStack>
+
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                    Created @_tenant.CreatedAt.ToString("MMMM dd, yyyy")
+                                </MudText>
+                            </MudStack>
+
+                            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.Edit"
+                                       OnClick="StartEditing">
+                                Edit Settings
+                            </MudButton>
+                        }
+                        else
+                        {
+                            @* Edit mode *@
+                            <MudTextField @bind-Value="_editName"
+                                          Label="Organization Name"
+                                          Variant="Variant.Outlined"
+                                          Required="true" />
+
+                            <MudTextField @bind-Value="_editDescription"
+                                          Label="Description"
+                                          Variant="Variant.Outlined"
+                                          Lines="3" />
+
+                            <MudTextField @bind-Value="_editLocation"
+                                          Label="Location"
+                                          Variant="Variant.Outlined"
+                                          Placeholder="e.g., Manila, Philippines" />
+
+                            <MudStack Row="true" Spacing="2" Justify="Justify.FlexEnd">
+                                <MudButton Variant="Variant.Text" OnClick="CancelEditing">Cancel</MudButton>
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                           OnClick="SaveChanges"
+                                           Disabled="_isSaving">
+                                    @if (_isSaving)
+                                    {
+                                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                                        <text>Saving...</text>
+                                    }
+                                    else
+                                    {
+                                        <text>Save Changes</text>
+                                    }
+                                </MudButton>
+                            </MudStack>
+                        }
+                    </MudStack>
+                }
+            </div>
+        </MudPaper>
+    </Authorized>
+    <NotAuthorized>
+        <MudAlert Severity="Severity.Warning">You need Provider or Admin access to view organization settings.</MudAlert>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private TenantResponse? _tenant;
+    private bool _isLoading = true;
+    private bool _isEditing;
+    private bool _isSaving;
+    private string? _tenantId;
+    private string _editName = string.Empty;
+    private string? _editDescription;
+    private string? _editLocation;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _tenantId = authState.User.FindFirst("TenantId")?.Value;
+
+        if (!string.IsNullOrEmpty(_tenantId))
+        {
+            await LoadTenant();
+        }
+        else
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task LoadTenant()
+    {
+        _isLoading = true;
+        try
+        {
+            _tenant = await TenantService.GetTenantAsync(Guid.Parse(_tenantId!));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void StartEditing()
+    {
+        if (_tenant == null) return;
+        _editName = _tenant.Name;
+        _editDescription = _tenant.Description;
+        _editLocation = _tenant.Location;
+        _isEditing = true;
+    }
+
+    private void CancelEditing()
+    {
+        _isEditing = false;
+    }
+
+    private async Task SaveChanges()
+    {
+        if (string.IsNullOrWhiteSpace(_editName))
+        {
+            Snackbar.Add("Organization name is required.", Severity.Warning);
+            return;
+        }
+
+        _isSaving = true;
+        StateHasChanged();
+
+        try
+        {
+            var request = new UpdateTenantRequest
+            {
+                Name = _editName.Trim(),
+                Description = string.IsNullOrWhiteSpace(_editDescription) ? null : _editDescription.Trim(),
+                Location = string.IsNullOrWhiteSpace(_editLocation) ? null : _editLocation.Trim(),
+                OperatingHours = _tenant?.OperatingHours,
+                BannerUrl = _tenant?.BannerUrl
+            };
+
+            var updated = await TenantService.UpdateTenantAsync(Guid.Parse(_tenantId!), request);
+            if (updated != null)
+            {
+                _tenant = updated;
+                _isEditing = false;
+                Snackbar.Add("Organization updated successfully!", Severity.Success);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

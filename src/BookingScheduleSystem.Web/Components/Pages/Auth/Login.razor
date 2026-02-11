@@ -13,7 +13,7 @@
 @implements IDisposable
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="d-flex align-center justify-center" Style="min-height: 100vh;">
-    <MudPaper Elevation="3" Class="pa-8" Style="width: 100%; max-width: 450px;">
+    <MudPaper Elevation="0" Class="pa-10" Style="width: 100%; max-width: 450px; border: 1px solid var(--mud-palette-divider); border-radius: 20px;">
         <MudStack Spacing="4">
             @* Logo/Branding *@
             <MudStack Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="2">
@@ -27,7 +27,7 @@
                 </MudAlert>
             }
 
-            <MudText Typo="Typo.h5" Align="Align.Center">Welcome Back</MudText>
+            <MudText Typo="Typo.h4" Align="Align.Center" Style="font-weight: 800; letter-spacing: -0.03em;">Welcome Back</MudText>
             <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
                 Sign in to continue to your account
             </MudText>

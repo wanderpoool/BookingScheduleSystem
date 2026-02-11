@@ -1,5 +1,6 @@
 using BookingScheduleSystem.Api.Infrastructure.Auth;
 using BookingScheduleSystem.Api.Infrastructure.MultiTenancy;
+using BookingScheduleSystem.Api.Infrastructure.Subscriptions;
 using BookingScheduleSystem.Contracts.Common;
 using BookingScheduleSystem.Contracts.Auth;
 using FastEndpoints;
@@ -101,6 +102,40 @@ public sealed class Register : Endpoint<RegisterUserRequest, AuthenticationRespo
             }
         }
 
+        // Check user/provider limits when registering under a tenant
+        TenantSubscription? subscription = null;
+        if (tenantId.HasValue)
+        {
+            var tenant = await session.LoadAsync<Tenant>(tenantId.Value, ct);
+            if (tenant is not null)
+            {
+                var (planLimits, sub) = await PlanLimitHelper.GetCurrentLimitsAsync(session, tenant, ct);
+                subscription = sub;
+
+                if (planLimits is not null)
+                {
+                    var activeUserCount = await session.Query<User>()
+                        .CountAsync(u => u.TenantId == tenantId && u.IsActive, ct);
+
+                    if (activeUserCount >= planLimits.MaxUsers)
+                    {
+                        ThrowError($"User limit ({planLimits.MaxUsers}) reached for this plan.", 403);
+                    }
+
+                    if (isProvider)
+                    {
+                        var activeProviderCount = await session.Query<User>()
+                            .CountAsync(u => u.TenantId == tenantId && u.IsProvider && u.IsActive, ct);
+
+                        if (activeProviderCount >= planLimits.MaxProviders)
+                        {
+                            ThrowError($"Provider limit ({planLimits.MaxProviders}) reached for this plan.", 403);
+                        }
+                    }
+                }
+            }
+        }
+
         // Determine provider working hours
         string? providerWorkingHours = null;
         if (isProvider && tenantId.HasValue)
@@ -148,6 +183,19 @@ public sealed class Register : Endpoint<RegisterUserRequest, AuthenticationRespo
         };
 
         session.Store(user);
+
+        // Update subscription usage stats if not in trial
+        if (subscription is not null)
+        {
+            subscription.CurrentUsage.ActiveUsers++;
+            if (isProvider)
+            {
+                subscription.CurrentUsage.ActiveProviders++;
+            }
+            subscription.CurrentUsage.LastUpdated = DateTime.SpecifyKind(DateTimeOffset.UtcNow.DateTime, DateTimeKind.Unspecified);
+            session.Update(subscription);
+        }
+
         await session.SaveChangesAsync(ct);
 
         Logger.LogInformation("Registered new user {UserId} with email {Email}", user.Id, user.Email);

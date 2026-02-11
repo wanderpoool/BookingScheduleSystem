@@ -1,5 +1,6 @@
 using System.Text;
 using BookingScheduleSystem.Api.Infrastructure.Auth;
+using BookingScheduleSystem.Api.Infrastructure.BackgroundJobs;
 using BookingScheduleSystem.Api.Infrastructure.Bookings;
 using BookingScheduleSystem.Api.Infrastructure.MultiTenancy;
 using BookingScheduleSystem.Api.Infrastructure.Schedules;
@@ -57,6 +58,12 @@ builder.Services.AddSingleton<IJwtTokenService, JwtTokenService>();
 builder.Services.AddSingleton<OtpService>();
 builder.Services.AddSingleton<OtpNotificationService>();
 builder.Services.AddScoped<BookingNotificationService>();
+
+// Register background jobs
+builder.Services.Configure<BackgroundJobOptions>(
+    builder.Configuration.GetSection(BackgroundJobOptions.SectionName));
+builder.Services.AddHostedService<SubscriptionExpiryJob>();
+builder.Services.AddHostedService<UsageStatisticsResetJob>();
 
 // Configure JWT authentication
 var jwtSecretKey = builder.Configuration["Jwt:SecretKey"]

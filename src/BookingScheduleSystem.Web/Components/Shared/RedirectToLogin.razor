@@ -5,18 +5,27 @@
     [CascadingParameter]
     private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
 
-    protected override async Task OnInitializedAsync()
+    private bool _hasChecked;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (AuthenticationStateTask == null)
-            return;
-
-        var authState = await AuthenticationStateTask;
-        var user = authState.User;
-
-        if (!user.Identity?.IsAuthenticated ?? true)
+        // Only check auth after the interactive circuit is established (not during prerender).
+        // OnAfterRenderAsync is never called during prerender, so JS interop is safe here.
+        if (firstRender && !_hasChecked)
         {
-            var returnUrl = Uri.EscapeDataString(Navigation.Uri);
-            Navigation.NavigateTo($"/login?returnUrl={returnUrl}", forceLoad: true);
+            _hasChecked = true;
+
+            if (AuthenticationStateTask == null)
+                return;
+
+            var authState = await AuthenticationStateTask;
+            var user = authState.User;
+
+            if (!user.Identity?.IsAuthenticated ?? true)
+            {
+                var returnUrl = Uri.EscapeDataString(Navigation.Uri);
+                Navigation.NavigateTo($"/login?returnUrl={returnUrl}", forceLoad: true);
+            }
         }
     }
 }

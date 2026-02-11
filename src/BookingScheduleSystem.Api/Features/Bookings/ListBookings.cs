@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using BookingScheduleSystem.Api.Infrastructure.Auth;
 using BookingScheduleSystem.Api.Infrastructure.Bookings;
 using BookingScheduleSystem.Api.Infrastructure.MultiTenancy;
 using BookingScheduleSystem.Api.Infrastructure.Schedules;
@@ -49,6 +50,7 @@ public sealed class ListBookings : Endpoint<ListBookingsRequest, ListBookingsRes
 
         var currentUserId = UserId.Parse(userIdClaim);
         var isAdmin = User.IsInRole("GlobalAdmin");
+        var isProvider = User.IsInRole("Provider");
 
         await using var session = DocumentStore.LightweightSession();
 
@@ -58,16 +60,36 @@ public sealed class ListBookings : Endpoint<ListBookingsRequest, ListBookingsRes
         IQueryable<Booking> query = session.Query<Booking>()
             .Where(b => b.TenantId == tenantId);
 
-        // Regular users can only see their own bookings
-        if (!isAdmin)
+        // Determine which schedule IDs this provider owns (for provider-level access)
+        var providerScheduleIds = new HashSet<ScheduleId>();
+        if (isProvider && !isAdmin)
         {
-            query = query.Where(b => b.UserId == currentUserId);
+            var ownedSchedules = await session.Query<Schedule>()
+                .Where(s => s.TenantId == tenantId && s.ProviderId == currentUserId)
+                .Select(s => s.Id)
+                .ToListAsync(ct);
+            providerScheduleIds = ownedSchedules.ToHashSet();
         }
-        else if (req.UserId.HasValue)
+
+        if (isAdmin)
         {
-            // Admins can filter by specific user
-            var filterUserId = new UserId(req.UserId.Value);
-            query = query.Where(b => b.UserId == filterUserId);
+            // Admins see all tenant bookings
+            if (req.UserId.HasValue)
+            {
+                var filterUserId = new UserId(req.UserId.Value);
+                query = query.Where(b => b.UserId == filterUserId);
+            }
+        }
+        else if (isProvider)
+        {
+            // Providers see their own bookings + bookings on their schedules
+            // Marten LINQ can't handle complex OR with HashSet, so fetch all tenant bookings and filter in-memory
+            // Apply other filters in DB first, then filter access in-memory after fetch
+        }
+        else
+        {
+            // Regular users only see their own bookings
+            query = query.Where(b => b.UserId == currentUserId);
         }
 
         if (req.ScheduleId.HasValue)
@@ -81,13 +103,35 @@ public sealed class ListBookings : Endpoint<ListBookingsRequest, ListBookingsRes
             query = query.Where(b => b.Status == req.Status.Value);
         }
 
-        var totalCount = await query.CountAsync(ct);
+        IReadOnlyList<Booking> bookings;
+        int totalCount;
 
-        var bookings = await query
-            .OrderByDescending(b => b.BookedAt)
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(ct);
+        if (isProvider && !isAdmin)
+        {
+            // For providers, fetch all matching bookings then filter in-memory
+            var allMatchingBookings = await query
+                .OrderByDescending(b => b.BookedAt)
+                .ToListAsync(ct);
+
+            var accessibleBookings = allMatchingBookings
+                .Where(b => b.UserId == currentUserId || providerScheduleIds.Contains(b.ScheduleId))
+                .ToList();
+
+            totalCount = accessibleBookings.Count;
+            bookings = accessibleBookings
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+        }
+        else
+        {
+            totalCount = (int)await query.CountAsync(ct);
+            bookings = await query
+                .OrderByDescending(b => b.BookedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(ct);
+        }
 
         // Load related schedules for enrichment
         var scheduleIds = bookings.Select(b => b.ScheduleId).Distinct().ToList();
@@ -99,11 +143,22 @@ public sealed class ListBookings : Endpoint<ListBookingsRequest, ListBookingsRes
                 schedules[sid] = schedule;
         }
 
+        // Load customer names for enrichment
+        var userIds = bookings.Select(b => b.UserId).Distinct().ToList();
+        var userNames = new Dictionary<UserId, string>();
+        foreach (var uid in userIds)
+        {
+            var user = await session.LoadAsync<User>(uid, ct);
+            if (user != null)
+                userNames[uid] = $"{user.FirstName} {user.LastName}".Trim();
+        }
+
         Response = new ListBookingsResponse
         {
             Bookings = bookings.Select(b =>
             {
                 schedules.TryGetValue(b.ScheduleId, out var schedule);
+                userNames.TryGetValue(b.UserId, out var customerName);
                 return new BookingResponse
                 {
                     Id = b.Id,
@@ -117,10 +172,11 @@ public sealed class ListBookings : Endpoint<ListBookingsRequest, ListBookingsRes
                     CancellationReason = b.CancellationReason,
                     ScheduleTitle = schedule?.Title,
                     ScheduleStartTime = schedule?.StartTime,
-                    ScheduleEndTime = schedule?.EndTime
+                    ScheduleEndTime = schedule?.EndTime,
+                    CustomerName = customerName
                 };
             }).ToList(),
-            TotalCount = (int)totalCount,
+            TotalCount = totalCount,
             PageNumber = pageNumber,
             PageSize = pageSize
         };

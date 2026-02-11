@@ -10,40 +10,41 @@
 <MudThemeProvider @ref="@_mudThemeProvider" IsDarkMode="@_isDarkMode" Theme="@_customTheme" />
 
 <MudLayout>
-    <MudAppBar Elevation="1">
+    <MudAppBar Elevation="0">
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
-        <MudText Typo="Typo.h5" Class="ml-3">@_organizationName</MudText>
-        <MudSpacer />
+        <MudText Typo="Typo.h6" Class="ml-3" Style="flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@_organizationName</MudText>
 
-        <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
-                       Color="Color.Inherit"
-                       OnClick="@ToggleDarkMode" />
+        <div style="display: flex; align-items: center; flex-shrink: 0;">
+            <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                           Color="Color.Inherit"
+                           OnClick="@ToggleDarkMode" />
 
-        <AuthorizeView>
-            <Authorized>
-                <NotificationBell />
-            </Authorized>
-        </AuthorizeView>
+            <AuthorizeView>
+                <Authorized>
+                    <NotificationBell />
+                </Authorized>
+            </AuthorizeView>
 
-        <MudText Typo="Typo.body2" Color="Color.Inherit" Class="mr-2 d-none d-sm-flex">@_userName</MudText>
-        <MudMenu Icon="@Icons.Material.Filled.Person" Color="Color.Inherit" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+            <MudText Typo="Typo.body2" Color="Color.Inherit" Class="mr-2 d-none d-sm-flex">@_userName</MudText>
+            <MudMenu Icon="@Icons.Material.Filled.Person" Color="Color.Inherit" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
             <MudMenuItem OnClick="@NavigateToProfile">Profile</MudMenuItem>
             <MudMenuItem OnClick="@NavigateToSettings">Settings</MudMenuItem>
             <MudDivider />
             <MudMenuItem OnClick="@Logout">Logout</MudMenuItem>
         </MudMenu>
+        </div>
     </MudAppBar>
 
     <MudDrawer Open="@_drawerOpen" OpenChanged="@((val) => _drawerOpen = val)"
-               Variant="DrawerVariant.Responsive" Breakpoint="Breakpoint.Md" Elevation="2">
-        <MudDrawerHeader>
-            <MudText Typo="Typo.h6">Navigation</MudText>
+               Variant="DrawerVariant.Responsive" Breakpoint="Breakpoint.Md" Elevation="0">
+        <MudDrawerHeader Class="py-4 px-5">
+            <MudText Typo="Typo.h6" Style="font-weight: 700; letter-spacing: -0.02em;">Navigation</MudText>
         </MudDrawerHeader>
         <NavMenu />
     </MudDrawer>
 
     <MudMainContent>
-        <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 px-2 px-sm-4">
+        <MudContainer MaxWidth="MaxWidth.Large" Class="mt-6 px-4 px-sm-6">
             @Body
         </MudContainer>
     </MudMainContent>
@@ -61,21 +62,21 @@
         PaletteLight = new PaletteLight()
         {
             // Primary Blue - Trustworthy & Professional
-            Primary = "#2563EB",
+            Primary = "#1D4ED8",
             PrimaryContrastText = "#FFFFFF",
-            PrimaryDarken = "#1E40AF",
-            PrimaryLighten = "#60A5FA",
+            PrimaryDarken = "#1E3A8A",
+            PrimaryLighten = "#3B82F6",
 
             // Secondary Teal - Energetic & Modern
-            Secondary = "#14B8A6",
+            Secondary = "#0D9488",
             SecondaryContrastText = "#FFFFFF",
             SecondaryDarken = "#0F766E",
             SecondaryLighten = "#5EEAD4",
 
             // Tertiary Purple - Special Features
-            Tertiary = "#8B5CF6",
+            Tertiary = "#7C3AED",
             TertiaryContrastText = "#FFFFFF",
-            TertiaryDarken = "#7C3AED",
+            TertiaryDarken = "#6D28D9",
             TertiaryLighten = "#A78BFA",
 
             // Semantic Colors
@@ -89,7 +90,7 @@
             ErrorContrastText = "#FFFFFF",
 
             // Backgrounds
-            Background = "#FAFBFC",
+            Background = "#FFFFFF",
             Surface = "#FFFFFF",
 
             // AppBar
@@ -107,9 +108,9 @@
             TextDisabled = "#9CA3AF",
 
             // Borders & Dividers
-            Divider = "#E5E7EB",
-            DividerLight = "#F3F4F6",
-            LinesDefault = "#E5E7EB",
+            Divider = "#EAECF0",
+            DividerLight = "#F2F4F7",
+            LinesDefault = "#EAECF0",
             LinesInputs = "#D1D5DB",
 
             // Actions
@@ -118,8 +119,8 @@
             ActionDisabledBackground = "#F3F4F6",
 
             // Hover/Ripple states
-            HoverOpacity = 0.06,
-            RippleOpacity = 0.12
+            HoverOpacity = 0.04,
+            RippleOpacity = 0.08
         },
         PaletteDark = new PaletteDark()
         {
@@ -152,15 +153,15 @@
             ErrorContrastText = "#0F1419",
 
             // Backgrounds
-            Background = "#0F1419",
-            Surface = "#1A1F2E",
+            Background = "#111318",
+            Surface = "#1C1F2A",
 
             // AppBar
-            AppbarBackground = "#1A1F2E",
+            AppbarBackground = "#1C1F2A",
             AppbarText = "#F9FAFB",
 
             // Drawer
-            DrawerBackground = "#1A1F2E",
+            DrawerBackground = "#1C1F2A",
             DrawerText = "#F9FAFB",
             DrawerIcon = "#9CA3AF",
 
@@ -186,7 +187,7 @@
         },
         LayoutProperties = new LayoutProperties()
         {
-            DefaultBorderRadius = "8px",
+            DefaultBorderRadius = "14px",
 
             // Drawer
             DrawerWidthLeft = "280px",
@@ -194,7 +195,7 @@
             DrawerMiniWidthLeft = "64px",
 
             // AppBar
-            AppbarHeight = "64px"
+            AppbarHeight = "56px"
         }
     };
 

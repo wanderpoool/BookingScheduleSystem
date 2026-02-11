@@ -1,0 +1,209 @@
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudTextField @bind-Value="_title"
+                          Label="Title"
+                          Variant="Variant.Outlined"
+                          Required="true"
+                          RequiredError="Title is required"
+                          Placeholder="e.g., Morning Consultation" />
+
+            <MudTextField @bind-Value="_description"
+                          Label="Description (optional)"
+                          Variant="Variant.Outlined"
+                          Lines="2"
+                          Placeholder="Brief description of this schedule slot" />
+
+            <MudGrid Spacing="2">
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker @bind-Date="_startDate"
+                                   Label="Start Date"
+                                   Variant="Variant.Outlined"
+                                   Required="true"
+                                   RequiredError="Start date is required"
+                                   MinDate="DateTime.Today" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTimePicker @bind-Time="_startTime"
+                                   Label="Start Time"
+                                   Variant="Variant.Outlined"
+                                   Required="true"
+                                   RequiredError="Start time is required" />
+                </MudItem>
+            </MudGrid>
+
+            <MudGrid Spacing="2">
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker @bind-Date="_endDate"
+                                   Label="End Date"
+                                   Variant="Variant.Outlined"
+                                   Required="true"
+                                   RequiredError="End date is required"
+                                   MinDate="_startDate ?? DateTime.Today" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTimePicker @bind-Time="_endTime"
+                                   Label="End Time"
+                                   Variant="Variant.Outlined"
+                                   Required="true"
+                                   RequiredError="End time is required" />
+                </MudItem>
+            </MudGrid>
+
+            <MudNumericField @bind-Value="_maxCapacity"
+                             Label="Max Capacity"
+                             Variant="Variant.Outlined"
+                             Min="1"
+                             Max="1000"
+                             Required="true"
+                             RequiredError="Capacity is required" />
+
+            @if (IsEditMode)
+            {
+                <MudSwitch @bind-Value="_isActive" Color="Color.Primary" Label="Active" />
+            }
+
+            @if (!string.IsNullOrEmpty(_validationError))
+            {
+                <MudAlert Severity="Severity.Error" Dense="true">@_validationError</MudAlert>
+            }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                   OnClick="Submit"
+                   Disabled="_isSubmitting">
+            @if (_isSubmitting)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                <text>Saving...</text>
+            }
+            else
+            {
+                @(IsEditMode ? "Update" : "Create")
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public bool IsEditMode { get; set; }
+    [Parameter] public Contracts.Schedules.ScheduleResponse? ExistingSchedule { get; set; }
+
+    private string _title = string.Empty;
+    private string? _description;
+    private DateTime? _startDate;
+    private TimeSpan? _startTime;
+    private DateTime? _endDate;
+    private TimeSpan? _endTime;
+    private int _maxCapacity = 1;
+    private bool _isActive = true;
+    private bool _isSubmitting;
+    private string? _validationError;
+
+    protected override void OnInitialized()
+    {
+        if (IsEditMode && ExistingSchedule is not null)
+        {
+            _title = ExistingSchedule.Title;
+            _description = ExistingSchedule.Description;
+            _startDate = ExistingSchedule.StartTime.Date;
+            _startTime = ExistingSchedule.StartTime.TimeOfDay;
+            _endDate = ExistingSchedule.EndTime.Date;
+            _endTime = ExistingSchedule.EndTime.TimeOfDay;
+            _maxCapacity = ExistingSchedule.MaxCapacity;
+            _isActive = ExistingSchedule.IsActive;
+        }
+        else
+        {
+            _startDate = DateTime.Today;
+            _endDate = DateTime.Today;
+            _startTime = new TimeSpan(9, 0, 0);
+            _endTime = new TimeSpan(10, 0, 0);
+        }
+    }
+
+    private bool Validate()
+    {
+        _validationError = null;
+
+        if (string.IsNullOrWhiteSpace(_title))
+        {
+            _validationError = "Title is required.";
+            return false;
+        }
+
+        if (_startDate is null || _startTime is null)
+        {
+            _validationError = "Start date and time are required.";
+            return false;
+        }
+
+        if (_endDate is null || _endTime is null)
+        {
+            _validationError = "End date and time are required.";
+            return false;
+        }
+
+        var startDateTime = _startDate.Value.Date + _startTime.Value;
+        var endDateTime = _endDate.Value.Date + _endTime.Value;
+
+        if (endDateTime <= startDateTime)
+        {
+            _validationError = "End time must be after start time.";
+            return false;
+        }
+
+        if (_maxCapacity < 1)
+        {
+            _validationError = "Max capacity must be at least 1.";
+            return false;
+        }
+
+        return true;
+    }
+
+    private void Submit()
+    {
+        if (!Validate()) return;
+
+        _isSubmitting = true;
+
+        var startDateTime = new DateTime(
+            _startDate!.Value.Year, _startDate.Value.Month, _startDate.Value.Day,
+            _startTime!.Value.Hours, _startTime.Value.Minutes, 0, DateTimeKind.Utc);
+        var endDateTime = new DateTime(
+            _endDate!.Value.Year, _endDate!.Value.Month, _endDate.Value.Day,
+            _endTime!.Value.Hours, _endTime.Value.Minutes, 0, DateTimeKind.Utc);
+
+        var result = new ScheduleFormResult
+        {
+            Title = _title.Trim(),
+            Description = string.IsNullOrWhiteSpace(_description) ? null : _description.Trim(),
+            StartTime = startDateTime,
+            EndTime = endDateTime,
+            MaxCapacity = _maxCapacity,
+            IsActive = _isActive
+        };
+
+        MudDialog.Close(DialogResult.Ok(result));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    public sealed record ScheduleFormResult
+    {
+        public required string Title { get; init; }
+        public string? Description { get; init; }
+        public DateTime StartTime { get; init; }
+        public DateTime EndTime { get; init; }
+        public int MaxCapacity { get; init; }
+        public bool IsActive { get; init; }
+    }
+}

@@ -48,6 +48,70 @@ public class ScheduleService : IScheduleService
         }
     }
 
+    public async Task<ListSchedulesResponse?> ListSchedulesAsync(
+        Guid? providerId = null, DateTime? startDate = null, DateTime? endDate = null,
+        bool? isActive = null, int page = 1, int pageSize = 20)
+    {
+        try
+        {
+            var url = $"/api/schedules?pageNumber={page}&pageSize={pageSize}";
+            if (providerId.HasValue)
+                url += $"&providerId={providerId.Value}";
+            if (startDate.HasValue)
+                url += $"&startDate={startDate.Value:O}";
+            if (endDate.HasValue)
+                url += $"&endDate={endDate.Value:O}";
+            if (isActive.HasValue)
+                url += $"&isActive={isActive.Value}";
+
+            var response = await _httpClient.GetAsync(url);
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<ListSchedulesResponse>();
+            }
+
+            var body = await response.Content.ReadAsStringAsync();
+            _logger.LogWarning("Failed to list schedules: {StatusCode} {Body}", response.StatusCode, body);
+            var message = ApiErrorHelper.ExtractMessage(body) ?? GetScheduleListError(response.StatusCode);
+            throw new HttpRequestException(message, null, response.StatusCode);
+        }
+        catch (HttpRequestException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error listing schedules");
+            throw new HttpRequestException("Unable to connect to the server. Please check your connection and try again.", ex);
+        }
+    }
+
+    public async Task<ScheduleResponse?> GetScheduleAsync(Guid scheduleId)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"/api/schedules/{scheduleId}");
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<ScheduleResponse>();
+            }
+
+            var body = await response.Content.ReadAsStringAsync();
+            _logger.LogWarning("Failed to get schedule {ScheduleId}: {StatusCode} {Body}", scheduleId, response.StatusCode, body);
+            var message = ApiErrorHelper.ExtractMessage(body) ?? "We couldn't load this schedule. Please try again.";
+            throw new HttpRequestException(message, null, response.StatusCode);
+        }
+        catch (HttpRequestException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting schedule {ScheduleId}", scheduleId);
+            throw new HttpRequestException("Unable to connect to the server. Please check your connection and try again.", ex);
+        }
+    }
+
     public async Task<ScheduleResponse?> CreateScheduleAsync(CreateScheduleRequest request)
     {
         try
@@ -71,6 +135,58 @@ public class ScheduleService : IScheduleService
         {
             _logger.LogError(ex, "Error creating schedule");
             throw new HttpRequestException("Unable to create the schedule. Please try again.", ex);
+        }
+    }
+
+    public async Task<ScheduleResponse?> UpdateScheduleAsync(Guid scheduleId, UpdateScheduleRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PutAsJsonAsync($"/api/schedules/{scheduleId}", request);
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<ScheduleResponse>();
+            }
+
+            var body = await response.Content.ReadAsStringAsync();
+            _logger.LogWarning("Failed to update schedule {ScheduleId}: {StatusCode} {Body}", scheduleId, response.StatusCode, body);
+            var message = ApiErrorHelper.ExtractMessage(body) ?? "We couldn't update the schedule. Please try again.";
+            throw new HttpRequestException(message, null, response.StatusCode);
+        }
+        catch (HttpRequestException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating schedule {ScheduleId}", scheduleId);
+            throw new HttpRequestException("Unable to update the schedule. Please try again.", ex);
+        }
+    }
+
+    public async Task DeleteScheduleAsync(Guid scheduleId)
+    {
+        try
+        {
+            var response = await _httpClient.DeleteAsync($"/api/schedules/{scheduleId}");
+            if (response.IsSuccessStatusCode)
+            {
+                return;
+            }
+
+            var body = await response.Content.ReadAsStringAsync();
+            _logger.LogWarning("Failed to delete schedule {ScheduleId}: {StatusCode} {Body}", scheduleId, response.StatusCode, body);
+            var message = ApiErrorHelper.ExtractMessage(body) ?? "We couldn't delete the schedule. It may have active bookings.";
+            throw new HttpRequestException(message, null, response.StatusCode);
+        }
+        catch (HttpRequestException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting schedule {ScheduleId}", scheduleId);
+            throw new HttpRequestException("Unable to delete the schedule. Please try again.", ex);
         }
     }
 

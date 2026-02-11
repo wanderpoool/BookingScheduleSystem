@@ -53,44 +53,7 @@ public sealed class CreateBooking : Endpoint<CreateBookingRequest, BookingRespon
         }
 
         // Get plan limits (either from trial or subscription)
-        PlanLimits? planLimits = null;
-        TenantSubscription? subscription = null;
-
-        if (tenant.IsInTrial)
-        {
-            // Trial has fixed limits
-            planLimits = new PlanLimits
-            {
-                MaxBookingsPerDay = 2,
-                MaxBookingsPerMonth = 60,
-                MaxConcurrentBookings = 5,
-                MaxSchedulesPerDay = 5,
-                MaxSchedulesPerMonth = 150,
-                MaxUsers = 5,
-                MaxProviders = 1,
-                MaxBranches = 1,
-                AllowMultipleBranches = false,
-                AllowCustomBranding = false,
-                AllowApiAccess = false,
-                AllowAdvancedReporting = false,
-                AllowPrioritySupport = false
-            };
-        }
-        else
-        {
-            // Load subscription and plan limits
-            subscription = await session.Query<TenantSubscription>()
-                .FirstOrDefaultAsync(s => s.TenantId == tenantId.Value && s.Status == SubscriptionStatus.Active, token: ct);
-
-            if (subscription is not null)
-            {
-                var plan = await session.LoadAsync<SubscriptionPlan>(subscription.PlanId, ct);
-                if (plan is not null)
-                {
-                    planLimits = plan.Limits;
-                }
-            }
-        }
+        var (planLimits, subscription) = await PlanLimitHelper.GetCurrentLimitsAsync(session, tenant, ct);
 
         if (planLimits is not null)
         {
@@ -124,6 +87,28 @@ public sealed class CreateBooking : Endpoint<CreateBookingRequest, BookingRespon
             if (monthlyBookingCount >= planLimits.MaxBookingsPerMonth)
             {
                 ThrowError($"Monthly booking limit ({planLimits.MaxBookingsPerMonth}) reached for this month.", 403);
+            }
+
+            // Check concurrent booking limit (active bookings for future schedules)
+            var nowUtc = DateTime.SpecifyKind(DateTimeOffset.UtcNow.DateTime, DateTimeKind.Unspecified);
+
+            var futureScheduleIds = await session.Query<Schedule>()
+                .Where(s => s.TenantId == tenantId.Value && s.StartTime > nowUtc)
+                .Select(s => s.Id)
+                .ToListAsync(ct);
+
+            // Marten can't serialize List<ScheduleId> for SQL array params — filter in-memory
+            var activeBookings = await session.Query<Booking>()
+                .Where(b => b.TenantId == tenantId.Value
+                    && b.Status != BookingStatus.Cancelled)
+                .ToListAsync(ct);
+
+            var futureScheduleIdSet = futureScheduleIds.ToHashSet();
+            var concurrentBookingCount = activeBookings.Count(b => futureScheduleIdSet.Contains(b.ScheduleId));
+
+            if (concurrentBookingCount >= planLimits.MaxConcurrentBookings)
+            {
+                ThrowError($"Concurrent booking limit ({planLimits.MaxConcurrentBookings}) reached.", 403);
             }
         }
 

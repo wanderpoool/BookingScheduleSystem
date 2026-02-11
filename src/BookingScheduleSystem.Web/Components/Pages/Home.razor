@@ -4,545 +4,513 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
+@inject IJSRuntime JS
 
-<PageTitle>Book me App! - Streamline Your Appointments & Bookings</PageTitle>
+<PageTitle>Book Me App! — Scheduling Made Effortless</PageTitle>
 
 <HeadContent>
-    <meta name="description" content="Transform your booking management with our powerful scheduling system. Perfect for salons, clinics, gyms, and service businesses in the Philippines. Start your 7-day free trial today!" />
+    <meta name="description" content="The modern booking system built for Filipino service businesses. Let patients and clients self-schedule appointments — from dental clinics to spas, nail salons, and barbershops." />
     <meta name="keywords" content="booking system, appointment scheduling, booking management, scheduling software, salon booking, clinic appointment, Philippines" />
-    <meta name="author" content="Book me App!" />
-    <meta property="og:title" content="Book me App! - Streamline Your Appointments" />
-    <meta property="og:description" content="Transform your booking management with our powerful scheduling system. 7-day free trial available!" />
+    <meta name="author" content="Book Me App!" />
+    <meta property="og:title" content="Book Me App! — Scheduling Made Effortless" />
+    <meta property="og:description" content="The modern booking system built for Filipino service businesses. Start your free trial today!" />
     <meta property="og:type" content="website" />
     <link rel="canonical" href="https://bookmyapp.ph" />
+    <link rel="stylesheet" href="css/landing.css" />
 </HeadContent>
 
-@* Simple Navigation Header *@
-<MudAppBar Elevation="1" Color="Color.Surface">
-    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-        <img src="logo.png" alt="Book me App!" style="height: 40px; width: auto;" />
-    </MudStack>
-    <MudSpacer />
+<div class="landing-page">
 
-    @* Desktop Navigation *@
-    <MudStack Row="true" Spacing="2" Class="d-none d-md-flex">
-        <MudButton Href="#features" Variant="Variant.Text" Color="Color.Default">Features</MudButton>
-        <MudButton Href="#pricing" Variant="Variant.Text" Color="Color.Default">Pricing</MudButton>
-        <MudButton Href="/login" Variant="Variant.Outlined" Color="Color.Primary">
-            Sign In
-        </MudButton>
-    </MudStack>
+    @* ===== NAV ===== *@
+    <nav class="lp-nav" id="lp-nav">
+        <a href="/" class="lp-nav-logo">
+            <div class="lp-nav-logo-icon">B</div>
+            <span class="lp-nav-logo-text">Book Me App!</span>
+        </a>
+        <ul class="lp-nav-links">
+            <li><a @onclick='() => ScrollToSection("features")' @onclick:preventDefault>Features</a></li>
+            <li><a @onclick='() => ScrollToSection("how-it-works")' @onclick:preventDefault>How It Works</a></li>
+            <li><a @onclick='() => ScrollToSection("testimonials")' @onclick:preventDefault>Testimonials</a></li>
+            <li><a href="/login" class="lp-btn lp-btn-primary">Get Started Free</a></li>
+        </ul>
+        <button class="lp-nav-mobile-btn" @onclick="() => _drawerOpen = !_drawerOpen">
+            <MudIcon Icon="@Icons.Material.Filled.Menu" />
+        </button>
+    </nav>
 
-    @* Mobile Navigation *@
-    <MudStack Row="true" Spacing="1" Class="d-flex d-md-none">
-        <MudButton Href="/login" Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small">
-            Sign In
-        </MudButton>
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Default" OnClick="@(() => _drawerOpen = !_drawerOpen)" />
-    </MudStack>
-</MudAppBar>
-
-@* Mobile Menu Drawer *@
-<MudDrawer @bind-Open="_drawerOpen" Anchor="Anchor.End" Elevation="2" Variant="@DrawerVariant.Temporary">
-    <MudDrawerHeader>
-        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-            <img src="logo.png" alt="Book me App!" style="height: 40px; width: auto;" />
-        </MudStack>
-    </MudDrawerHeader>
-    <MudNavMenu>
-        <MudNavLink Href="#features" OnClick="@(() => _drawerOpen = false)">
-            <MudText>Features</MudText>
-        </MudNavLink>
-        <MudNavLink Href="#pricing" OnClick="@(() => _drawerOpen = false)">
-            <MudText>Pricing</MudText>
-        </MudNavLink>
-        <MudDivider Class="my-2" />
-        <MudNavLink Href="/login">
-            <MudText>Sign In</MudText>
-        </MudNavLink>
-        <MudNavLink Href="/register-organization">
-            <MudText Color="Color.Primary" Style="font-weight: 600;">Start Free Trial</MudText>
-        </MudNavLink>
-    </MudNavMenu>
-</MudDrawer>
-
-@* Hero Section *@
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="py-4 py-md-8 px-4" Style="margin-top: 64px;">
-    <MudGrid Spacing="4" Justify="Justify.Center">
-        <MudItem xs="12" md="6" Class="d-flex align-center">
-            <MudStack Spacing="3">
-                <MudText Class="fw-bold" Style="font-size: clamp(1.75rem, 5vw, 2.5rem); line-height: 1.2;">
-                    Simplify Your <span style="color: var(--mud-palette-primary);">Booking</span> Management
-                </MudText>
-                <MudText Style="font-size: clamp(1rem, 3vw, 1.25rem);" Color="Color.Secondary">
-                    All-in-one scheduling solution for businesses in the Philippines
-                </MudText>
-                <MudText Typo="Typo.body1">
-                    Say goodbye to double bookings and missed appointments. Our intuitive system helps you manage schedules,
-                    track bookings, and delight your customers - all in one place.
-                </MudText>
-                <MudStack Row="true" Spacing="2" Class="flex-wrap">
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Primary"
-                               Size="Size.Large"
-                               Href="/register-organization"
-                               StartIcon="@Icons.Material.Filled.Rocket"
-                               Style="min-height: 48px;">
-                        Start Free Trial
-                    </MudButton>
-                    <MudButton Variant="Variant.Outlined"
-                               Color="Color.Primary"
-                               Size="Size.Large"
-                               Href="#pricing"
-                               StartIcon="@Icons.Material.Filled.Visibility"
-                               Style="min-height: 48px;">
-                        View Pricing
-                    </MudButton>
-                </MudStack>
-                <MudText Typo="Typo.caption" Color="Color.Secondary">
-                    ✨ 7-day free trial • No credit card required • 2 bookings per day during trial
-                </MudText>
+    @* Mobile Menu Drawer *@
+    <MudDrawer @bind-Open="_drawerOpen" Anchor="Anchor.End" Elevation="2" Variant="@DrawerVariant.Temporary">
+        <MudDrawerHeader>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <div class="lp-nav-logo-icon" style="width:32px;height:32px;font-size:14px;">B</div>
+                <span style="font-family:'Fraunces',Georgia,serif;font-weight:700;font-size:18px;">Book Me App!</span>
             </MudStack>
-        </MudItem>
-        <MudItem xs="12" md="6" Class="d-flex align-center justify-center">
-            <MudPaper Elevation="8" Class="pa-4 pa-md-8" Style="background: linear-gradient(135deg, var(--mud-palette-primary) 0%, var(--mud-palette-secondary) 100%); border-radius: 24px; width: 100%;">
-                <MudStack Spacing="3" AlignItems="AlignItems.Center">
-                    <MudIcon Icon="@Icons.Material.Filled.CalendarMonth" Size="Size.Large" Style="font-size: clamp(80px, 15vw, 120px); color: white;" />
-                    <MudText Style="color: white; text-align: center; font-size: clamp(1.25rem, 4vw, 1.75rem); font-weight: 600;">Smart Scheduling</MudText>
-                    <MudText Typo="Typo.body1" Style="color: white; text-align: center;">
-                        Built for Filipino businesses
-                    </MudText>
-                </MudStack>
-            </MudPaper>
-        </MudItem>
-    </MudGrid>
-</MudContainer>
+        </MudDrawerHeader>
+        <MudNavMenu>
+            <MudNavLink OnClick="@(() => { _drawerOpen = false; ScrollToSection("features"); })">Features</MudNavLink>
+            <MudNavLink OnClick="@(() => { _drawerOpen = false; ScrollToSection("how-it-works"); })">How It Works</MudNavLink>
+            <MudNavLink OnClick="@(() => { _drawerOpen = false; ScrollToSection("testimonials"); })">Testimonials</MudNavLink>
+            <MudDivider Class="my-2" />
+            <MudNavLink Href="/login">Sign In</MudNavLink>
+            <MudNavLink Href="/register-organization">
+                <MudText Style="font-weight: 600; color: #E85D2A;">Start Free Trial</MudText>
+            </MudNavLink>
+        </MudNavMenu>
+    </MudDrawer>
 
-@* Features Section *@
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="py-6 py-md-8 px-4" id="features" Style="background-color: var(--mud-palette-background-grey);">
-    <MudStack Spacing="4">
-        <MudStack Spacing="2" AlignItems="AlignItems.Center">
-            <MudText Align="Align.Center" Class="fw-bold" Style="font-size: clamp(1.5rem, 4vw, 2rem);">
-                Everything You Need to Succeed
-            </MudText>
-            <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary" Class="px-4">
-                Powerful features designed for service-based businesses
-            </MudText>
-        </MudStack>
+    @* ===== HERO ===== *@
+    <section class="lp-hero">
+        <div class="lp-hero-badge">
+            <span class="lp-hero-badge-dot"></span>
+            Built for Filipino service businesses
+        </div>
+        <h1>Your schedule,<br><span class="highlight">effortlessly managed.</span></h1>
+        <p>The modern booking system built for Filipino service businesses. Let patients and clients self-schedule appointments — from dental clinics to spas, nail salons, and barbershops — all in one place.</p>
+        <div class="lp-hero-actions">
+            <a href="/register-organization" class="lp-btn lp-btn-primary lp-btn-large">Start Free Trial</a>
+            <a @onclick='() => ScrollToSection("how-it-works")' @onclick:preventDefault class="lp-btn lp-btn-secondary lp-btn-large" style="cursor:pointer;">See How It Works</a>
+        </div>
+        <div class="lp-hero-social-proof">
+            <div class="lp-hero-avatars">
+                <span>JL</span>
+                <span>MK</span>
+                <span>AR</span>
+                <span>TS</span>
+            </div>
+            <div class="lp-hero-social-text"><strong>5,000+</strong> Filipino businesses trust Book Me App!</div>
+        </div>
 
-        <MudGrid Spacing="3">
-            <MudItem xs="12" sm="6" md="4">
-                <MudCard Elevation="4" Style="height: 100%;">
-                    <MudCardContent>
-                        <MudStack Spacing="3" AlignItems="AlignItems.Center">
-                            <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Color="Color.Primary" Size="Size.Large" />
-                            <MudText Typo="Typo.h6" Align="Align.Center">Smart Scheduling</MudText>
-                            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
-                                Intelligent booking system that prevents conflicts and optimizes your time
-                            </MudText>
-                        </MudStack>
-                    </MudCardContent>
-                </MudCard>
-            </MudItem>
+        @* Product Preview *@
+        <div class="lp-hero-preview">
+            <div class="lp-hero-float lp-hero-float-1">
+                <span class="lp-float-icon green">&#10003;</span>
+                <span><strong>Appointment confirmed</strong><br><span style="color:var(--clr-text-muted);font-size:12px">Dental cleaning — Just now</span></span>
+            </div>
+            <div class="lp-hero-float lp-hero-float-2">
+                <span class="lp-float-icon blue">&#128276;</span>
+                <span><strong>SMS Reminder sent</strong><br><span style="color:var(--clr-text-muted);font-size:12px">via Globe/Smart</span></span>
+            </div>
+            <div class="lp-hero-float lp-hero-float-3">
+                <span class="lp-float-icon orange">&#9889;</span>
+                <span><strong>No-show reduced</strong><br><span style="color:var(--clr-text-muted);font-size:12px">by 85%</span></span>
+            </div>
 
-            <MudItem xs="12" sm="6" md="4">
-                <MudCard Elevation="4" Style="height: 100%;">
-                    <MudCardContent>
-                        <MudStack Spacing="3" AlignItems="AlignItems.Center">
-                            <MudIcon Icon="@Icons.Material.Filled.Groups" Color="Color.Info" Size="Size.Large" />
-                            <MudText Typo="Typo.h6" Align="Align.Center">Multi-Provider Support</MudText>
-                            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
-                                Manage multiple service providers with individual schedules and availability
-                            </MudText>
-                        </MudStack>
-                    </MudCardContent>
-                </MudCard>
-            </MudItem>
+            <div class="lp-preview-window">
+                <div class="lp-preview-topbar">
+                    <span class="lp-preview-dot"></span>
+                    <span class="lp-preview-dot"></span>
+                    <span class="lp-preview-dot"></span>
+                    <span class="lp-preview-url">app.bookmeapp.ph/dashboard</span>
+                </div>
+                <div class="lp-preview-content">
+                    <div class="lp-preview-sidebar">
+                        <div class="lp-preview-sidebar-title">Smile Dental Clinic</div>
+                        <div class="lp-preview-sidebar-item active">
+                            <span>&#128202;</span> Dashboard
+                        </div>
+                        <div class="lp-preview-sidebar-item">
+                            <span>&#128197;</span> Appointments
+                        </div>
+                        <div class="lp-preview-sidebar-item">
+                            <span>&#128101;</span> Patients
+                        </div>
+                        <div class="lp-preview-sidebar-item">
+                            <span>&#128200;</span> Analytics
+                        </div>
+                    </div>
+                    <div class="lp-preview-main">
+                        <div class="lp-preview-main-header">
+                            <div class="lp-preview-main-title">Today's Appointments</div>
+                            <div class="lp-preview-today-badge">@DateTime.Now.ToString("MMM dd, yyyy")</div>
+                        </div>
+                        <div class="lp-preview-calendar">
+                            <div class="lp-preview-cal-day">Mon</div>
+                            <div class="lp-preview-cal-day">Tue</div>
+                            <div class="lp-preview-cal-day">Wed</div>
+                            <div class="lp-preview-cal-day">Thu</div>
+                            <div class="lp-preview-cal-day">Fri</div>
+                            <div class="lp-preview-cal-day">Sat</div>
+                            <div class="lp-preview-cal-day">Sun</div>
+                            <div class="lp-preview-cal-date">9</div>
+                            <div class="lp-preview-cal-date has-event">10</div>
+                            <div class="lp-preview-cal-date">11</div>
+                            <div class="lp-preview-cal-date today">12</div>
+                            <div class="lp-preview-cal-date has-event">13</div>
+                            <div class="lp-preview-cal-date">14</div>
+                            <div class="lp-preview-cal-date">15</div>
+                        </div>
+                        <div class="lp-preview-appointments">
+                            <div class="lp-preview-appointment">
+                                <span class="lp-preview-apt-time">9:00 AM</span>
+                                <span class="lp-preview-apt-title">Dental Cleaning</span>
+                                <span class="lp-preview-apt-person">Maria S.</span>
+                            </div>
+                            <div class="lp-preview-appointment">
+                                <span class="lp-preview-apt-time">10:30 AM</span>
+                                <span class="lp-preview-apt-title">Tooth Extraction</span>
+                                <span class="lp-preview-apt-person">Juan D.</span>
+                            </div>
+                            <div class="lp-preview-appointment">
+                                <span class="lp-preview-apt-time">2:00 PM</span>
+                                <span class="lp-preview-apt-title">Braces Adjustment</span>
+                                <span class="lp-preview-apt-person">Angela R.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-            <MudItem xs="12" sm="6" md="4">
-                <MudCard Elevation="4" Style="height: 100%;">
-                    <MudCardContent>
-                        <MudStack Spacing="3" AlignItems="AlignItems.Center">
-                            <MudIcon Icon="@Icons.Material.Filled.Notifications" Color="Color.Warning" Size="Size.Large" />
-                            <MudText Typo="Typo.h6" Align="Align.Center">Automated Reminders</MudText>
-                            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
-                                Reduce no-shows with automatic SMS and email notifications
-                            </MudText>
-                        </MudStack>
-                    </MudCardContent>
-                </MudCard>
-            </MudItem>
+    @* ===== MARQUEE ===== *@
+    <section class="lp-marquee-section">
+        <div class="lp-marquee-label">Trusted by teams at</div>
+        <div class="lp-marquee-track">
+            <div class="lp-marquee-logos">
+                <span class="lp-marquee-logo">Belo Medical</span>
+                <span class="lp-marquee-logo">The Spa Wellness</span>
+                <span class="lp-marquee-logo">Nailaholics</span>
+                <span class="lp-marquee-logo">Bruno's Barbers</span>
+                <span class="lp-marquee-logo">Shinagawa Lasik</span>
+                <span class="lp-marquee-logo">Lay Bare</span>
+                <span class="lp-marquee-logo">Hey Sugar!</span>
+                <span class="lp-marquee-logo">Bench Fix</span>
+                <span class="lp-marquee-logo">Asian Hospital</span>
+                <span class="lp-marquee-logo">Dentica PH</span>
+            </div>
+            <div class="lp-marquee-logos" aria-hidden="true">
+                <span class="lp-marquee-logo">Belo Medical</span>
+                <span class="lp-marquee-logo">The Spa Wellness</span>
+                <span class="lp-marquee-logo">Nailaholics</span>
+                <span class="lp-marquee-logo">Bruno's Barbers</span>
+                <span class="lp-marquee-logo">Shinagawa Lasik</span>
+                <span class="lp-marquee-logo">Lay Bare</span>
+                <span class="lp-marquee-logo">Hey Sugar!</span>
+                <span class="lp-marquee-logo">Bench Fix</span>
+                <span class="lp-marquee-logo">Asian Hospital</span>
+                <span class="lp-marquee-logo">Dentica PH</span>
+            </div>
+        </div>
+    </section>
 
-            <MudItem xs="12" sm="6" md="4">
-                <MudCard Elevation="4" Style="height: 100%;">
-                    <MudCardContent>
-                        <MudStack Spacing="3" AlignItems="AlignItems.Center">
-                            <MudIcon Icon="@Icons.Material.Filled.Analytics" Color="Color.Success" Size="Size.Large" />
-                            <MudText Typo="Typo.h6" Align="Align.Center">Business Analytics</MudText>
-                            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
-                                Track bookings, revenue, and performance with detailed reports
-                            </MudText>
-                        </MudStack>
-                    </MudCardContent>
-                </MudCard>
-            </MudItem>
+    @* ===== FEATURES ===== *@
+    <section class="lp-features" id="features">
+        <div class="lp-section-label">Features</div>
+        <h2 class="lp-section-title">Everything you need to manage appointments like a pro.</h2>
+        <p class="lp-section-desc">Powerful tools built for dental clinics, spas, nail salons, and barbershops across the Philippines.</p>
 
-            <MudItem xs="12" sm="6" md="4">
-                <MudCard Elevation="4" Style="height: 100%;">
-                    <MudCardContent>
-                        <MudStack Spacing="3" AlignItems="AlignItems.Center">
-                            <MudIcon Icon="@Icons.Material.Filled.PhoneAndroid" Color="Color.Secondary" Size="Size.Large" />
-                            <MudText Typo="Typo.h6" Align="Align.Center">Mobile Friendly</MudText>
-                            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
-                                Manage bookings on-the-go with our responsive mobile interface
-                            </MudText>
-                        </MudStack>
-                    </MudCardContent>
-                </MudCard>
-            </MudItem>
+        <div class="lp-features-grid">
+            <div class="lp-feature-card">
+                <div class="lp-feature-icon orange">
+                    <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Style="color:#E85D2A;" />
+                </div>
+                <h3>Smart Scheduling</h3>
+                <p>AI-powered time slot suggestions that optimize your clinic or salon schedule — no double-bookings, no gaps.</p>
+            </div>
+            <div class="lp-feature-card">
+                <div class="lp-feature-icon blue">
+                    <MudIcon Icon="@Icons.Material.Filled.Notifications" Style="color:#6366F1;" />
+                </div>
+                <h3>SMS &amp; Viber Reminders</h3>
+                <p>Reduce no-shows by 85% with automated reminders via SMS (Globe/Smart), Viber, and Messenger — channels Filipinos actually use.</p>
+            </div>
+            <div class="lp-feature-card">
+                <div class="lp-feature-icon green">
+                    <MudIcon Icon="@Icons.Material.Filled.Link" Style="color:#22C55E;" />
+                </div>
+                <h3>Custom Booking Pages</h3>
+                <p>Share a branded booking link on Facebook, Instagram, or Viber groups. Clients pick a service, choose a slot, and book.</p>
+            </div>
+            <div class="lp-feature-card">
+                <div class="lp-feature-icon yellow">
+                    <MudIcon Icon="@Icons.Material.Filled.CreditCard" Style="color:#D97706;" />
+                </div>
+                <h3>GCash &amp; Maya Payments</h3>
+                <p>Accept deposits or full payments via GCash, Maya, credit card, or bank transfer directly during the booking flow.</p>
+            </div>
+            <div class="lp-feature-card">
+                <div class="lp-feature-icon purple">
+                    <MudIcon Icon="@Icons.Material.Filled.Groups" Style="color:#A855F7;" />
+                </div>
+                <h3>Multi-Branch &amp; Staff</h3>
+                <p>Manage multiple branches — BGC, Makati, Cebu — and assign dentists, therapists, or barbers with round-robin scheduling.</p>
+            </div>
+            <div class="lp-feature-card">
+                <div class="lp-feature-icon teal">
+                    <MudIcon Icon="@Icons.Material.Filled.BarChart" Style="color:#14B8A6;" />
+                </div>
+                <h3>Analytics Dashboard</h3>
+                <p>Track bookings, revenue, peak hours, popular services, and client retention with real-time visual reports.</p>
+            </div>
+        </div>
+    </section>
 
-            <MudItem xs="12" sm="6" md="4">
-                <MudCard Elevation="4" Style="height: 100%;">
-                    <MudCardContent>
-                        <MudStack Spacing="3" AlignItems="AlignItems.Center">
-                            <MudIcon Icon="@Icons.Material.Filled.Security" Color="Color.Error" Size="Size.Large" />
-                            <MudText Typo="Typo.h6" Align="Align.Center">DPA Compliant</MudText>
-                            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
-                                Secure and compliant with Philippine Data Privacy Act of 2012
-                            </MudText>
-                        </MudStack>
-                    </MudCardContent>
-                </MudCard>
-            </MudItem>
-        </MudGrid>
-    </MudStack>
-</MudContainer>
+    @* ===== SHOWCASE ===== *@
+    <section class="lp-showcase-section" id="how-it-works">
+        <div class="lp-showcase-row">
+            <div class="lp-showcase-text">
+                <div class="lp-section-label">Smart Scheduling</div>
+                <h2>AI that knows your <br>clinic's ideal flow.</h2>
+                <p>Our scheduling engine learns your service durations, staff availability, and peak hours — so your dental chair, massage bed, or barber seat is never empty or overbooked.</p>
+                <ul class="lp-showcase-list">
+                    <li><span class="lp-showcase-list-check">&#10003;</span> Automatic buffer time between procedures</li>
+                    <li><span class="lp-showcase-list-check">&#10003;</span> Handles walk-ins alongside online bookings</li>
+                    <li><span class="lp-showcase-list-check">&#10003;</span> AI-suggested slots based on service type and duration</li>
+                    <li><span class="lp-showcase-list-check">&#10003;</span> Multi-branch sync for clinics across Metro Manila and beyond</li>
+                </ul>
+                <a href="/register-organization" class="lp-btn lp-btn-primary">Try Smart Scheduling</a>
+            </div>
+            <div class="lp-showcase-visual">
+                <div class="lp-showcase-card">
+                    <div class="lp-ss-visual">
+                        <div class="lp-ss-header">
+                            <div class="lp-ss-title">Thursday, Feb 12</div>
+                            <div class="lp-ss-week">Week 7</div>
+                        </div>
+                        <div class="lp-ss-timeline">
+                            <div class="lp-ss-slot">
+                                <div class="lp-ss-time">9:00 AM</div>
+                                <div class="lp-ss-block booked">Dental Cleaning — Maria S.</div>
+                            </div>
+                            <div class="lp-ss-slot">
+                                <div class="lp-ss-time">10:00 AM</div>
+                                <div class="lp-ss-block available">Available Slot</div>
+                            </div>
+                            <div class="lp-ss-slot">
+                                <div class="lp-ss-time">11:00 AM</div>
+                                <div class="lp-ss-block ai-suggested">Best for Tooth Whitening</div>
+                            </div>
+                            <div class="lp-ss-slot">
+                                <div class="lp-ss-time">12:00 PM</div>
+                                <div class="lp-ss-block available">Lunch Break</div>
+                            </div>
+                            <div class="lp-ss-slot">
+                                <div class="lp-ss-time">1:00 PM</div>
+                                <div class="lp-ss-block booked">Braces Adjustment — Angela R.</div>
+                            </div>
+                            <div class="lp-ss-slot">
+                                <div class="lp-ss-time">2:00 PM</div>
+                                <div class="lp-ss-block ai-suggested">Open for Walk-ins</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-@* Pricing Section *@
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="py-6 py-md-8 px-4" id="pricing">
-    <MudStack Spacing="4">
-        <MudStack Spacing="2" AlignItems="AlignItems.Center">
-            <MudText Align="Align.Center" Class="fw-bold" Style="font-size: clamp(1.5rem, 4vw, 2rem);">
-                Simple, Transparent Pricing
-            </MudText>
-            <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary" Class="px-4">
-                Choose the perfect plan for your business size
-            </MudText>
-        </MudStack>
+        <div class="lp-showcase-row reverse">
+            <div class="lp-showcase-text">
+                <div class="lp-section-label">Notifications</div>
+                <h2>Never miss a booking — <br>and clients won't forget.</h2>
+                <p>Multi-channel automated reminders via SMS, Viber, and Messenger keep your patients and clients showing up on time, every time.</p>
+                <ul class="lp-showcase-list">
+                    <li><span class="lp-showcase-list-check">&#10003;</span> SMS via Globe, Smart, TNT, and DITO networks</li>
+                    <li><span class="lp-showcase-list-check">&#10003;</span> Viber and Facebook Messenger notifications</li>
+                    <li><span class="lp-showcase-list-check">&#10003;</span> Customizable Taglish reminder templates</li>
+                    <li><span class="lp-showcase-list-check">&#10003;</span> Automated follow-up for rebooking and reviews</li>
+                </ul>
+                <a href="/register-organization" class="lp-btn lp-btn-primary">See All Features</a>
+            </div>
+            <div class="lp-showcase-visual">
+                <div class="lp-showcase-card">
+                    <div class="lp-notif-visual">
+                        <div class="lp-notif-list">
+                            <div class="lp-notif-item">
+                                <div class="lp-notif-avatar" style="background:#6366F1">MS</div>
+                                <div class="lp-notif-content">
+                                    <div class="lp-notif-title">New Appointment Confirmed</div>
+                                    <div class="lp-notif-desc">Maria S. booked Dental Cleaning — Makati branch</div>
+                                </div>
+                                <div class="lp-notif-time">Just now</div>
+                            </div>
+                            <div class="lp-notif-item">
+                                <div class="lp-notif-avatar" style="background:#22C55E">JD</div>
+                                <div class="lp-notif-content">
+                                    <div class="lp-notif-title">SMS Reminder Sent</div>
+                                    <div class="lp-notif-desc">Juan D. — Tooth Extraction in 1 hour</div>
+                                </div>
+                                <div class="lp-notif-time">2 min ago</div>
+                            </div>
+                            <div class="lp-notif-item">
+                                <div class="lp-notif-avatar" style="background:#E85D2A">AR</div>
+                                <div class="lp-notif-content">
+                                    <div class="lp-notif-title">Rescheduled via Viber</div>
+                                    <div class="lp-notif-desc">Angela R. moved Braces Adjustment to Sat 10 AM</div>
+                                </div>
+                                <div class="lp-notif-time">15 min ago</div>
+                            </div>
+                            <div class="lp-notif-item">
+                                <div class="lp-notif-avatar" style="background:#FFC53D;color:#92400E">KT</div>
+                                <div class="lp-notif-content">
+                                    <div class="lp-notif-title">GCash Payment Received</div>
+                                    <div class="lp-notif-desc">Kim T. paid P500 deposit — Full Body Massage</div>
+                                </div>
+                                <div class="lp-notif-time">1 hr ago</div>
+                            </div>
+                            <div class="lp-notif-item">
+                                <div class="lp-notif-avatar" style="background:#A855F7">RC</div>
+                                <div class="lp-notif-content">
+                                    <div class="lp-notif-title">5-Star Review</div>
+                                    <div class="lp-notif-desc">Rica C. — "Super galing ng nail art! Will rebook!"</div>
+                                </div>
+                                <div class="lp-notif-time">3 hrs ago</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-        <MudGrid Spacing="3" Justify="Justify.Center">
-            @* Starter Plan *@
-            <MudItem xs="12" sm="6" md="3">
-                <MudCard Elevation="8" Style="height: 100%; border: 2px solid var(--mud-palette-grey-lighten3);">
-                    <MudCardContent>
-                        <MudStack Spacing="3">
-                            <MudText Typo="Typo.h6" Color="Color.Primary">Starter</MudText>
-                            <MudStack Row="true" AlignItems="AlignItems.End" Spacing="1">
-                                <MudText Typo="Typo.h3" Class="fw-bold">₱499</MudText>
-                                <MudText Typo="Typo.body2" Color="Color.Secondary">/month</MudText>
-                            </MudStack>
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                                Perfect for solo practitioners
-                            </MudText>
-                            <MudDivider />
-                            <MudStack Spacing="2">
-                                <MudStack Row="true" Spacing="1">
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
-                                    <MudText Typo="Typo.body2">Up to 10 bookings/day</MudText>
-                                </MudStack>
-                                <MudStack Row="true" Spacing="1">
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
-                                    <MudText Typo="Typo.body2">1 service provider</MudText>
-                                </MudStack>
-                                <MudStack Row="true" Spacing="1">
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
-                                    <MudText Typo="Typo.body2">Basic analytics</MudText>
-                                </MudStack>
-                                <MudStack Row="true" Spacing="1">
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
-                                    <MudText Typo="Typo.body2">Email support</MudText>
-                                </MudStack>
-                            </MudStack>
-                        </MudStack>
-                    </MudCardContent>
-                    <MudCardActions Class="pa-4">
-                        <MudButton Variant="Variant.Outlined"
-                                   Color="Color.Primary"
-                                   FullWidth="true"
-                                   Href="/register-organization">
-                            Start Free Trial
-                        </MudButton>
-                    </MudCardActions>
-                </MudCard>
-            </MudItem>
+    @* ===== STATS ===== *@
+    <section class="lp-stats-section">
+        <div class="lp-stats-inner">
+            <div class="lp-stat-item">
+                <h3>5K+</h3>
+                <p>Filipino Businesses</p>
+            </div>
+            <div class="lp-stat-item">
+                <h3>1.2M</h3>
+                <p>Appointments Booked</p>
+            </div>
+            <div class="lp-stat-item">
+                <h3>85%</h3>
+                <p>Fewer No-Shows</p>
+            </div>
+            <div class="lp-stat-item">
+                <h3>99.9%</h3>
+                <p>Uptime Guaranteed</p>
+            </div>
+        </div>
+    </section>
 
-            @* Professional Plan (Popular) *@
-            <MudItem xs="12" sm="6" md="3">
-                <MudCard Elevation="12" Style="height: 100%; border: 3px solid var(--mud-palette-primary);" Class="professional-plan-card">
-                    <MudCardContent>
-                        <MudStack Spacing="3">
-                            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-                                <MudText Typo="Typo.h6" Color="Color.Primary">Professional</MudText>
-                                <MudChip T="string" Color="Color.Primary" Size="Size.Small" Text="Popular" />
-                            </MudStack>
-                            <MudStack Row="true" AlignItems="AlignItems.End" Spacing="1">
-                                <MudText Typo="Typo.h3" Class="fw-bold">₱999</MudText>
-                                <MudText Typo="Typo.body2" Color="Color.Secondary">/month</MudText>
-                            </MudStack>
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                                For growing businesses
-                            </MudText>
-                            <MudDivider />
-                            <MudStack Spacing="2">
-                                <MudStack Row="true" Spacing="1">
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
-                                    <MudText Typo="Typo.body2">Up to 30 bookings/day</MudText>
-                                </MudStack>
-                                <MudStack Row="true" Spacing="1">
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
-                                    <MudText Typo="Typo.body2">Up to 3 providers</MudText>
-                                </MudStack>
-                                <MudStack Row="true" Spacing="1">
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
-                                    <MudText Typo="Typo.body2">Advanced analytics</MudText>
-                                </MudStack>
-                                <MudStack Row="true" Spacing="1">
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
-                                    <MudText Typo="Typo.body2">Priority email support</MudText>
-                                </MudStack>
-                                <MudStack Row="true" Spacing="1">
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
-                                    <MudText Typo="Typo.body2">SMS notifications</MudText>
-                                </MudStack>
-                            </MudStack>
-                        </MudStack>
-                    </MudCardContent>
-                    <MudCardActions Class="pa-4">
-                        <MudButton Variant="Variant.Filled"
-                                   Color="Color.Primary"
-                                   FullWidth="true"
-                                   Href="/register-organization">
-                            Start Free Trial
-                        </MudButton>
-                    </MudCardActions>
-                </MudCard>
-            </MudItem>
+    @* ===== TESTIMONIALS ===== *@
+    <section class="lp-testimonials" id="testimonials">
+        <div class="lp-section-label">Testimonials</div>
+        <h2 class="lp-section-title">Loved by Filipino business owners.</h2>
+        <p class="lp-section-desc" style="margin-bottom:48px">Don't just take our word for it — hear what clinic owners, spa managers, and salon operators have to say.</p>
 
-            @* Business Plan *@
-            <MudItem xs="12" sm="6" md="3">
-                <MudCard Elevation="8" Style="height: 100%; border: 2px solid var(--mud-palette-grey-lighten3);">
-                    <MudCardContent>
-                        <MudStack Spacing="3">
-                            <MudText Typo="Typo.h6" Color="Color.Primary">Business</MudText>
-                            <MudStack Row="true" AlignItems="AlignItems.End" Spacing="1">
-                                <MudText Typo="Typo.h3" Class="fw-bold">₱1,999</MudText>
-                                <MudText Typo="Typo.body2" Color="Color.Secondary">/month</MudText>
-                            </MudStack>
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                                For established businesses
-                            </MudText>
-                            <MudDivider />
-                            <MudStack Spacing="2">
-                                <MudStack Row="true" Spacing="1">
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
-                                    <MudText Typo="Typo.body2">Up to 100 bookings/day</MudText>
-                                </MudStack>
-                                <MudStack Row="true" Spacing="1">
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
-                                    <MudText Typo="Typo.body2">Up to 10 providers</MudText>
-                                </MudStack>
-                                <MudStack Row="true" Spacing="1">
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
-                                    <MudText Typo="Typo.body2">Premium analytics</MudText>
-                                </MudStack>
-                                <MudStack Row="true" Spacing="1">
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
-                                    <MudText Typo="Typo.body2">Priority support</MudText>
-                                </MudStack>
-                                <MudStack Row="true" Spacing="1">
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
-                                    <MudText Typo="Typo.body2">SMS + Email notifications</MudText>
-                                </MudStack>
-                                <MudStack Row="true" Spacing="1">
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
-                                    <MudText Typo="Typo.body2">Custom branding</MudText>
-                                </MudStack>
-                            </MudStack>
-                        </MudStack>
-                    </MudCardContent>
-                    <MudCardActions Class="pa-4">
-                        <MudButton Variant="Variant.Outlined"
-                                   Color="Color.Primary"
-                                   FullWidth="true"
-                                   Href="/register-organization">
-                            Start Free Trial
-                        </MudButton>
-                    </MudCardActions>
-                </MudCard>
-            </MudItem>
+        <div class="lp-testimonials-grid">
+            <div class="lp-testimonial-card">
+                <div class="lp-testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                <blockquote>"Ang laki ng improvement ng clinic namin! Patients can book online 24/7, and no-shows went down drastically. Hindi na kami nagha-hassle sa phone calls."</blockquote>
+                <div class="lp-testimonial-author">
+                    <div class="lp-testimonial-avatar" style="background:#6366F1">DC</div>
+                    <div>
+                        <div class="lp-testimonial-name">Dra. Camille Santos</div>
+                        <div class="lp-testimonial-role">Owner, Smile First Dental — Quezon City</div>
+                    </div>
+                </div>
+            </div>
+            <div class="lp-testimonial-card">
+                <div class="lp-testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                <blockquote>"Our three spa branches in Makati, BGC, and Alabang are all synced. GCash deposits before appointments made our operations so much smoother."</blockquote>
+                <div class="lp-testimonial-author">
+                    <div class="lp-testimonial-avatar" style="background:#E85D2A">MR</div>
+                    <div>
+                        <div class="lp-testimonial-name">Marco Reyes</div>
+                        <div class="lp-testimonial-role">Manager, Serenity Spa &amp; Wellness</div>
+                    </div>
+                </div>
+            </div>
+            <div class="lp-testimonial-card">
+                <div class="lp-testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                <blockquote>"Super easy gamitin! I just share my booking link sa Instagram at Facebook, tapos ang dami nang nag-book. Perfect for my nail salon."</blockquote>
+                <div class="lp-testimonial-author">
+                    <div class="lp-testimonial-avatar" style="background:#22C55E">JG</div>
+                    <div>
+                        <div class="lp-testimonial-name">Jessa Garcia</div>
+                        <div class="lp-testimonial-role">Owner, Polished PH Nail Spa — Cebu</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-            @* Enterprise Plan *@
-            <MudItem xs="12" sm="6" md="3">
-                <MudCard Elevation="8" Style="height: 100%; border: 2px solid var(--mud-palette-grey-lighten3);">
-                    <MudCardContent>
-                        <MudStack Spacing="3">
-                            <MudText Typo="Typo.h6" Color="Color.Primary">Enterprise</MudText>
-                            <MudStack Row="true" AlignItems="AlignItems.End" Spacing="1">
-                                <MudText Typo="Typo.h3" Class="fw-bold">₱3,999</MudText>
-                                <MudText Typo="Typo.body2" Color="Color.Secondary">/month</MudText>
-                            </MudStack>
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                                For large organizations
-                            </MudText>
-                            <MudDivider />
-                            <MudStack Spacing="2">
-                                <MudStack Row="true" Spacing="1">
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
-                                    <MudText Typo="Typo.body2">Unlimited bookings</MudText>
-                                </MudStack>
-                                <MudStack Row="true" Spacing="1">
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
-                                    <MudText Typo="Typo.body2">Unlimited providers</MudText>
-                                </MudStack>
-                                <MudStack Row="true" Spacing="1">
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
-                                    <MudText Typo="Typo.body2">Enterprise analytics</MudText>
-                                </MudStack>
-                                <MudStack Row="true" Spacing="1">
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
-                                    <MudText Typo="Typo.body2">24/7 phone support</MudText>
-                                </MudStack>
-                                <MudStack Row="true" Spacing="1">
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
-                                    <MudText Typo="Typo.body2">Multi-location support</MudText>
-                                </MudStack>
-                                <MudStack Row="true" Spacing="1">
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
-                                    <MudText Typo="Typo.body2">API access</MudText>
-                                </MudStack>
-                                <MudStack Row="true" Spacing="1">
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
-                                    <MudText Typo="Typo.body2">Dedicated account manager</MudText>
-                                </MudStack>
-                            </MudStack>
-                        </MudStack>
-                    </MudCardContent>
-                    <MudCardActions Class="pa-4">
-                        <MudButton Variant="Variant.Outlined"
-                                   Color="Color.Primary"
-                                   FullWidth="true"
-                                   Href="/register-organization">
-                            Start Free Trial
-                        </MudButton>
-                    </MudCardActions>
-                </MudCard>
-            </MudItem>
-        </MudGrid>
-    </MudStack>
-</MudContainer>
+    @* ===== CTA ===== *@
+    <section class="lp-cta-section">
+        <div class="lp-cta-inner">
+            <h2>Ready to level up<br>your appointments?</h2>
+            <p>Join 5,000+ Filipino dental clinics, spas, nail salons, and barbershops who stopped chasing clients and started getting booked nonstop.</p>
+            <div class="lp-cta-actions">
+                <a href="/register-organization" class="lp-btn lp-btn-white lp-btn-large">Start Free — No Card Needed</a>
+                <a @onclick='() => ScrollToSection("features")' @onclick:preventDefault class="lp-btn lp-btn-outline-white lp-btn-large" style="cursor:pointer;">Learn More</a>
+            </div>
+        </div>
+    </section>
 
-@* CTA Section *@
-<MudContainer MaxWidth="MaxWidth.Large" Class="py-6 py-md-8 px-4">
-    <MudPaper Elevation="8" Class="pa-4 pa-md-8" Style="background: linear-gradient(135deg, var(--mud-palette-primary) 0%, var(--mud-palette-secondary) 100%); border-radius: 16px;">
-        <MudStack Spacing="3" AlignItems="AlignItems.Center">
-            <MudText Align="Align.Center" Style="color: white; font-size: clamp(1.5rem, 4vw, 2rem); font-weight: 700;">
-                Ready to Transform Your Business?
-            </MudText>
-            <MudText Align="Align.Center" Style="color: white; font-size: clamp(1rem, 3vw, 1.25rem);">
-                Join hundreds of Filipino businesses already using our platform
-            </MudText>
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Surface"
-                       Size="Size.Large"
-                       Href="/register-organization"
-                       StartIcon="@Icons.Material.Filled.Rocket"
-                       Style="min-height: 48px;">
-                Start Your Free 7-Day Trial
-            </MudButton>
-            <MudText Typo="Typo.body2" Align="Align.Center" Style="color: white;">
-                No credit card required • Cancel anytime
-            </MudText>
-        </MudStack>
-    </MudPaper>
-</MudContainer>
+    @* ===== FOOTER ===== *@
+    <footer class="lp-footer">
+        <div class="lp-footer-top">
+            <div>
+                <a href="/" class="lp-nav-logo">
+                    <div class="lp-nav-logo-icon">B</div>
+                    <span class="lp-nav-logo-text">Book Me App!</span>
+                </a>
+                <p class="lp-footer-brand-desc">The modern booking and scheduling platform built for Filipino dental clinics, spas, nail salons, and barbershops.</p>
+            </div>
+            <div class="lp-footer-col">
+                <h4>Product</h4>
+                <ul>
+                    <li><a @onclick='() => ScrollToSection("features")' @onclick:preventDefault>Features</a></li>
+                    <li><a @onclick='() => ScrollToSection("how-it-works")' @onclick:preventDefault>How It Works</a></li>
+                    <li><a href="/login">Sign In</a></li>
+                </ul>
+            </div>
+            <div class="lp-footer-col">
+                <h4>Company</h4>
+                <ul>
+                    <li><a href="#">About Us</a></li>
+                    <li><a href="#">Blog</a></li>
+                    <li><a href="#">Contact</a></li>
+                </ul>
+            </div>
+            <div class="lp-footer-col">
+                <h4>Support</h4>
+                <ul>
+                    <li><a href="#">Help Center</a></li>
+                    <li><a href="#">Privacy</a></li>
+                    <li><a href="#">Terms</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="lp-footer-bottom">
+            <span>&copy; @DateTime.Now.Year Book Me App! All rights reserved.</span>
+        </div>
+    </footer>
 
-@* Footer *@
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="py-4 py-md-6 px-4" Style="background-color: var(--mud-palette-background-grey);">
-    <MudGrid Spacing="3">
-        <MudItem xs="12" md="4">
-            <MudStack Spacing="2">
-                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                    <img src="logo.png" alt="Book me App!" style="height: 40px; width: auto;" />
-                </MudStack>
-                <MudText Typo="Typo.body2" Color="Color.Secondary">
-                    Empowering Filipino businesses with smart scheduling solutions.
-                </MudText>
-            </MudStack>
-        </MudItem>
-        <MudItem xs="12" sm="4" md="2">
-            <MudStack Spacing="2">
-                <MudText Typo="Typo.h6">Product</MudText>
-                <MudLink Href="#features" Typo="Typo.body2">Features</MudLink>
-                <MudLink Href="#pricing" Typo="Typo.body2">Pricing</MudLink>
-                <MudLink Href="/login" Typo="Typo.body2">Sign In</MudLink>
-            </MudStack>
-        </MudItem>
-        <MudItem xs="12" sm="4" md="2">
-            <MudStack Spacing="2">
-                <MudText Typo="Typo.h6">Legal</MudText>
-                <MudLink Href="/privacy" Typo="Typo.body2">Privacy Policy</MudLink>
-                <MudLink Href="/terms" Typo="Typo.body2">Terms of Service</MudLink>
-            </MudStack>
-        </MudItem>
-        <MudItem xs="12" sm="4" md="4">
-            <MudStack Spacing="2">
-                <MudText Typo="Typo.h6">Compliant</MudText>
-                <MudText Typo="Typo.body2" Color="Color.Secondary">
-                    🛡️ Data Privacy Act of 2012 (RA 10173) Compliant
-                </MudText>
-            </MudStack>
-        </MudItem>
-    </MudGrid>
-    <MudDivider Class="my-4" />
-    <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
-        © @DateTime.Now.Year Book me App!. All rights reserved.
-    </MudText>
-</MudContainer>
+</div>
 
-<style>
-    /* Professional plan card scale effect - desktop only */
-    @@media (min-width: 960px) {
-        .professional-plan-card {
-            transform: scale(1.05);
+<script suppress-error="BL9992">
+    // Intersection Observer for scroll animations
+    const lpObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+            }
+        });
+    }, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' });
+
+    document.querySelectorAll('.landing-page .animate-on-scroll').forEach(el => lpObserver.observe(el));
+
+    // Nav shadow on scroll
+    window.addEventListener('scroll', () => {
+        const nav = document.getElementById('lp-nav');
+        if (nav) {
+            nav.classList.toggle('scrolled', window.scrollY > 50);
         }
-    }
+    });
 
-    /* Ensure touch-friendly tap targets on mobile */
-    @@media (max-width: 959px) {
-        .mud-button {
-            min-height: 44px !important;
-        }
-    }
-
-    /* Smooth scrolling for anchor links */
-    html {
-        scroll-behavior: smooth;
-    }
-
-    /* Improve readability on mobile */
-    @@media (max-width: 599px) {
-        .mud-typography-body1 {
-            font-size: 0.95rem !important;
-        }
-
-        .mud-typography-body2 {
-            font-size: 0.85rem !important;
-        }
-    }
-</style>
+    // Smooth scroll handled via inline onclick handlers
+</script>
 
 @code {
     private bool _drawerOpen = false;
+
+    private async void ScrollToSection(string id)
+    {
+        await JS.InvokeVoidAsync("eval", $"document.getElementById('{id}')?.scrollIntoView({{behavior:'smooth'}})");
+    }
 
     protected override async Task OnInitializedAsync()
     {

@@ -7,6 +7,8 @@
 @inject ITenantService TenantService
 @inject IAuthenticationService AuthService
 @inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
 
 <PageTitle>Dashboard - Booking Schedule System</PageTitle>
 
@@ -25,19 +27,23 @@
         {
             @* No tenant — same for all roles *@
             <MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
-                <MudPaper Elevation="2" Class="pa-6">
-                    <MudStack AlignItems="AlignItems.Center" Spacing="3">
-                        <MudIcon Icon="@Icons.Material.Filled.BusinessCenter" Size="Size.Large" Color="Color.Warning" />
-                        <MudText Typo="Typo.h5" Align="Align.Center">No Company Found</MudText>
-                        <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary">
-                            Your account is not associated with any company. Please contact your organization for an invitation link to get started.
-                        </MudText>
-                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                   StartIcon="@Icons.Material.Filled.Logout"
-                                   OnClick="HandleLogout">
-                            Sign Out
-                        </MudButton>
-                    </MudStack>
+                <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden;">
+                    <div class="pa-4 px-5" style="border-bottom: 1px solid var(--mud-palette-divider);">
+                        <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">No Company Found</MudText>
+                    </div>
+                    <div class="pa-6">
+                        <MudStack AlignItems="AlignItems.Center" Spacing="3">
+                            <MudIcon Icon="@Icons.Material.Filled.BusinessCenter" Size="Size.Large" Color="Color.Warning" />
+                            <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary">
+                                Your account is not associated with any company. Please contact your organization for an invitation link to get started.
+                            </MudText>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.Logout"
+                                       OnClick="HandleLogout">
+                                Sign Out
+                            </MudButton>
+                        </MudStack>
+                    </div>
                 </MudPaper>
             </MudContainer>
         }
@@ -45,133 +51,216 @@
         {
             @* Provider / GlobalAdmin dashboard *@
             <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
-                <MudStack Spacing="4">
-                    <MudStack Spacing="2">
-                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="flex-wrap gap-2">
-                            <MudStack Spacing="1">
-                                <MudText Typo="Typo.h5">Welcome back, @_userName!</MudText>
-                                <MudText Typo="Typo.body1" Color="Color.Secondary">Here's your overview for today</MudText>
-                            </MudStack>
-                            <MudHidden Breakpoint="Breakpoint.Xs">
-                                <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                           StartIcon="@Icons.Material.Filled.EventAvailable"
-                                           Href="/browse-schedules">
-                                    Browse Schedules
-                                </MudButton>
-                            </MudHidden>
-                        </MudStack>
-                        <MudHidden Breakpoint="Breakpoint.Xs" Invert="true">
-                            <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
+                <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden;">
+                    @* Header bar *@
+                    <div class="d-flex align-center pa-4 px-5" style="border-bottom: 1px solid var(--mud-palette-divider);">
+                        <div class="mr-auto">
+                            <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">Welcome back, @_userName!</MudText>
+                            <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Here's your overview for today</MudText>
+                        </div>
+                        <MudHidden Breakpoint="Breakpoint.Xs">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
                                        StartIcon="@Icons.Material.Filled.EventAvailable"
                                        Href="/browse-schedules">
                                 Browse Schedules
                             </MudButton>
                         </MudHidden>
-                    </MudStack>
+                    </div>
 
-                    @* Next upcoming booking highlight *@
-                    @if (_upcomingBookings.Count > 0)
-                    {
-                        var next = _upcomingBookings[0];
-                        var nextProviderName = GetProviderName(next.ScheduleId);
+                    <div class="pa-5">
+                        <MudStack Spacing="4">
+                            <MudHidden Breakpoint="Breakpoint.Xs" Invert="true">
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
+                                           StartIcon="@Icons.Material.Filled.EventAvailable"
+                                           Href="/browse-schedules">
+                                    Browse Schedules
+                                </MudButton>
+                            </MudHidden>
 
-                        <MudPaper Elevation="3" Class="pa-5" Style="border-left: 5px solid var(--mud-palette-primary);">
-                            <MudStack Spacing="2">
-                                <MudText Typo="Typo.overline" Color="Color.Primary" Style="font-weight: 700; letter-spacing: 1px;">NEXT APPOINTMENT</MudText>
-                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="flex-wrap">
-                                    <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Color="Color.Primary" />
-                                    <MudText Typo="Typo.h6">
-                                        @(next.ScheduleStartTime?.ToString("dddd, MMMM dd") ?? "")
-                                    </MudText>
-                                    <MudText Typo="Typo.h6" Color="Color.Secondary">
-                                        @(next.ScheduleStartTime?.ToString("h:mm tt") ?? "") - @(next.ScheduleEndTime?.ToString("h:mm tt") ?? "")
-                                    </MudText>
-                                </MudStack>
-                                <MudStack Row="true" Spacing="3" Class="flex-wrap">
-                                    @if (!string.IsNullOrWhiteSpace(nextProviderName))
-                                    {
-                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                            <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Color="Color.Secondary" />
-                                            <MudText Typo="Typo.body2" Color="Color.Secondary">@nextProviderName</MudText>
-                                        </MudStack>
-                                    }
-                                    @if (!string.IsNullOrWhiteSpace(_tenantLocation))
-                                    {
-                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                            <MudIcon Icon="@Icons.Material.Filled.LocationOn" Size="Size.Small" Color="Color.Secondary" />
-                                            <MudText Typo="Typo.body2" Color="Color.Secondary">@_tenantLocation</MudText>
-                                        </MudStack>
-                                    }
-                                    <MudChip T="string" Size="Size.Small"
-                                             Color="@GetStatusColor(next.Status)"
-                                             Variant="Variant.Filled">
-                                        @next.Status
-                                    </MudChip>
-                                </MudStack>
-                            </MudStack>
-                        </MudPaper>
+                            @* Pending Approvals section *@
+                            @if (_pendingApprovals.Count > 0)
+                            {
+                                <MudStack Spacing="2">
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                        <MudIcon Icon="@Icons.Material.Filled.PendingActions" Color="Color.Warning" />
+                                        <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">
+                                            Pending Approvals (@_pendingApprovals.Count)
+                                        </MudText>
+                                    </MudStack>
 
-                        @* Recent bookings list *@
-                        @if (_upcomingBookings.Count > 1)
-                        {
-                            <MudText Typo="Typo.h6" Class="mt-2">Recent Bookings</MudText>
-                            <MudGrid Spacing="2">
-                                @foreach (var booking in _upcomingBookings.Skip(1).Take(5))
-                                {
-                                    <MudItem xs="12" sm="6" md="4">
-                                        <MudPaper Elevation="1" Class="pa-3" Style="border-left: 3px solid var(--mud-palette-primary);">
-                                            <MudStack Spacing="1">
-                                                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-                                                    <MudText Typo="Typo.body2" Style="font-weight: 600;">
-                                                        @(booking.ScheduleStartTime?.ToString("MMM dd, yyyy") ?? "")
-                                                    </MudText>
-                                                    <MudChip T="string" Size="Size.Small"
-                                                             Color="@GetStatusColor(booking.Status)"
-                                                             Variant="Variant.Filled">
-                                                        @booking.Status
-                                                    </MudChip>
-                                                </MudStack>
-                                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                                    <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Color="Color.Secondary" />
+                                    <MudGrid Spacing="2">
+                                        @foreach (var pending in _pendingApprovals)
+                                        {
+                                            var bookingId = pending.Id;
+                                            <MudItem xs="12" md="6">
+                                                <MudPaper Elevation="0" Class="pa-4" Style="border-top: 3px solid var(--mud-palette-warning); border: 1px solid var(--mud-palette-divider); border-radius: 14px;">
+                                                    <MudStack Spacing="2">
+                                                <MudText Typo="Typo.body1" Style="font-weight: 700;">
+                                                    @(pending.ScheduleTitle ?? "Untitled Schedule")
+                                                </MudText>
+                                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="flex-wrap">
+                                                    <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Size="Size.Small" Color="Color.Secondary" />
                                                     <MudText Typo="Typo.body2" Color="Color.Secondary">
-                                                        @(booking.ScheduleStartTime?.ToString("h:mm tt") ?? "") - @(booking.ScheduleEndTime?.ToString("h:mm tt") ?? "")
+                                                        @(pending.ScheduleStartTime?.ToString("ddd, MMM dd") ?? "") · @(pending.ScheduleStartTime?.ToString("h:mm tt") ?? "") - @(pending.ScheduleEndTime?.ToString("h:mm tt") ?? "")
                                                     </MudText>
                                                 </MudStack>
-                                                @{
-                                                    var recentProvider = GetProviderName(booking.ScheduleId);
-                                                }
-                                                @if (!string.IsNullOrWhiteSpace(recentProvider))
-                                                {
-                                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                                        <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Color="Color.Secondary" />
-                                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@recentProvider</MudText>
+                                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="flex-wrap">
+                                                    <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Color="Color.Secondary" />
+                                                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                                        @(pending.CustomerName ?? "Customer") · Booked @GetTimeAgo(pending.BookedAt)
+                                                    </MudText>
+                                                </MudStack>
+                                                @* Desktop/Tablet: Horizontal buttons *@
+                                                <MudHidden Breakpoint="Breakpoint.SmAndDown">
+                                                    <MudStack Row="true" Spacing="2" Class="mt-1">
+                                                        <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small"
+                                                                   StartIcon="@Icons.Material.Filled.Check"
+                                                                   Disabled="_processingBookingIds.Contains(bookingId)"
+                                                                   OnClick="@(() => HandleApprove(pending))"
+                                                                   Style="min-height: 44px; flex: 1;">
+                                                            Approve
+                                                        </MudButton>
+                                                        <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small"
+                                                                   StartIcon="@Icons.Material.Filled.Close"
+                                                                   Disabled="_processingBookingIds.Contains(bookingId)"
+                                                                   OnClick="@(() => HandleReject(pending))"
+                                                                   Style="min-height: 44px; flex: 1;">
+                                                            Reject
+                                                        </MudButton>
                                                     </MudStack>
-                                                }
-                                            </MudStack>
-                                        </MudPaper>
-                                    </MudItem>
-                                }
-                            </MudGrid>
-                        }
+                                                </MudHidden>
+                                                @* Mobile: Vertical stacked full-width buttons *@
+                                                <MudHidden Breakpoint="Breakpoint.MdAndUp">
+                                                    <MudStack Spacing="2" Class="mt-1">
+                                                        <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Medium"
+                                                                   StartIcon="@Icons.Material.Filled.Check"
+                                                                   Disabled="_processingBookingIds.Contains(bookingId)"
+                                                                   OnClick="@(() => HandleApprove(pending))"
+                                                                   FullWidth="true"
+                                                                   Style="min-height: 48px;">
+                                                            Approve
+                                                        </MudButton>
+                                                        <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Medium"
+                                                                   StartIcon="@Icons.Material.Filled.Close"
+                                                                   Disabled="_processingBookingIds.Contains(bookingId)"
+                                                                   OnClick="@(() => HandleReject(pending))"
+                                                                   FullWidth="true"
+                                                                   Style="min-height: 48px;">
+                                                            Reject
+                                                        </MudButton>
+                                                    </MudStack>
+                                                </MudHidden>
+                                                    </MudStack>
+                                                </MudPaper>
+                                            </MudItem>
+                                        }
+                                    </MudGrid>
+                                </MudStack>
+                            }
 
-                        <MudButton Variant="Variant.Text" Color="Color.Primary" Href="/my-bookings"
-                                   EndIcon="@Icons.Material.Filled.ArrowForward" FullWidth="true">
-                            View All Bookings
-                        </MudButton>
-                    }
-                    else
-                    {
-                        <MudPaper Elevation="2" Class="pa-6">
-                            <MudStack AlignItems="AlignItems.Center" Spacing="3">
-                                <MudIcon Icon="@Icons.Material.Filled.EventAvailable" Size="Size.Large" Color="Color.Primary" />
-                                <MudText Typo="Typo.h6" Align="Align.Center">No upcoming bookings</MudText>
-                                <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
-                                    You're all clear! Browse available schedules to book your next appointment.
-                                </MudText>
-                            </MudStack>
-                        </MudPaper>
-                    }
-                </MudStack>
+                            @* Next upcoming booking highlight *@
+                            @if (_upcomingBookings.Count > 0)
+                            {
+                                var next = _upcomingBookings[0];
+                                var nextProviderName = GetProviderName(next.ScheduleId);
+
+                                <MudPaper Elevation="0" Class="pa-5" Style="border-top: 3px solid var(--mud-palette-primary); border: 1px solid var(--mud-palette-divider); border-radius: 14px; background: var(--color-surface-variant);">
+                                    <MudStack Spacing="2">
+                                        <MudText Typo="Typo.overline" Color="Color.Primary" Style="font-weight: 700; letter-spacing: 1px;">NEXT APPOINTMENT</MudText>
+                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="flex-wrap">
+                                            <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Color="Color.Primary" />
+                                            <MudText Typo="Typo.h6">
+                                                @(next.ScheduleStartTime?.ToString("dddd, MMMM dd") ?? "")
+                                            </MudText>
+                                            <MudText Typo="Typo.h6" Color="Color.Secondary">
+                                                @(next.ScheduleStartTime?.ToString("h:mm tt") ?? "") - @(next.ScheduleEndTime?.ToString("h:mm tt") ?? "")
+                                            </MudText>
+                                        </MudStack>
+                                        <MudStack Row="true" Spacing="3" Class="flex-wrap">
+                                            @if (!string.IsNullOrWhiteSpace(nextProviderName))
+                                            {
+                                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                                    <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Color="Color.Secondary" />
+                                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@nextProviderName</MudText>
+                                                </MudStack>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(_tenantLocation))
+                                            {
+                                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                                    <MudIcon Icon="@Icons.Material.Filled.LocationOn" Size="Size.Small" Color="Color.Secondary" />
+                                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@_tenantLocation</MudText>
+                                                </MudStack>
+                                            }
+                                            <MudChip T="string" Size="Size.Small"
+                                                     Color="@GetStatusColor(next.Status)"
+                                                     Variant="Variant.Filled">
+                                                @next.Status
+                                            </MudChip>
+                                        </MudStack>
+                                    </MudStack>
+                                </MudPaper>
+
+                                @* Recent bookings list *@
+                                @if (_upcomingBookings.Count > 1)
+                                {
+                                    <MudText Typo="Typo.subtitle2" Style="font-weight: 700;" Class="mt-2">Recent Bookings</MudText>
+                                    <MudGrid Spacing="2">
+                                        @foreach (var booking in _upcomingBookings.Skip(1).Take(5))
+                                        {
+                                            <MudItem xs="12" sm="6" md="4">
+                                                <MudPaper Elevation="0" Class="pa-3" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px;">
+                                                    <MudStack Spacing="1">
+                                                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                                            <MudText Typo="Typo.body2" Style="font-weight: 700;">
+                                                                @(booking.ScheduleStartTime?.ToString("MMM dd, yyyy") ?? "")
+                                                            </MudText>
+                                                            <MudChip T="string" Size="Size.Small"
+                                                                     Color="@GetStatusColor(booking.Status)"
+                                                                     Variant="Variant.Filled">
+                                                                @booking.Status
+                                                            </MudChip>
+                                                        </MudStack>
+                                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                                            <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Color="Color.Secondary" />
+                                                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                                                @(booking.ScheduleStartTime?.ToString("h:mm tt") ?? "") - @(booking.ScheduleEndTime?.ToString("h:mm tt") ?? "")
+                                                            </MudText>
+                                                        </MudStack>
+                                                        @{
+                                                            var recentProvider = GetProviderName(booking.ScheduleId);
+                                                        }
+                                                        @if (!string.IsNullOrWhiteSpace(recentProvider))
+                                                        {
+                                                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                                                <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Color="Color.Secondary" />
+                                                                <MudText Typo="Typo.body2" Color="Color.Secondary">@recentProvider</MudText>
+                                                            </MudStack>
+                                                        }
+                                                    </MudStack>
+                                                </MudPaper>
+                                            </MudItem>
+                                        }
+                                    </MudGrid>
+                                }
+
+                                <MudButton Variant="Variant.Text" Color="Color.Primary" Href="/my-bookings"
+                                           EndIcon="@Icons.Material.Filled.ArrowForward" FullWidth="true">
+                                    View All Bookings
+                                </MudButton>
+                            }
+                            else
+                            {
+                                <MudStack AlignItems="AlignItems.Center" Spacing="3" Class="pa-4">
+                                    <MudIcon Icon="@Icons.Material.Filled.EventAvailable" Size="Size.Large" Color="Color.Primary" />
+                                    <MudText Typo="Typo.body1" Align="Align.Center">No upcoming bookings</MudText>
+                                    <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+                                        You're all clear! Browse available schedules to book your next appointment.
+                                    </MudText>
+                                </MudStack>
+                            }
+                        </MudStack>
+                    </div>
+                </MudPaper>
             </MudContainer>
         }
         else
@@ -180,116 +269,127 @@
             @if (_upcomingBookings.Count == 0)
             {
                 <MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
-                    <MudPaper Elevation="2" Class="pa-6">
-                        <MudStack AlignItems="AlignItems.Center" Spacing="3">
-                            <MudIcon Icon="@Icons.Material.Filled.EventAvailable" Size="Size.Large" Color="Color.Primary" />
-                            <MudText Typo="Typo.h5" Align="Align.Center">Welcome, @_userName!</MudText>
-                            <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary">
-                                You don't have any upcoming bookings yet. Book a schedule to get started.
-                            </MudText>
-                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
-                                       StartIcon="@Icons.Material.Filled.BookOnline"
-                                       Href="/browse-schedules">
-                                Book a Schedule
-                            </MudButton>
-                        </MudStack>
+                    <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden;">
+                        <div class="d-flex align-center pa-4 px-5" style="border-bottom: 1px solid var(--mud-palette-divider);">
+                            <div class="mr-auto">
+                                <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">Welcome, @_userName!</MudText>
+                                <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Get started with your first booking</MudText>
+                            </div>
+                        </div>
+                        <div class="pa-6">
+                            <MudStack AlignItems="AlignItems.Center" Spacing="3">
+                                <MudIcon Icon="@Icons.Material.Filled.EventAvailable" Size="Size.Large" Color="Color.Primary" />
+                                <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary">
+                                    You don't have any upcoming bookings yet. Book a schedule to get started.
+                                </MudText>
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                                           StartIcon="@Icons.Material.Filled.BookOnline"
+                                           Href="/browse-schedules">
+                                    Book a Schedule
+                                </MudButton>
+                            </MudStack>
+                        </div>
                     </MudPaper>
                 </MudContainer>
             }
             else
             {
                 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
-                    <MudStack Spacing="3">
-                        <MudStack Spacing="2">
-                            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="flex-wrap gap-2">
-                                <MudStack Spacing="1">
-                                    <MudText Typo="Typo.h5">Welcome, @_userName!</MudText>
-                                    <MudText Typo="Typo.body1" Color="Color.Secondary">Your upcoming appointments</MudText>
-                                </MudStack>
-                                <MudHidden Breakpoint="Breakpoint.Xs">
-                                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                               StartIcon="@Icons.Material.Filled.EventAvailable"
-                                               Href="/browse-schedules">
-                                        Browse Schedules
-                                    </MudButton>
-                                </MudHidden>
-                            </MudStack>
-                            <MudHidden Breakpoint="Breakpoint.Xs" Invert="true">
-                                <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
+                    <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden;">
+                        @* Header bar *@
+                        <div class="d-flex align-center pa-4 px-5" style="border-bottom: 1px solid var(--mud-palette-divider);">
+                            <div class="mr-auto">
+                                <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">Welcome, @_userName!</MudText>
+                                <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Your upcoming appointments</MudText>
+                            </div>
+                            <MudHidden Breakpoint="Breakpoint.Xs">
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
                                            StartIcon="@Icons.Material.Filled.EventAvailable"
                                            Href="/browse-schedules">
                                     Browse Schedules
                                 </MudButton>
                             </MudHidden>
-                        </MudStack>
+                        </div>
 
-                        <MudGrid Spacing="3">
-                            @foreach (var booking in _upcomingBookings.Take(3))
-                            {
-                                <MudItem xs="12" sm="6" md="4">
-                                    <MudCard Elevation="2" Style="height: 100%; border-left: 4px solid var(--mud-palette-primary);">
-                                        <MudCardContent Class="pa-4">
-                                            <MudStack Spacing="2">
-                                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                                    <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Size="Size.Small" Color="Color.Primary" />
-                                                    <MudText Typo="Typo.body1" Style="font-weight: 600;">
-                                                        @(booking.ScheduleStartTime?.ToString("ddd, MMM dd") ?? "")
-                                                    </MudText>
-                                                </MudStack>
+                        <div class="pa-5">
+                            <MudStack Spacing="3">
+                                <MudHidden Breakpoint="Breakpoint.Xs" Invert="true">
+                                    <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
+                                               StartIcon="@Icons.Material.Filled.EventAvailable"
+                                               Href="/browse-schedules">
+                                        Browse Schedules
+                                    </MudButton>
+                                </MudHidden>
 
-                                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                                    <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Color="Color.Primary" />
-                                                    <MudText Typo="Typo.body2">
-                                                        @(booking.ScheduleStartTime?.ToString("h:mm tt") ?? "") - @(booking.ScheduleEndTime?.ToString("h:mm tt") ?? "")
-                                                    </MudText>
-                                                </MudStack>
+                                <MudGrid Spacing="3">
+                                    @foreach (var booking in _upcomingBookings.Take(3))
+                                    {
+                                        <MudItem xs="12" sm="6" md="4">
+                                            <MudPaper Elevation="0" Style="height: 100%; border-top: 3px solid var(--mud-palette-primary); border: 1px solid var(--mud-palette-divider); border-radius: 14px;">
+                                                <div class="pa-4">
+                                                    <MudStack Spacing="2">
+                                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                                            <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Size="Size.Small" Color="Color.Primary" />
+                                                            <MudText Typo="Typo.body1" Style="font-weight: 700;">
+                                                                @(booking.ScheduleStartTime?.ToString("ddd, MMM dd") ?? "")
+                                                            </MudText>
+                                                        </MudStack>
 
-                                                @{
-                                                    var providerName = GetProviderName(booking.ScheduleId);
-                                                }
-                                                @if (!string.IsNullOrWhiteSpace(providerName))
-                                                {
-                                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                                        <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Color="Color.Secondary" />
-                                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@providerName</MudText>
+                                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                                            <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Color="Color.Primary" />
+                                                            <MudText Typo="Typo.body2">
+                                                                @(booking.ScheduleStartTime?.ToString("h:mm tt") ?? "") - @(booking.ScheduleEndTime?.ToString("h:mm tt") ?? "")
+                                                            </MudText>
+                                                        </MudStack>
+
+                                                        @{
+                                                            var providerName = GetProviderName(booking.ScheduleId);
+                                                        }
+                                                        @if (!string.IsNullOrWhiteSpace(providerName))
+                                                        {
+                                                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                                                <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Color="Color.Secondary" />
+                                                                <MudText Typo="Typo.body2" Color="Color.Secondary">@providerName</MudText>
+                                                            </MudStack>
+                                                        }
+
+                                                        @if (!string.IsNullOrWhiteSpace(_tenantLocation))
+                                                        {
+                                                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                                                <MudIcon Icon="@Icons.Material.Filled.LocationOn" Size="Size.Small" Color="Color.Secondary" />
+                                                                <MudText Typo="Typo.body2" Color="Color.Secondary">@_tenantLocation</MudText>
+                                                            </MudStack>
+                                                        }
+
+                                                        <MudChip T="string" Size="Size.Small"
+                                                                 Color="@GetStatusColor(booking.Status)"
+                                                                 Variant="Variant.Filled">
+                                                            @booking.Status
+                                                        </MudChip>
                                                     </MudStack>
-                                                }
+                                                </div>
+                                            </MudPaper>
+                                        </MudItem>
+                                    }
+                                </MudGrid>
 
-                                                @if (!string.IsNullOrWhiteSpace(_tenantLocation))
-                                                {
-                                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                                        <MudIcon Icon="@Icons.Material.Filled.LocationOn" Size="Size.Small" Color="Color.Secondary" />
-                                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@_tenantLocation</MudText>
-                                                    </MudStack>
-                                                }
-
-                                                <MudChip T="string" Size="Size.Small"
-                                                         Color="@GetStatusColor(booking.Status)"
-                                                         Variant="Variant.Filled">
-                                                    @booking.Status
-                                                </MudChip>
-                                            </MudStack>
-                                        </MudCardContent>
-                                    </MudCard>
-                                </MudItem>
-                            }
-                        </MudGrid>
-
-                        @if (_upcomingBookings.Count > 3)
-                        {
-                            <MudButton Variant="Variant.Text" Color="Color.Primary" Href="/my-bookings"
-                                       EndIcon="@Icons.Material.Filled.ArrowForward" FullWidth="true">
-                                View All @_upcomingBookings.Count Bookings
-                            </MudButton>
-                        }
-                        else
-                        {
-                            <MudButton Variant="Variant.Text" Color="Color.Primary" Href="/my-bookings"
-                                       EndIcon="@Icons.Material.Filled.ArrowForward" FullWidth="true">
-                                View All Bookings
-                            </MudButton>
-                        }
-                    </MudStack>
+                                @if (_upcomingBookings.Count > 3)
+                                {
+                                    <MudButton Variant="Variant.Text" Color="Color.Primary" Href="/my-bookings"
+                                               EndIcon="@Icons.Material.Filled.ArrowForward" FullWidth="true">
+                                        View All @_upcomingBookings.Count Bookings
+                                    </MudButton>
+                                }
+                                else
+                                {
+                                    <MudButton Variant="Variant.Text" Color="Color.Primary" Href="/my-bookings"
+                                               EndIcon="@Icons.Material.Filled.ArrowForward" FullWidth="true">
+                                        View All Bookings
+                                    </MudButton>
+                                }
+                            </MudStack>
+                        </div>
+                    </MudPaper>
                 </MudContainer>
             }
         }
@@ -310,6 +410,8 @@
     private Guid _tenantId;
     private string? _tenantLocation;
     private List<BookingResponse> _upcomingBookings = new();
+    private List<BookingResponse> _pendingApprovals = new();
+    private HashSet<BookingId> _processingBookingIds = new();
     private Dictionary<ScheduleId, string?> _providerNameLookup = new();
 
     protected override async Task OnInitializedAsync()
@@ -370,6 +472,14 @@
 
         _tenantLocation = tenant?.Location;
 
+        // Store pending approvals for provider/admin dashboard
+        if (_isProviderOrAdmin && pendingResult?.Bookings != null)
+        {
+            _pendingApprovals = pendingResult.Bookings
+                .OrderByDescending(b => b.BookedAt)
+                .ToList();
+        }
+
         // Merge and filter to future bookings only
         var allBookings = new List<BookingResponse>();
         if (confirmedResult?.Bookings != null)
@@ -415,6 +525,80 @@
     {
         await AuthService.LogoutAsync();
         Navigation.NavigateTo("/login", forceLoad: true);
+    }
+
+    private async Task HandleApprove(BookingResponse booking)
+    {
+        _processingBookingIds.Add(booking.Id);
+        StateHasChanged();
+
+        try
+        {
+            await BookingService.ApproveBookingAsync(booking.Id.Value);
+            _pendingApprovals.Remove(booking);
+            Snackbar.Add($"Booking for \"{booking.ScheduleTitle}\" approved", Severity.Success);
+            await LoadDashboardData();
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _processingBookingIds.Remove(booking.Id);
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleReject(BookingResponse booking)
+    {
+        var parameters = new DialogParameters<RejectReasonDialog>
+        {
+            { x => x.ScheduleTitle, booking.ScheduleTitle ?? "this schedule" }
+        };
+
+        var dialog = await DialogService.ShowAsync<RejectReasonDialog>("Reject Booking", parameters,
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true });
+        var result = await dialog.Result;
+
+        if (result is null || result.Canceled)
+            return;
+
+        var reason = result.Data as string;
+
+        _processingBookingIds.Add(booking.Id);
+        StateHasChanged();
+
+        try
+        {
+            await BookingService.RejectBookingAsync(booking.Id.Value, string.IsNullOrWhiteSpace(reason) ? null : reason);
+            _pendingApprovals.Remove(booking);
+            Snackbar.Add($"Booking for \"{booking.ScheduleTitle}\" rejected", Severity.Info);
+            await LoadDashboardData();
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _processingBookingIds.Remove(booking.Id);
+            StateHasChanged();
+        }
+    }
+
+    private static string GetTimeAgo(DateTime bookedAt)
+    {
+        var elapsed = DateTime.UtcNow - bookedAt;
+        if (elapsed.TotalMinutes < 1)
+            return "just now";
+        if (elapsed.TotalMinutes < 60)
+            return $"{(int)elapsed.TotalMinutes} min ago";
+        if (elapsed.TotalHours < 24)
+            return $"{(int)elapsed.TotalHours}h ago";
+        if (elapsed.TotalDays < 7)
+            return $"{(int)elapsed.TotalDays}d ago";
+        return bookedAt.ToString("MMM dd");
     }
 
     private Color GetStatusColor(BookingStatus status) => status switch

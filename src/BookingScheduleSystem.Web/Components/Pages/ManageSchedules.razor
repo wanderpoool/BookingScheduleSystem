@@ -1,0 +1,517 @@
+@page "/schedules"
+@rendermode InteractiveServer
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IScheduleService ScheduleService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject NavigationManager Navigation
+
+<AuthorizeView Roles="Provider,GlobalAdmin">
+    <Authorized>
+        <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden;">
+            @* Header bar *@
+            <div class="d-flex align-center pa-4 px-5 flex-wrap gap-2" style="border-bottom: 1px solid var(--mud-palette-divider);">
+                <div class="mr-auto">
+                    <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">Manage Schedules</MudText>
+                    <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Create, edit, and manage your schedule slots</MudText>
+                </div>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Add"
+                           OnClick="OpenCreateDialog"
+                           Size="Size.Small">
+                    New Schedule
+                </MudButton>
+            </div>
+
+            <div class="pa-5">
+                <MudStack Spacing="3">
+                    @* Filters *@
+                    <MudStack Row="true" Spacing="2" Class="flex-wrap" AlignItems="AlignItems.Center">
+                        <MudChip T="string" Color="@(_activeFilter == null ? Color.Primary : Color.Default)"
+                                 Variant="@(_activeFilter == null ? Variant.Filled : Variant.Outlined)"
+                                 OnClick="@(() => FilterByActive(null))">All</MudChip>
+                        <MudChip T="string" Color="@(_activeFilter == true ? Color.Success : Color.Default)"
+                                 Variant="@(_activeFilter == true ? Variant.Filled : Variant.Outlined)"
+                                 OnClick="@(() => FilterByActive(true))">Active</MudChip>
+                        <MudChip T="string" Color="@(_activeFilter == false ? Color.Error : Color.Default)"
+                                 Variant="@(_activeFilter == false ? Variant.Filled : Variant.Outlined)"
+                                 OnClick="@(() => FilterByActive(false))">Inactive</MudChip>
+
+                        <MudSpacer />
+
+                        <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                            <MudIconButton Icon="@Icons.Material.Filled.ViewList"
+                                           Color="@(_viewMode == ViewMode.List ? Color.Primary : Color.Default)"
+                                           OnClick="@(() => SetViewMode(ViewMode.List))"
+                                           Size="Size.Small" />
+                            <MudIconButton Icon="@Icons.Material.Filled.CalendarMonth"
+                                           Color="@(_viewMode == ViewMode.Calendar ? Color.Primary : Color.Default)"
+                                           OnClick="@(() => SetViewMode(ViewMode.Calendar))"
+                                           Size="Size.Small" />
+                        </MudStack>
+                    </MudStack>
+
+                    @if (_isLoading)
+                    {
+                        <MudStack AlignItems="AlignItems.Center" Class="pa-8">
+                            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                            <MudText>Loading schedules...</MudText>
+                        </MudStack>
+                    }
+                    else if (_viewMode == ViewMode.Calendar)
+                    {
+                        @* Calendar View *@
+                        <div style="position: relative;">
+                            @if (_isCalendarLoading)
+                            {
+                                <div style="position: absolute; inset: 0; z-index: 10; background: rgba(255,255,255,0.7); display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                                    <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" />
+                                </div>
+                            }
+
+                            @* Day view on mobile, Week view on sm+ *@
+                            <MudHidden Breakpoint="Breakpoint.SmAndUp">
+                                <MudCalendar T="ScheduleCalendarItem"
+                                             Items="@_calendarItems"
+                                             View="CalendarView.Day"
+                                             MinVisibleTime="@(new TimeOnly(7, 0))"
+                                             ShowMonth="false"
+                                             ShowWeek="false"
+                                             ShowWorkWeek="false"
+                                             ItemClicked="@OnCalendarItemClicked"
+                                             DateRangeChanged="@OnDateRangeChanged"
+                                             Use24HourClock="false"
+                                             Style="height: calc(100vh - 340px); min-height: 300px;">
+                                    <CellTemplate Context="calItem">
+                                        <div style="width: 100%; height: 100%; border: 2px solid @(calItem.TimeBlock.IsAvailable ? "#10B981" : "#EF4444"); background: @(calItem.TimeBlock.IsAvailable ? "#D1FAE5" : "#FEE2E2"); cursor: pointer;">
+                                            <div style="background: @(calItem.TimeBlock.IsAvailable ? "#10B981" : "#EF4444"); padding: 2px 6px;">
+                                                <MudText Style="color: #fff; font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                                    @calItem.Title
+                                                </MudText>
+                                            </div>
+                                        </div>
+                                    </CellTemplate>
+                                </MudCalendar>
+                            </MudHidden>
+                            <MudHidden Breakpoint="Breakpoint.Xs">
+                                <MudCalendar T="ScheduleCalendarItem"
+                                             Items="@_calendarItems"
+                                             View="CalendarView.Week"
+                                             MinVisibleTime="@(new TimeOnly(7, 0))"
+                                             ItemClicked="@OnCalendarItemClicked"
+                                             DateRangeChanged="@OnDateRangeChanged"
+                                             Use24HourClock="false"
+                                             Style="height: calc(100vh - 340px); min-height: 400px;">
+                                    <CellTemplate Context="calItem">
+                                        <div style="width: 100%; height: 100%; border: 2px solid @(calItem.TimeBlock.IsAvailable ? "#10B981" : "#EF4444"); background: @(calItem.TimeBlock.IsAvailable ? "#D1FAE5" : "#FEE2E2"); cursor: pointer;">
+                                            <div style="background: @(calItem.TimeBlock.IsAvailable ? "#10B981" : "#EF4444"); padding: 2px 6px;">
+                                                <MudText Style="color: #fff; font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                                    @calItem.Title
+                                                </MudText>
+                                            </div>
+                                            <div class="pa-1">
+                                                <MudText Typo="Typo.caption">@calItem.Text</MudText>
+                                            </div>
+                                        </div>
+                                    </CellTemplate>
+                                </MudCalendar>
+                            </MudHidden>
+                        </div>
+                    }
+                    else if (_schedules == null || _schedules.Count == 0)
+                    {
+                        @* Empty state *@
+                        <MudStack AlignItems="AlignItems.Center" Spacing="2" Class="pa-8">
+                            <MudIcon Icon="@Icons.Material.Filled.EventBusy" Size="Size.Large" Color="Color.Secondary" />
+                            <MudText Typo="Typo.body1" Color="Color.Secondary">No schedules found</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">Create your first schedule to start accepting bookings.</MudText>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.Add"
+                                       OnClick="OpenCreateDialog">
+                                Create Schedule
+                            </MudButton>
+                        </MudStack>
+                    }
+                    else
+                    {
+                        @* List View *@
+                        <MudStack Spacing="2">
+                            @foreach (var schedule in _schedules)
+                            {
+                                <MudPaper Elevation="0" Class="pa-4" Style="@($"border-top: 3px solid {(schedule.IsActive ? "var(--mud-palette-success)" : "var(--mud-palette-text-disabled)")}; border: 1px solid var(--mud-palette-divider); border-radius: 14px;")">
+                                    <MudStack Spacing="2">
+                                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Start">
+                                            <div>
+                                                <MudText Typo="Typo.body1" Style="font-weight: 700;">@schedule.Title</MudText>
+                                                @if (!string.IsNullOrWhiteSpace(schedule.Description))
+                                                {
+                                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@schedule.Description</MudText>
+                                                }
+                                            </div>
+                                            <MudChip T="string" Size="Size.Small"
+                                                     Color="@(schedule.IsActive ? Color.Success : Color.Default)"
+                                                     Variant="Variant.Filled">
+                                                @(schedule.IsActive ? "Active" : "Inactive")
+                                            </MudChip>
+                                        </MudStack>
+
+                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                            <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Size="Size.Small" Color="Color.Secondary" />
+                                            <MudText Typo="Typo.body2">@schedule.StartTime.ToString("ddd, MMM dd, yyyy")</MudText>
+                                        </MudStack>
+
+                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                            <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Color="Color.Secondary" />
+                                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                                @schedule.StartTime.ToString("h:mm tt") - @schedule.EndTime.ToString("h:mm tt")
+                                            </MudText>
+                                        </MudStack>
+
+                                        <MudStack Row="true" Spacing="3" AlignItems="AlignItems.Center">
+                                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                                <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Small" Color="Color.Secondary" />
+                                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                    @schedule.CurrentBookings / @schedule.MaxCapacity booked
+                                                </MudText>
+                                            </MudStack>
+                                            <MudProgressLinear Value="@GetBookingPercentage(schedule)"
+                                                               Color="@(GetBookingPercentage(schedule) >= 100 ? Color.Error : Color.Primary)"
+                                                               Rounded="true"
+                                                               Size="Size.Small"
+                                                               Style="max-width: 120px;" />
+                                        </MudStack>
+
+                                        <MudStack Row="true" Spacing="1" Justify="Justify.FlexEnd">
+                                            <MudButton Variant="Variant.Text" Color="Color.Primary"
+                                                       Size="Size.Small"
+                                                       StartIcon="@Icons.Material.Filled.Edit"
+                                                       OnClick="@(() => OpenEditDialog(schedule))">
+                                                Edit
+                                            </MudButton>
+                                            <MudButton Variant="Variant.Text" Color="Color.Error"
+                                                       Size="Size.Small"
+                                                       StartIcon="@Icons.Material.Filled.Delete"
+                                                       OnClick="@(() => ConfirmDelete(schedule))"
+                                                       Disabled="@(schedule.CurrentBookings > 0)">
+                                                Delete
+                                            </MudButton>
+                                        </MudStack>
+                                    </MudStack>
+                                </MudPaper>
+                            }
+                        </MudStack>
+
+                        @if (_totalCount > _pageSize)
+                        {
+                            <MudStack AlignItems="AlignItems.Center" Class="mt-4">
+                                <MudPagination Count="@((int)Math.Ceiling((double)_totalCount / _pageSize))"
+                                               Selected="@_currentPage"
+                                               SelectedChanged="OnPageChanged"
+                                               Color="Color.Primary" />
+                            </MudStack>
+                        }
+                    }
+                </MudStack>
+            </div>
+        </MudPaper>
+    </Authorized>
+    <NotAuthorized>
+        <MudAlert Severity="Severity.Warning">
+            You need Provider or Admin access to manage schedules.
+        </MudAlert>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private enum ViewMode { List, Calendar }
+
+    private List<ScheduleResponse>? _schedules;
+    private List<ScheduleCalendarItem> _calendarItems = new();
+    private bool _isLoading = true;
+    private bool _isCalendarLoading;
+    private bool? _activeFilter;
+    private ViewMode _viewMode = ViewMode.List;
+    private int _currentPage = 1;
+    private int _pageSize = 20;
+    private int _totalCount;
+    private DateRange? _lastDateRange;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSchedules();
+    }
+
+    private async Task LoadSchedules()
+    {
+        _isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var result = await ScheduleService.ListSchedulesAsync(
+                isActive: _activeFilter,
+                page: _currentPage,
+                pageSize: _pageSize);
+
+            if (result != null)
+            {
+                _schedules = result.Providers
+                    .SelectMany(p => p.Days)
+                    .SelectMany(d => d.TimeBlocks)
+                    .Where(tb => tb.ScheduleId.HasValue)
+                    .Select(tb => new ScheduleResponse
+                    {
+                        Id = tb.ScheduleId!.Value,
+                        TenantId = default,
+                        Title = tb.ScheduleTitle ?? "Untitled",
+                        StartTime = tb.StartTime,
+                        EndTime = tb.EndTime,
+                        IsActive = tb.IsAvailable,
+                        MaxCapacity = 1,
+                        CurrentBookings = tb.IsAvailable ? 0 : 1
+                    })
+                    .DistinctBy(s => s.Id)
+                    .OrderBy(s => s.StartTime)
+                    .ToList();
+                _totalCount = result.TotalCount;
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task LoadCalendarSchedules()
+    {
+        if (_lastDateRange?.Start is null || _lastDateRange?.End is null) return;
+
+        _isCalendarLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var s = _lastDateRange.Start.Value;
+            var e = _lastDateRange.End.Value;
+            var startDate = new DateTime(s.Year, s.Month, s.Day, 0, 0, 0, DateTimeKind.Utc);
+            var endDate = new DateTime(e.Year, e.Month, e.Day, 0, 0, 0, DateTimeKind.Utc);
+            if (endDate <= startDate)
+                endDate = startDate.AddDays(1);
+
+            var result = await ScheduleService.ListSchedulesAsync(
+                startDate: startDate,
+                endDate: endDate,
+                isActive: _activeFilter,
+                pageSize: 200);
+
+            _calendarItems = result?.Providers != null
+                ? ScheduleCalendarItem.FromProviders(result.Providers)
+                : new();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isCalendarLoading = false;
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task OnDateRangeChanged(DateRange dateRange)
+    {
+        _lastDateRange = dateRange;
+        await LoadCalendarSchedules();
+    }
+
+    private async Task OnCalendarItemClicked(ScheduleCalendarItem item)
+    {
+        if (item.TimeBlock.ScheduleId.HasValue)
+        {
+            try
+            {
+                var schedule = await ScheduleService.GetScheduleAsync(item.TimeBlock.ScheduleId.Value.Value);
+                if (schedule != null)
+                {
+                    await OpenEditDialog(schedule);
+                }
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add(ex.Message, Severity.Error);
+            }
+        }
+    }
+
+    private async Task FilterByActive(bool? active)
+    {
+        _activeFilter = active;
+        _currentPage = 1;
+
+        if (_viewMode == ViewMode.Calendar)
+        {
+            await LoadCalendarSchedules();
+        }
+        else
+        {
+            await LoadSchedules();
+        }
+    }
+
+    private async Task SetViewMode(ViewMode mode)
+    {
+        _viewMode = mode;
+        if (mode == ViewMode.List)
+        {
+            await LoadSchedules();
+        }
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _currentPage = page;
+        await LoadSchedules();
+    }
+
+    private async Task OpenCreateDialog()
+    {
+        var parameters = new DialogParameters<ScheduleFormDialog>
+        {
+            { x => x.IsEditMode, false }
+        };
+
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
+        };
+
+        var dialog = await DialogService.ShowAsync<ScheduleFormDialog>("Create Schedule", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: ScheduleFormDialog.ScheduleFormResult formResult })
+        {
+            try
+            {
+                var request = new CreateScheduleRequest
+                {
+                    Title = formResult.Title,
+                    Description = formResult.Description,
+                    StartTime = formResult.StartTime,
+                    EndTime = formResult.EndTime,
+                    MaxCapacity = formResult.MaxCapacity
+                };
+
+                var created = await ScheduleService.CreateScheduleAsync(request);
+                if (created != null)
+                {
+                    Snackbar.Add("Schedule created successfully!", Severity.Success);
+                    await RefreshCurrentView();
+                }
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add(ex.Message, Severity.Error);
+            }
+        }
+    }
+
+    private async Task OpenEditDialog(ScheduleResponse schedule)
+    {
+        var parameters = new DialogParameters<ScheduleFormDialog>
+        {
+            { x => x.IsEditMode, true },
+            { x => x.ExistingSchedule, schedule }
+        };
+
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
+        };
+
+        var dialog = await DialogService.ShowAsync<ScheduleFormDialog>("Edit Schedule", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: ScheduleFormDialog.ScheduleFormResult formResult })
+        {
+            try
+            {
+                var request = new UpdateScheduleRequest
+                {
+                    Title = formResult.Title,
+                    Description = formResult.Description,
+                    StartTime = formResult.StartTime,
+                    EndTime = formResult.EndTime,
+                    MaxCapacity = formResult.MaxCapacity,
+                    IsActive = formResult.IsActive
+                };
+
+                var updated = await ScheduleService.UpdateScheduleAsync(schedule.Id.Value, request);
+                if (updated != null)
+                {
+                    Snackbar.Add("Schedule updated successfully!", Severity.Success);
+                    await RefreshCurrentView();
+                }
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add(ex.Message, Severity.Error);
+            }
+        }
+    }
+
+    private async Task ConfirmDelete(ScheduleResponse schedule)
+    {
+        var parameters = new DialogParameters<DeleteConfirmDialog>
+        {
+            { x => x.ContentText, $"Are you sure you want to delete \"{schedule.Title}\"? This action will deactivate the schedule." }
+        };
+
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall };
+        var dialog = await DialogService.ShowAsync<DeleteConfirmDialog>("Delete Schedule", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            try
+            {
+                await ScheduleService.DeleteScheduleAsync(schedule.Id.Value);
+                Snackbar.Add("Schedule deleted successfully.", Severity.Success);
+                await RefreshCurrentView();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add(ex.Message, Severity.Error);
+            }
+        }
+    }
+
+    private async Task RefreshCurrentView()
+    {
+        if (_viewMode == ViewMode.Calendar)
+        {
+            await LoadCalendarSchedules();
+        }
+        else
+        {
+            await LoadSchedules();
+        }
+    }
+
+    private static double GetBookingPercentage(ScheduleResponse schedule)
+    {
+        if (schedule.MaxCapacity <= 0) return 0;
+        return Math.Min(100, (double)schedule.CurrentBookings / schedule.MaxCapacity * 100);
+    }
+}

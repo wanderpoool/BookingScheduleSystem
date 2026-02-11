@@ -1,0 +1,97 @@
+@page "/schedules/create"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IScheduleService ScheduleService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject NavigationManager Navigation
+
+<AuthorizeView Roles="Provider,GlobalAdmin">
+    <Authorized>
+        <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden;">
+            <div class="d-flex align-center pa-4 px-5" style="border-bottom: 1px solid var(--mud-palette-divider);">
+                <div class="mr-auto">
+                    <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">Create Schedule</MudText>
+                    <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Add a new schedule slot for bookings</MudText>
+                </div>
+            </div>
+
+            <div class="pa-5">
+                @if (_isCreating)
+                {
+                    <MudStack AlignItems="AlignItems.Center" Class="pa-8">
+                        <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                        <MudText>Opening schedule form...</MudText>
+                    </MudStack>
+                }
+            </div>
+        </MudPaper>
+    </Authorized>
+    <NotAuthorized>
+        <MudAlert Severity="Severity.Warning">
+            You need Provider or Admin access to create schedules.
+        </MudAlert>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private bool _isCreating = true;
+    private bool _dialogOpened;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_dialogOpened)
+        {
+            _dialogOpened = true;
+            await OpenCreateDialog();
+        }
+    }
+
+    private async Task OpenCreateDialog()
+    {
+        var parameters = new DialogParameters<ScheduleFormDialog>
+        {
+            { x => x.IsEditMode, false }
+        };
+
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
+        };
+
+        var dialog = await DialogService.ShowAsync<ScheduleFormDialog>("Create Schedule", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: ScheduleFormDialog.ScheduleFormResult formResult })
+        {
+            try
+            {
+                var request = new CreateScheduleRequest
+                {
+                    Title = formResult.Title,
+                    Description = formResult.Description,
+                    StartTime = formResult.StartTime,
+                    EndTime = formResult.EndTime,
+                    MaxCapacity = formResult.MaxCapacity
+                };
+
+                var created = await ScheduleService.CreateScheduleAsync(request);
+                if (created != null)
+                {
+                    Snackbar.Add("Schedule created successfully!", Severity.Success);
+                    Navigation.NavigateTo("/schedules");
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add(ex.Message, Severity.Error);
+            }
+        }
+
+        _isCreating = false;
+        Navigation.NavigateTo("/schedules");
+    }
+}

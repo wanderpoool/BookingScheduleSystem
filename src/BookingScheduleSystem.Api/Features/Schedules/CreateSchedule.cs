@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using BookingScheduleSystem.Api.Infrastructure.MultiTenancy;
 using BookingScheduleSystem.Api.Infrastructure.Schedules;
+using BookingScheduleSystem.Api.Infrastructure.Subscriptions;
 using BookingScheduleSystem.Contracts.Common;
 using BookingScheduleSystem.Contracts.Schedules;
 using FastEndpoints;
@@ -66,6 +67,41 @@ public sealed class CreateSchedule : Endpoint<CreateScheduleRequest, ScheduleRes
             ThrowError(operatingHoursError, 400);
         }
 
+        // Check schedule limits (trial or subscription)
+        var (planLimits, subscription) = await PlanLimitHelper.GetCurrentLimitsAsync(session, tenant, ct);
+
+        if (planLimits is not null)
+        {
+            var today = DateTime.SpecifyKind(DateTimeOffset.UtcNow.Date, DateTimeKind.Unspecified);
+            var tomorrow = today.AddDays(1);
+
+            var todayScheduleCount = await session.Query<Schedule>()
+                .CountAsync(s => s.TenantId == tenantId.Value
+                    && s.CreatedAt >= today
+                    && s.CreatedAt < tomorrow
+                    && s.IsActive, ct);
+
+            if (todayScheduleCount >= planLimits.MaxSchedulesPerDay)
+            {
+                ThrowError($"Daily schedule limit ({planLimits.MaxSchedulesPerDay}) reached for today.", 403);
+            }
+
+            var now = DateTimeOffset.UtcNow;
+            var firstDayOfMonth = DateTime.SpecifyKind(new DateTime(now.Year, now.Month, 1), DateTimeKind.Unspecified);
+            var firstDayOfNextMonth = firstDayOfMonth.AddMonths(1);
+
+            var monthlyScheduleCount = await session.Query<Schedule>()
+                .CountAsync(s => s.TenantId == tenantId.Value
+                    && s.CreatedAt >= firstDayOfMonth
+                    && s.CreatedAt < firstDayOfNextMonth
+                    && s.IsActive, ct);
+
+            if (monthlyScheduleCount >= planLimits.MaxSchedulesPerMonth)
+            {
+                ThrowError($"Monthly schedule limit ({planLimits.MaxSchedulesPerMonth}) reached for this month.", 403);
+            }
+        }
+
         UserId? providerId = null;
         if (req.ProviderId.HasValue)
         {
@@ -125,6 +161,16 @@ public sealed class CreateSchedule : Endpoint<CreateScheduleRequest, ScheduleRes
         };
 
         session.Store(schedule);
+
+        // Update subscription usage stats if not in trial
+        if (subscription is not null)
+        {
+            subscription.CurrentUsage.SchedulesToday++;
+            subscription.CurrentUsage.SchedulesThisMonth++;
+            subscription.CurrentUsage.LastUpdated = DateTime.SpecifyKind(DateTimeOffset.UtcNow.DateTime, DateTimeKind.Unspecified);
+            session.Update(subscription);
+        }
+
         await session.SaveChangesAsync(ct);
 
         Logger.LogInformation(

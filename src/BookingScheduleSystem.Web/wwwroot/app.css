@@ -121,6 +121,107 @@ h1:focus {
 }
 
 /* ========================================
+   SLACK-INSPIRED MUDBLAZOR OVERRIDES
+   ======================================== */
+
+/* Pill-shaped primary buttons */
+.mud-button-filled.mud-button-filled-primary,
+.mud-button-filled.mud-button-filled-success,
+.mud-button-filled.mud-button-filled-error {
+    border-radius: var(--radius-pill);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-transform: none;
+}
+
+.mud-button-filled.mud-button-filled-size-large {
+    min-height: 52px;
+    padding-left: var(--space-8);
+    padding-right: var(--space-8);
+}
+
+/* Pill-shaped outlined buttons */
+.mud-button-outlined {
+    border-radius: var(--radius-pill);
+    text-transform: none;
+}
+
+/* Text buttons - pill radius too */
+.mud-button-text {
+    border-radius: var(--radius-pill);
+    text-transform: none;
+}
+
+/* AppBar — clean border, no shadow */
+.mud-appbar {
+    border-bottom: 1px solid var(--color-divider);
+    box-shadow: none !important;
+}
+
+/* Drawer — clean border, no shadow */
+.mud-drawer {
+    border-right: 1px solid var(--color-divider);
+    box-shadow: none !important;
+}
+
+/* Nav links — rounded, generous padding */
+.mud-nav-link {
+    border-radius: 8px;
+    margin: 2px 8px;
+    padding: 12px 16px;
+    min-height: 44px;
+}
+
+/* Chips — rounder */
+.mud-chip {
+    border-radius: 24px;
+}
+
+/* Dialogs — rounder corners + more padding */
+.mud-dialog {
+    border-radius: 20px;
+}
+
+.mud-dialog .mud-dialog-actions {
+    padding: 16px 24px 20px;
+}
+
+.mud-dialog .mud-dialog-title {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+/* Inputs — rounder outlined borders */
+.mud-input-outlined .mud-input-outlined-border {
+    border-radius: 12px;
+}
+
+/* Snackbars — rounder */
+.mud-snackbar {
+    border-radius: 12px;
+}
+
+/* Subtler hover/ripple effects */
+.mud-ripple:hover {
+    opacity: 0.96;
+}
+
+/* Mobile: ensure all buttons are touch-friendly */
+@media (max-width: 599px) {
+    .mud-button-filled,
+    .mud-button-outlined {
+        min-height: 44px;
+    }
+
+    /* Near-fullscreen dialogs on mobile */
+    .mud-dialog {
+        margin: 8px;
+        max-height: calc(100vh - 16px);
+        border-radius: 16px;
+    }
+}
+
+/* ========================================
    RESPONSIVE UTILITIES
    ======================================== */
 

@@ -1,14 +1,19 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @inject NavigationManager Navigation
 
-<MudNavMenu>
+<MudNavMenu Class="px-2 pt-2">
     <MudNavLink Href="/dashboard" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
     <MudNavLink Href="/browse-schedules" Icon="@Icons.Material.Filled.BookOnline">Book a Schedule</MudNavLink>
     <MudNavLink Href="/my-bookings" Icon="@Icons.Material.Filled.EventNote">My Bookings</MudNavLink>
 
     <AuthorizeView Roles="Provider,GlobalAdmin">
         <Authorized>
-            <MudDivider Class="my-2" />
+            <MudDivider Class="my-3" />
+
+            <MudText Typo="Typo.overline" Class="px-4 mb-1"
+                     Style="font-weight: 600; letter-spacing: 0.08em; color: var(--mud-palette-text-secondary);">
+                MANAGEMENT
+            </MudText>
 
             <MudNavGroup Title="Schedules" Icon="@Icons.Material.Filled.CalendarMonth" Expanded="false">
                 <MudNavLink Href="/schedules" Icon="@Icons.Material.Filled.ViewList">Manage Schedules</MudNavLink>
@@ -24,14 +29,14 @@
                 <MudNavLink Href="/subscription" Icon="@Icons.Material.Filled.CreditCard">Subscription</MudNavLink>
             </MudNavGroup>
 
-            <MudDivider Class="my-2" />
+            <MudDivider Class="my-3" />
 
             <MudNavLink Href="/analytics" Icon="@Icons.Material.Filled.BarChart">Analytics</MudNavLink>
             <MudNavLink Href="/settings" Icon="@Icons.Material.Filled.Tune">Settings</MudNavLink>
         </Authorized>
     </AuthorizeView>
 
-    <MudDivider Class="my-2" />
+    <MudDivider Class="my-3" />
 
     <MudNavLink Href="/profile" Icon="@Icons.Material.Filled.Person">My Profile</MudNavLink>
 </MudNavMenu>

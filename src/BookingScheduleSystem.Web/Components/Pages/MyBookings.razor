@@ -6,106 +6,116 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject ISnackbar Snackbar
 
-<MudText Typo="Typo.h5" Class="mb-4">My Bookings</MudText>
-
 <AuthorizeView>
     <Authorized>
-        <MudStack Spacing="3">
-            @* Status Filter *@
-            <MudStack Row="true" Spacing="2" Class="flex-wrap">
-                <MudChip T="string" Color="@(_statusFilter == null ? Color.Primary : Color.Default)"
-                         Variant="@(_statusFilter == null ? Variant.Filled : Variant.Outlined)"
-                         OnClick="@(() => FilterByStatus(null))">All</MudChip>
-                <MudChip T="string" Color="@(_statusFilter == BookingStatus.Pending ? Color.Warning : Color.Default)"
-                         Variant="@(_statusFilter == BookingStatus.Pending ? Variant.Filled : Variant.Outlined)"
-                         OnClick="@(() => FilterByStatus(BookingStatus.Pending))">Pending</MudChip>
-                <MudChip T="string" Color="@(_statusFilter == BookingStatus.Confirmed ? Color.Success : Color.Default)"
-                         Variant="@(_statusFilter == BookingStatus.Confirmed ? Variant.Filled : Variant.Outlined)"
-                         OnClick="@(() => FilterByStatus(BookingStatus.Confirmed))">Confirmed</MudChip>
-                <MudChip T="string" Color="@(_statusFilter == BookingStatus.Cancelled ? Color.Error : Color.Default)"
-                         Variant="@(_statusFilter == BookingStatus.Cancelled ? Variant.Filled : Variant.Outlined)"
-                         OnClick="@(() => FilterByStatus(BookingStatus.Cancelled))">Cancelled</MudChip>
-            </MudStack>
+        <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden;">
+            @* Header bar *@
+            <div class="d-flex align-center pa-4 px-5" style="border-bottom: 1px solid var(--mud-palette-divider);">
+                <div class="mr-auto">
+                    <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">My Bookings</MudText>
+                    <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Manage your appointments</MudText>
+                </div>
+            </div>
 
-            @if (_isLoading)
-            {
-                <MudStack AlignItems="AlignItems.Center" Class="pa-8">
-                    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
-                    <MudText>Loading bookings...</MudText>
-                </MudStack>
-            }
-            else if (_bookings == null || _bookings.Count == 0)
-            {
-                <MudAlert Severity="Severity.Info">
-                    No bookings found. <MudLink Href="/browse-schedules">Browse available schedules</MudLink> to make a booking.
-                </MudAlert>
-            }
-            else
-            {
-                <MudStack Spacing="2">
-                    @foreach (var booking in _bookings)
+            <div class="pa-5">
+                <MudStack Spacing="3">
+                    @* Status Filter *@
+                    <MudStack Row="true" Spacing="2" Class="flex-wrap">
+                        <MudChip T="string" Color="@(_statusFilter == null ? Color.Primary : Color.Default)"
+                                 Variant="@(_statusFilter == null ? Variant.Filled : Variant.Outlined)"
+                                 OnClick="@(() => FilterByStatus(null))">All</MudChip>
+                        <MudChip T="string" Color="@(_statusFilter == BookingStatus.Pending ? Color.Warning : Color.Default)"
+                                 Variant="@(_statusFilter == BookingStatus.Pending ? Variant.Filled : Variant.Outlined)"
+                                 OnClick="@(() => FilterByStatus(BookingStatus.Pending))">Pending</MudChip>
+                        <MudChip T="string" Color="@(_statusFilter == BookingStatus.Confirmed ? Color.Success : Color.Default)"
+                                 Variant="@(_statusFilter == BookingStatus.Confirmed ? Variant.Filled : Variant.Outlined)"
+                                 OnClick="@(() => FilterByStatus(BookingStatus.Confirmed))">Confirmed</MudChip>
+                        <MudChip T="string" Color="@(_statusFilter == BookingStatus.Cancelled ? Color.Error : Color.Default)"
+                                 Variant="@(_statusFilter == BookingStatus.Cancelled ? Variant.Filled : Variant.Outlined)"
+                                 OnClick="@(() => FilterByStatus(BookingStatus.Cancelled))">Cancelled</MudChip>
+                    </MudStack>
+
+                    @if (_isLoading)
                     {
-                        <MudPaper Elevation="1" Class="pa-3" Style="border-left: 4px solid var(--mud-palette-primary);">
-                            <MudStack Spacing="2">
-                                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-                                    <MudText Typo="Typo.body1" Style="font-weight: 600;">
-                                        @(booking.ScheduleTitle ?? "Schedule")
-                                    </MudText>
-                                    <MudChip T="string" Size="Size.Small"
-                                             Color="@GetStatusColor(booking.Status)"
-                                             Variant="Variant.Filled">
-                                        @booking.Status
-                                    </MudChip>
-                                </MudStack>
+                        <MudStack AlignItems="AlignItems.Center" Class="pa-8">
+                            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                            <MudText>Loading bookings...</MudText>
+                        </MudStack>
+                    }
+                    else if (_bookings == null || _bookings.Count == 0)
+                    {
+                        <MudAlert Severity="Severity.Info">
+                            No bookings found. <MudLink Href="/browse-schedules">Browse available schedules</MudLink> to make a booking.
+                        </MudAlert>
+                    }
+                    else
+                    {
+                        <MudStack Spacing="2">
+                            @foreach (var booking in _bookings)
+                            {
+                                <MudPaper Elevation="0" Class="pa-4" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px;">
+                                    <MudStack Spacing="2">
+                                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                            <MudText Typo="Typo.body1" Style="font-weight: 700;">
+                                                @(booking.ScheduleTitle ?? "Schedule")
+                                            </MudText>
+                                            <MudChip T="string" Size="Size.Small"
+                                                     Color="@GetStatusColor(booking.Status)"
+                                                     Variant="Variant.Filled">
+                                                @booking.Status
+                                            </MudChip>
+                                        </MudStack>
 
-                                @if (booking.ScheduleStartTime.HasValue)
-                                {
-                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                        <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Size="Size.Small" Color="Color.Secondary" />
-                                        <MudText Typo="Typo.body2">
-                                            @booking.ScheduleStartTime.Value.ToString("ddd, MMM dd, yyyy")
-                                        </MudText>
+                                        @if (booking.ScheduleStartTime.HasValue)
+                                        {
+                                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                                <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Size="Size.Small" Color="Color.Secondary" />
+                                                <MudText Typo="Typo.body2">
+                                                    @booking.ScheduleStartTime.Value.ToString("ddd, MMM dd, yyyy")
+                                                </MudText>
+                                            </MudStack>
+                                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                                <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Color="Color.Secondary" />
+                                                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                                    @booking.ScheduleStartTime.Value.ToString("h:mm tt") - @(booking.ScheduleEndTime?.ToString("h:mm tt") ?? "")
+                                                </MudText>
+                                            </MudStack>
+                                        }
+
+                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                            <MudIcon Icon="@Icons.Material.Filled.EventNote" Size="Size.Small" Color="Color.Secondary" />
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                Booked on @booking.BookedAt.ToString("MMM dd, yyyy")
+                                            </MudText>
+                                        </MudStack>
+
+                                        @if (booking.Status != BookingStatus.Cancelled)
+                                        {
+                                            <MudButton Variant="Variant.Outlined" Color="Color.Error" FullWidth="true"
+                                                       OnClick="@(() => CancelBooking(booking))"
+                                                       Disabled="@_isCancelling"
+                                                       StartIcon="@Icons.Material.Filled.Cancel">
+                                                Cancel Booking
+                                            </MudButton>
+                                        }
                                     </MudStack>
-                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                        <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Color="Color.Secondary" />
-                                        <MudText Typo="Typo.body2" Color="Color.Secondary">
-                                            @booking.ScheduleStartTime.Value.ToString("h:mm tt") - @(booking.ScheduleEndTime?.ToString("h:mm tt") ?? "")
-                                        </MudText>
-                                    </MudStack>
-                                }
+                                </MudPaper>
+                            }
+                        </MudStack>
 
-                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                    <MudIcon Icon="@Icons.Material.Filled.EventNote" Size="Size.Small" Color="Color.Secondary" />
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                        Booked on @booking.BookedAt.ToString("MMM dd, yyyy")
-                                    </MudText>
-                                </MudStack>
-
-                                @if (booking.Status != BookingStatus.Cancelled)
-                                {
-                                    <MudButton Variant="Variant.Outlined" Color="Color.Error" FullWidth="true"
-                                               OnClick="@(() => CancelBooking(booking))"
-                                               Disabled="@_isCancelling"
-                                               StartIcon="@Icons.Material.Filled.Cancel">
-                                        Cancel Booking
-                                    </MudButton>
-                                }
+                        @if (_totalCount > _pageSize)
+                        {
+                            <MudStack AlignItems="AlignItems.Center" Class="mt-4">
+                                <MudPagination Count="@((int)Math.Ceiling((double)_totalCount / _pageSize))"
+                                               Selected="@_currentPage"
+                                               SelectedChanged="OnPageChanged"
+                                               Color="Color.Primary" />
                             </MudStack>
-                        </MudPaper>
+                        }
                     }
                 </MudStack>
-
-                @if (_totalCount > _pageSize)
-                {
-                    <MudStack AlignItems="AlignItems.Center" Class="mt-4">
-                        <MudPagination Count="@((int)Math.Ceiling((double)_totalCount / _pageSize))"
-                                       Selected="@_currentPage"
-                                       SelectedChanged="OnPageChanged"
-                                       Color="Color.Primary" />
-                    </MudStack>
-                }
-            }
-        </MudStack>
+            </div>
+        </MudPaper>
     </Authorized>
     <NotAuthorized>
         <MudAlert Severity="Severity.Warning">

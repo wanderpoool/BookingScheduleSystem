@@ -16,4 +16,5 @@ public sealed record BookingResponse
     public string? ScheduleTitle { get; init; }
     public DateTime? ScheduleStartTime { get; init; }
     public DateTime? ScheduleEndTime { get; init; }
+    public string? CustomerName { get; init; }
 }

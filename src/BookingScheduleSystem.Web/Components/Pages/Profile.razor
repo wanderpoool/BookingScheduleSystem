@@ -1,0 +1,225 @@
+@page "/profile"
+@rendermode InteractiveServer
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+@using BookingScheduleSystem.Contracts.Users
+@inject IUserService UserService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject ISnackbar Snackbar
+
+<MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden;">
+    <div class="d-flex align-center pa-4 px-5" style="border-bottom: 1px solid var(--mud-palette-divider);">
+        <div class="mr-auto">
+            <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">My Profile</MudText>
+            <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">View and edit your profile</MudText>
+        </div>
+    </div>
+
+    <div class="pa-5">
+        @if (_isLoading)
+        {
+            <MudStack AlignItems="AlignItems.Center" Class="pa-8">
+                <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                <MudText>Loading profile...</MudText>
+            </MudStack>
+        }
+        else if (_user == null)
+        {
+            <MudAlert Severity="Severity.Warning">Unable to load your profile. Please try signing in again.</MudAlert>
+        }
+        else
+        {
+            <MudStack Spacing="3">
+                @* Avatar + name *@
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+                    <MudAvatar Color="Color.Primary" Size="Size.Large" Style="font-size: 1.5rem;">
+                        @(_user.FirstName.Length > 0 ? _user.FirstName[0].ToString().ToUpper() : "?")
+                    </MudAvatar>
+                    <div>
+                        <MudText Typo="Typo.h6">@_user.FirstName @_user.LastName</MudText>
+                        <MudStack Row="true" Spacing="1">
+                            @if (_user.IsGlobalAdmin)
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled">Admin</MudChip>
+                            }
+                            else if (_user.IsProvider)
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Filled">Provider</MudChip>
+                            }
+                            else
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Default" Variant="Variant.Filled">Customer</MudChip>
+                            }
+                        </MudStack>
+                    </div>
+                </MudStack>
+
+                <MudDivider />
+
+                @if (!_isEditing)
+                {
+                    @* View mode *@
+                    <MudStack Spacing="2">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                            <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" Color="Color.Secondary" />
+                            <MudText Typo="Typo.body2">@_user.Email</MudText>
+                        </MudStack>
+
+                        @if (!string.IsNullOrWhiteSpace(_user.PhoneNumber))
+                        {
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Small" Color="Color.Secondary" />
+                                <MudText Typo="Typo.body2">@_user.PhoneNumber</MudText>
+                            </MudStack>
+                        }
+
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            Member since @_user.CreatedAt.ToString("MMMM dd, yyyy")
+                        </MudText>
+                    </MudStack>
+
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Edit"
+                               OnClick="StartEditing">
+                        Edit Profile
+                    </MudButton>
+                }
+                else
+                {
+                    @* Edit mode *@
+                    <MudGrid Spacing="2">
+                        <MudItem xs="12" sm="6">
+                            <MudTextField @bind-Value="_editFirstName"
+                                          Label="First Name"
+                                          Variant="Variant.Outlined"
+                                          Required="true" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudTextField @bind-Value="_editLastName"
+                                          Label="Last Name"
+                                          Variant="Variant.Outlined"
+                                          Required="true" />
+                        </MudItem>
+                    </MudGrid>
+
+                    <MudTextField @bind-Value="_editPhone"
+                                  Label="Phone Number"
+                                  Variant="Variant.Outlined"
+                                  Placeholder="+63..." />
+
+                    <MudStack Row="true" Spacing="2" Justify="Justify.FlexEnd">
+                        <MudButton Variant="Variant.Text" OnClick="CancelEditing">Cancel</MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                   OnClick="SaveProfile"
+                                   Disabled="_isSaving">
+                            @if (_isSaving)
+                            {
+                                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                                <text>Saving...</text>
+                            }
+                            else
+                            {
+                                <text>Save Changes</text>
+                            }
+                        </MudButton>
+                    </MudStack>
+                }
+            </MudStack>
+        }
+    </div>
+</MudPaper>
+
+@code {
+    private UserResponse? _user;
+    private bool _isLoading = true;
+    private bool _isEditing;
+    private bool _isSaving;
+    private string? _userId;
+    private string _editFirstName = string.Empty;
+    private string _editLastName = string.Empty;
+    private string? _editPhone;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (!string.IsNullOrEmpty(_userId))
+        {
+            await LoadProfile();
+        }
+        else
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task LoadProfile()
+    {
+        _isLoading = true;
+        try
+        {
+            _user = await UserService.GetUserAsync(Guid.Parse(_userId!));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void StartEditing()
+    {
+        if (_user == null) return;
+        _editFirstName = _user.FirstName;
+        _editLastName = _user.LastName;
+        _editPhone = _user.PhoneNumber;
+        _isEditing = true;
+    }
+
+    private void CancelEditing()
+    {
+        _isEditing = false;
+    }
+
+    private async Task SaveProfile()
+    {
+        if (string.IsNullOrWhiteSpace(_editFirstName) || string.IsNullOrWhiteSpace(_editLastName))
+        {
+            Snackbar.Add("First and last name are required.", Severity.Warning);
+            return;
+        }
+
+        _isSaving = true;
+        StateHasChanged();
+
+        try
+        {
+            var request = new UpdateUserRequest
+            {
+                FirstName = _editFirstName.Trim(),
+                LastName = _editLastName.Trim(),
+                PhoneNumber = string.IsNullOrWhiteSpace(_editPhone) ? null : _editPhone.Trim()
+            };
+
+            var updated = await UserService.UpdateUserAsync(Guid.Parse(_userId!), request);
+            if (updated != null)
+            {
+                _user = updated;
+                _isEditing = false;
+                Snackbar.Add("Profile updated successfully!", Severity.Success);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

@@ -1,0 +1,131 @@
+@page "/analytics"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Components.Authorization
+@using BookingScheduleSystem.Contracts.Subscriptions
+@inject ISubscriptionService SubscriptionService
+@inject ISnackbar Snackbar
+
+<AuthorizeView Roles="Provider,GlobalAdmin">
+    <Authorized>
+        <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden;">
+            <div class="pa-4 px-5" style="border-bottom: 1px solid var(--mud-palette-divider);">
+                <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">Analytics</MudText>
+                <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Your business performance overview</MudText>
+            </div>
+
+            <div class="pa-5">
+                @if (_isLoading)
+                {
+                    <MudStack AlignItems="AlignItems.Center" Class="pa-8">
+                        <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                        <MudText>Loading analytics...</MudText>
+                    </MudStack>
+                }
+                else if (_subscription == null)
+                {
+                    <MudAlert Severity="Severity.Info">No subscription data available to display analytics.</MudAlert>
+                }
+                else
+                {
+                    <MudStack Spacing="4">
+                        @* Summary cards *@
+                        <MudGrid Spacing="2">
+                            <MudItem xs="6" sm="3">
+                                <MudPaper Elevation="0" Class="pa-4" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px;">
+                                    <MudStack Spacing="1">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">Bookings Today</MudText>
+                                        <MudText Typo="Typo.h5" Style="font-weight: 700;">@_subscription.CurrentUsage.BookingsToday</MudText>
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">of @_subscription.PlanLimits.MaxBookingsPerDay max</MudText>
+                                    </MudStack>
+                                </MudPaper>
+                            </MudItem>
+                            <MudItem xs="6" sm="3">
+                                <MudPaper Elevation="0" Class="pa-4" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px;">
+                                    <MudStack Spacing="1">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">Bookings This Month</MudText>
+                                        <MudText Typo="Typo.h5" Style="font-weight: 700;">@_subscription.CurrentUsage.BookingsThisMonth</MudText>
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">of @_subscription.PlanLimits.MaxBookingsPerMonth max</MudText>
+                                    </MudStack>
+                                </MudPaper>
+                            </MudItem>
+                            <MudItem xs="6" sm="3">
+                                <MudPaper Elevation="0" Class="pa-4" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px;">
+                                    <MudStack Spacing="1">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">Schedules Today</MudText>
+                                        <MudText Typo="Typo.h5" Style="font-weight: 700;">@_subscription.CurrentUsage.SchedulesToday</MudText>
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">of @_subscription.PlanLimits.MaxSchedulesPerDay max</MudText>
+                                    </MudStack>
+                                </MudPaper>
+                            </MudItem>
+                            <MudItem xs="6" sm="3">
+                                <MudPaper Elevation="0" Class="pa-4" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px;">
+                                    <MudStack Spacing="1">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">Active Providers</MudText>
+                                        <MudText Typo="Typo.h5" Style="font-weight: 700;">@_subscription.CurrentUsage.ActiveProviders</MudText>
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">of @_subscription.PlanLimits.MaxProviders max</MudText>
+                                    </MudStack>
+                                </MudPaper>
+                            </MudItem>
+                        </MudGrid>
+
+                        <MudDivider />
+
+                        @* Usage progress *@
+                        <MudText Typo="Typo.subtitle2" Style="font-weight: 700;">Usage vs. Limits</MudText>
+                        <MudStack Spacing="2">
+                            @UsageBar("Daily Bookings", _subscription.CurrentUsage.BookingsToday, _subscription.PlanLimits.MaxBookingsPerDay)
+                            @UsageBar("Monthly Bookings", _subscription.CurrentUsage.BookingsThisMonth, _subscription.PlanLimits.MaxBookingsPerMonth)
+                            @UsageBar("Daily Schedules", _subscription.CurrentUsage.SchedulesToday, _subscription.PlanLimits.MaxSchedulesPerDay)
+                            @UsageBar("Monthly Schedules", _subscription.CurrentUsage.SchedulesThisMonth, _subscription.PlanLimits.MaxSchedulesPerMonth)
+                            @UsageBar("Users", _subscription.CurrentUsage.ActiveUsers, _subscription.PlanLimits.MaxUsers)
+                            @UsageBar("Providers", _subscription.CurrentUsage.ActiveProviders, _subscription.PlanLimits.MaxProviders)
+                        </MudStack>
+
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            Last updated: @_subscription.CurrentUsage.LastUpdated.ToString("MMM dd, yyyy h:mm tt")
+                        </MudText>
+                    </MudStack>
+                }
+            </div>
+        </MudPaper>
+    </Authorized>
+    <NotAuthorized>
+        <MudAlert Severity="Severity.Warning">You need Provider or Admin access to view analytics.</MudAlert>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private TenantSubscriptionResponse? _subscription;
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            _subscription = await SubscriptionService.GetCurrentSubscriptionAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private RenderFragment UsageBar(string label, int current, int max) => __builder =>
+    {
+        var pct = max > 0 ? Math.Min(100, (double)current / max * 100) : 0;
+        var color = pct >= 90 ? Color.Error : pct >= 70 ? Color.Warning : Color.Primary;
+
+        <div>
+            <MudStack Row="true" Justify="Justify.SpaceBetween">
+                <MudText Typo="Typo.body2">@label</MudText>
+                <MudText Typo="Typo.body2" Style="font-weight: 700;">@current / @max</MudText>
+            </MudStack>
+            <MudProgressLinear Value="@pct" Color="@color" Rounded="true" Size="Size.Medium" />
+        </div>
+    };
+}

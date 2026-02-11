@@ -1,0 +1,76 @@
+@page "/settings"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Components.Authorization
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+<AuthorizeView Roles="Provider,GlobalAdmin">
+    <Authorized>
+        <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden;">
+            <div class="pa-4 px-5" style="border-bottom: 1px solid var(--mud-palette-divider);">
+                <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">Settings</MudText>
+                <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Application preferences</MudText>
+            </div>
+
+            <div class="pa-5">
+                <MudStack Spacing="3">
+                    @* Quick links to other settings pages *@
+                    <MudPaper Elevation="0" Class="pa-4 cursor-pointer" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px;" @onclick="@(() => Navigation.NavigateTo("/organization"))">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                <MudIcon Icon="@Icons.Material.Filled.Business" Color="Color.Primary" />
+                                <div>
+                                    <MudText Typo="Typo.body1" Style="font-weight: 700;">Organization Settings</MudText>
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">Edit name, location, operating hours</MudText>
+                                </div>
+                            </MudStack>
+                            <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Color="Color.Secondary" />
+                        </MudStack>
+                    </MudPaper>
+
+                    <MudPaper Elevation="0" Class="pa-4 cursor-pointer" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px;" @onclick="@(() => Navigation.NavigateTo("/subscription"))">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                <MudIcon Icon="@Icons.Material.Filled.CreditCard" Color="Color.Primary" />
+                                <div>
+                                    <MudText Typo="Typo.body1" Style="font-weight: 700;">Subscription & Billing</MudText>
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">View plan, usage, and billing details</MudText>
+                                </div>
+                            </MudStack>
+                            <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Color="Color.Secondary" />
+                        </MudStack>
+                    </MudPaper>
+
+                    <MudPaper Elevation="0" Class="pa-4 cursor-pointer" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px;" @onclick="@(() => Navigation.NavigateTo("/profile"))">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                <MudIcon Icon="@Icons.Material.Filled.Person" Color="Color.Primary" />
+                                <div>
+                                    <MudText Typo="Typo.body1" Style="font-weight: 700;">My Profile</MudText>
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">Edit your name, phone, and preferences</MudText>
+                                </div>
+                            </MudStack>
+                            <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Color="Color.Secondary" />
+                        </MudStack>
+                    </MudPaper>
+
+                    <MudPaper Elevation="0" Class="pa-4 cursor-pointer" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px;" @onclick="@(() => Navigation.NavigateTo("/providers"))">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                <MudIcon Icon="@Icons.Material.Filled.Group" Color="Color.Primary" />
+                                <div>
+                                    <MudText Typo="Typo.body1" Style="font-weight: 700;">Manage Providers</MudText>
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">View and manage service providers</MudText>
+                                </div>
+                            </MudStack>
+                            <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Color="Color.Secondary" />
+                        </MudStack>
+                    </MudPaper>
+                </MudStack>
+            </div>
+        </MudPaper>
+    </Authorized>
+    <NotAuthorized>
+        <MudAlert Severity="Severity.Warning">You need Provider or Admin access to view settings.</MudAlert>
+    </NotAuthorized>
+</AuthorizeView>

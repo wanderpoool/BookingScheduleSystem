@@ -33,4 +33,30 @@ public class TenantService : ITenantService
             return null;
         }
     }
+
+    public async Task<TenantResponse?> UpdateTenantAsync(Guid tenantId, UpdateTenantRequest request)
+    {
+        try
+        {
+            var response = await _httpClient.PutAsJsonAsync($"/api/tenants/{tenantId}", request);
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<TenantResponse>();
+            }
+
+            var body = await response.Content.ReadAsStringAsync();
+            _logger.LogWarning("Failed to update tenant {TenantId}: {StatusCode} {Body}", tenantId, response.StatusCode, body);
+            var message = ApiErrorHelper.ExtractMessage(body) ?? "We couldn't update the organization settings.";
+            throw new HttpRequestException(message, null, response.StatusCode);
+        }
+        catch (HttpRequestException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating tenant {TenantId}", tenantId);
+            throw new HttpRequestException("Unable to update organization settings. Please try again.", ex);
+        }
+    }
 }

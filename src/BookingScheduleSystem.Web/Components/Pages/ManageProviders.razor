@@ -1,0 +1,156 @@
+@page "/providers"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Components.Authorization
+@using BookingScheduleSystem.Contracts.Users
+@inject IUserService UserService
+@inject ISnackbar Snackbar
+
+<AuthorizeView Roles="Provider,GlobalAdmin">
+    <Authorized>
+        <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden;">
+            <div class="d-flex align-center pa-4 px-5" style="border-bottom: 1px solid var(--mud-palette-divider);">
+                <div class="mr-auto">
+                    <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">Manage Providers</MudText>
+                    <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">View and manage service providers</MudText>
+                </div>
+            </div>
+
+            <div class="pa-5">
+                <MudStack Spacing="3">
+                    <MudStack Row="true" Spacing="2" Class="flex-wrap">
+                        <MudChip T="string" Color="@(_activeFilter == null ? Color.Primary : Color.Default)"
+                                 Variant="@(_activeFilter == null ? Variant.Filled : Variant.Outlined)"
+                                 OnClick="@(() => FilterByActive(null))">All</MudChip>
+                        <MudChip T="string" Color="@(_activeFilter == true ? Color.Success : Color.Default)"
+                                 Variant="@(_activeFilter == true ? Variant.Filled : Variant.Outlined)"
+                                 OnClick="@(() => FilterByActive(true))">Active</MudChip>
+                        <MudChip T="string" Color="@(_activeFilter == false ? Color.Error : Color.Default)"
+                                 Variant="@(_activeFilter == false ? Variant.Filled : Variant.Outlined)"
+                                 OnClick="@(() => FilterByActive(false))">Inactive</MudChip>
+                    </MudStack>
+
+                    @if (_isLoading)
+                    {
+                        <MudStack AlignItems="AlignItems.Center" Class="pa-8">
+                            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                            <MudText>Loading providers...</MudText>
+                        </MudStack>
+                    }
+                    else if (_providers == null || _providers.Count == 0)
+                    {
+                        <MudStack AlignItems="AlignItems.Center" Spacing="2" Class="pa-8">
+                            <MudIcon Icon="@Icons.Material.Filled.GroupOff" Size="Size.Large" Color="Color.Secondary" />
+                            <MudText Typo="Typo.body1" Color="Color.Secondary">No providers found</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">Providers will appear here once added to your organization.</MudText>
+                        </MudStack>
+                    }
+                    else
+                    {
+                        <MudStack Spacing="2">
+                            @foreach (var provider in _providers)
+                            {
+                                <MudPaper Elevation="0" Class="pa-4" Style="@($"border-top: 3px solid {(provider.IsActive ? "var(--mud-palette-success)" : "var(--mud-palette-text-disabled)")}; border: 1px solid var(--mud-palette-divider); border-radius: 14px;")">
+                                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                        <MudStack Spacing="1">
+                                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                                <MudAvatar Color="Color.Primary" Size="Size.Small">
+                                                    @(provider.FirstName.Length > 0 ? provider.FirstName[0].ToString().ToUpper() : "?")
+                                                </MudAvatar>
+                                                <MudText Typo="Typo.body1" Style="font-weight: 700;">
+                                                    @provider.FirstName @provider.LastName
+                                                </MudText>
+                                            </MudStack>
+                                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                                <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" Color="Color.Secondary" />
+                                                <MudText Typo="Typo.body2" Color="Color.Secondary">@provider.Email</MudText>
+                                            </MudStack>
+                                            @if (!string.IsNullOrWhiteSpace(provider.PhoneNumber))
+                                            {
+                                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                                    <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Small" Color="Color.Secondary" />
+                                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@provider.PhoneNumber</MudText>
+                                                </MudStack>
+                                            }
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                Joined @provider.CreatedAt.ToString("MMM dd, yyyy")
+                                            </MudText>
+                                        </MudStack>
+                                        <MudChip T="string" Size="Size.Small"
+                                                 Color="@(provider.IsActive ? Color.Success : Color.Default)"
+                                                 Variant="Variant.Filled">
+                                            @(provider.IsActive ? "Active" : "Inactive")
+                                        </MudChip>
+                                    </MudStack>
+                                </MudPaper>
+                            }
+                        </MudStack>
+
+                        @if (_totalCount > _pageSize)
+                        {
+                            <MudStack AlignItems="AlignItems.Center" Class="mt-4">
+                                <MudPagination Count="@((int)Math.Ceiling((double)_totalCount / _pageSize))"
+                                               Selected="@_currentPage"
+                                               SelectedChanged="OnPageChanged"
+                                               Color="Color.Primary" />
+                            </MudStack>
+                        }
+                    }
+                </MudStack>
+            </div>
+        </MudPaper>
+    </Authorized>
+    <NotAuthorized>
+        <MudAlert Severity="Severity.Warning">You need Provider or Admin access to manage providers.</MudAlert>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private List<UserResponse>? _providers;
+    private bool _isLoading = true;
+    private bool? _activeFilter;
+    private int _currentPage = 1;
+    private int _pageSize = 20;
+    private int _totalCount;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProviders();
+    }
+
+    private async Task LoadProviders()
+    {
+        _isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var result = await UserService.ListUsersAsync(isProvider: true, isActive: _activeFilter, page: _currentPage, pageSize: _pageSize);
+            if (result != null)
+            {
+                _providers = result.Users;
+                _totalCount = result.TotalCount;
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task FilterByActive(bool? active)
+    {
+        _activeFilter = active;
+        _currentPage = 1;
+        await LoadProviders();
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _currentPage = page;
+        await LoadProviders();
+    }
+}

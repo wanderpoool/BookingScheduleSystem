@@ -16,19 +16,25 @@
     <Authorized>
         @if (string.IsNullOrEmpty(_tenantId))
         {
-            <MudText Typo="Typo.h5" Class="mb-4">Available Schedules</MudText>
-            <MudAlert Severity="Severity.Warning" Class="mb-4">
-                You are not associated with any organization. Ask your organization for an invitation link to get started.
-            </MudAlert>
+            <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden;">
+                <div class="pa-4 px-5" style="border-bottom: 1px solid var(--mud-palette-divider);">
+                    <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">Available Schedules</MudText>
+                </div>
+                <div class="pa-4">
+                    <MudAlert Severity="Severity.Warning">
+                        You are not associated with any organization. Ask your organization for an invitation link to get started.
+                    </MudAlert>
+                </div>
+            </MudPaper>
         }
         else if (_isCustomer)
         {
             @* Customer view: calendar card with header inside *@
-            <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-lines-default); border-radius: 12px; overflow: hidden; position: relative;">
+            <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden; position: relative;">
                 @* Header bar *@
-                <div class="d-flex align-center pa-3" style="border-bottom: 1px solid var(--mud-palette-lines-default);">
+                <div class="d-flex align-center pa-4 px-5" style="border-bottom: 1px solid var(--mud-palette-divider);">
                     <div class="mr-auto">
-                        <MudText Typo="Typo.subtitle1" Style="font-weight: 600;">Select a Schedule</MudText>
+                        <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">Select a Schedule</MudText>
                         <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Tap a time slot to book</MudText>
                     </div>
                     <span class="d-flex align-center gap-1 mr-3">
@@ -66,12 +72,20 @@
                         @if (!calItem.TimeBlock.IsAvailable && calItem.TimeBlock.CustomerName == _userFullName)
                         {
                             @* Current user's booking — show details *@
-                            <div style="width: 100%; height: 100%; border: 2px solid #2563EB; background: #DBEAFE;">
-                                <div style="background: #2563EB; padding: 2px 6px;">
-                                    <MudText Style="color: #fff; font-size: 12px; font-weight: 600;" Align="Align.Center">Your Booking</MudText>
+                            <div style="width: 100%; height: 100%; border: 2px solid @(GetBookingStatusColor(calItem.TimeBlock.BookingStatus)); background: @(GetBookingStatusBg(calItem.TimeBlock.BookingStatus)); display: flex; flex-direction: column;">
+                                <div style="background: @(GetBookingStatusColor(calItem.TimeBlock.BookingStatus)); padding: 2px 8px; display: flex; align-items: center; justify-content: space-between;">
+                                    <span style="color: #fff; font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">YOUR BOOKING</span>
+                                    <span style="color: #fff; font-size: 10px; font-weight: 700; background: rgba(0,0,0,0.15); border-radius: 4px; padding: 1px 6px;">@(GetBookingStatusLabel(calItem.TimeBlock.BookingStatus))</span>
                                 </div>
-                                <div class="pa-2">
-                                    <MudText Typo="Typo.caption">Provider Name : @calItem.ProviderName</MudText>
+                                <div style="padding: 4px 8px; flex: 1; display: flex; flex-direction: column; gap: 2px;">
+                                    @if (!string.IsNullOrWhiteSpace(calItem.TimeBlock.ScheduleTitle))
+                                    {
+                                        <span style="font-size: 12px; font-weight: 700; color: #1F2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@calItem.TimeBlock.ScheduleTitle</span>
+                                    }
+                                    <span style="font-size: 11px; color: #6B7280; display: flex; align-items: center; gap: 4px;">
+                                        <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Style="font-size: 14px; color: #6B7280;" />
+                                        @calItem.ProviderName
+                                    </span>
                                 </div>
                             </div>
                         }
@@ -79,7 +93,7 @@
                         {
                             @* Someone else's booking — just red, no info *@
                             <div style="width: 100%; height: 100%; background: #EF4444; display: flex; align-items: center; justify-content: center;">
-                                <span style="color: #fff; font-size: 12px; font-weight: 600;">Booked</span>
+                                <span style="color: #fff; font-size: 12px; font-weight: 700;">Booked</span>
                             </div>
                         }
                         else
@@ -94,40 +108,52 @@
         }
         else
         {
-            @* Provider/Admin view: calendar card with header inside *@
-            <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-lines-default); border-radius: 12px; overflow: hidden; position: relative;">
-                @* Header bar *@
-                <div class="d-flex align-center pa-3" style="border-bottom: 1px solid var(--mud-palette-lines-default);">
-                    <div class="mr-auto">
-                        <MudText Typo="Typo.subtitle1" Style="font-weight: 600;">@(_isProvider ? "My Schedule" : "All Schedules")</MudText>
-                        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Click a booking to manage it</MudText>
-                    </div>
-                    <span class="d-flex align-center gap-1 mr-3">
-                        <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--mud-palette-success); display: inline-block;"></span>
-                        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Available</MudText>
-                    </span>
-                    <span class="d-flex align-center gap-1">
-                        <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--mud-palette-error); display: inline-block;"></span>
-                        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Booked</MudText>
-                    </span>
+            @* Provider/Admin view: clean calendar *@
+            <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden; position: relative;">
+                @* Minimal header *@
+                <div class="d-flex align-center pa-4 px-5" style="border-bottom: 1px solid var(--mud-palette-divider);">
+                    <MudText Typo="Typo.subtitle1" Style="font-weight: 700;" Class="mr-auto">@(_isProvider ? "My Schedule" : "All Schedules")</MudText>
+                    <MudStack Row="true" Spacing="3" AlignItems="AlignItems.Center" Class="d-none d-sm-flex">
+                        <span class="d-flex align-center gap-1">
+                            <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--mud-palette-warning); display: inline-block;"></span>
+                            <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Pending</MudText>
+                        </span>
+                        <span class="d-flex align-center gap-1">
+                            <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--mud-palette-success); display: inline-block;"></span>
+                            <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Confirmed</MudText>
+                        </span>
+                    </MudStack>
                 </div>
+
+                @if (_isLoading)
+                {
+                    <div style="position: absolute; inset: 0; z-index: 10; background: rgba(255,255,255,0.7); display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" />
+                        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2">Loading...</MudText>
+                    </div>
+                }
 
                 <MudCalendar T="ScheduleCalendarItem"
                              Items="@_calendarItems"
-                             View="CalendarView.Week"
+                             @bind-View="_providerView"
                              MinVisibleTime="@_businessStartTime"
+                             ShowMonth="false"
+                             ShowWorkWeek="false"
                              ItemClicked="@OnItemClicked"
                              DateRangeChanged="@OnDateRangeChanged"
                              Use24HourClock="false"
                              Style="height: calc(100vh - 220px); min-height: 500px;">
                     <CellTemplate Context="item">
-                        <div style="width: 100%; height: 100%; border: 2px solid @GetColor(item.Color, true)">
-                            <div style="background-color: @GetColor(item.Color, true)">
-                                <MudText Style="color: #ffffff;" Typo="Typo.body1" Align="Align.Center">@item.Title</MudText>
-                            </div>
-                            <div class="pa-2">
-                                <MudText Typo="Typo.body2">@item.Text</MudText>
-                            </div>
+                        <div style="width: 100%; height: 100%; background: @GetProviderCellBg(item); border-left: 3px solid @GetProviderCellAccent(item); display: flex; flex-direction: column; padding: 4px 8px; cursor: pointer;">
+                            <span style="font-size: 12px; font-weight: 600; color: @GetProviderCellAccent(item); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                @GetProviderCellLabel(item)
+                            </span>
+                            @if (!string.IsNullOrWhiteSpace(item.TimeBlock.CustomerName))
+                            {
+                                <span style="font-size: 11px; color: #6B7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    @item.TimeBlock.CustomerName
+                                </span>
+                            }
                         </div>
                     </CellTemplate>
                 </MudCalendar>
@@ -151,7 +177,29 @@
     private bool _isProvider;
     private bool _isLoading;
     private DateRange? _lastDateRange;
+    private CalendarView _providerView = CalendarView.Week;
     private TimeOnly _businessStartTime = new(9, 0);
+
+    private static string GetBookingStatusColor(BookingStatus? status) => status switch
+    {
+        BookingStatus.Confirmed => "#10B981",
+        BookingStatus.Pending => "#F59E0B",
+        _ => "#1D4ED8"
+    };
+
+    private static string GetBookingStatusBg(BookingStatus? status) => status switch
+    {
+        BookingStatus.Confirmed => "#D1FAE5",
+        BookingStatus.Pending => "#FEF3C7",
+        _ => "#DBEAFE"
+    };
+
+    private static string GetBookingStatusLabel(BookingStatus? status) => status switch
+    {
+        BookingStatus.Confirmed => "Confirmed",
+        BookingStatus.Pending => "Pending",
+        _ => "Booked"
+    };
 
     private string GetColor(Color color, bool solid = false)
     {
@@ -164,6 +212,36 @@
             _ => ("#6B7280", "#F3F4F6")
         };
         return solid ? hex : light;
+    }
+
+    private static string GetProviderCellAccent(ScheduleCalendarItem item) => item.TimeBlock.BookingStatus switch
+    {
+        BookingStatus.Confirmed => "#10B981",
+        BookingStatus.Pending => "#F59E0B",
+        BookingStatus.Cancelled => "#EF4444",
+        _ => "#F59E0B"
+    };
+
+    private static string GetProviderCellBg(ScheduleCalendarItem item) => item.TimeBlock.BookingStatus switch
+    {
+        BookingStatus.Confirmed => "#F0FDF4",
+        BookingStatus.Pending => "#FFFBEB",
+        BookingStatus.Cancelled => "#FEF2F2",
+        _ => "#FFFBEB"
+    };
+
+    private static string GetProviderCellLabel(ScheduleCalendarItem item)
+    {
+        var status = item.TimeBlock.BookingStatus switch
+        {
+            BookingStatus.Confirmed => "Confirmed",
+            BookingStatus.Pending => "Pending",
+            BookingStatus.Cancelled => "Cancelled",
+            _ => "Pending"
+        };
+        return !string.IsNullOrWhiteSpace(item.TimeBlock.ScheduleTitle)
+            ? $"{item.TimeBlock.ScheduleTitle}"
+            : status;
     }
 
     protected override async Task OnInitializedAsync()
@@ -237,13 +315,13 @@
 
             if (_isCustomer)
             {
-                _calendarItems = items;
+                _calendarItems = SplitIntoHourlySlots(items);
             }
             else if (_isProvider && Guid.TryParse(_userId, out var providerGuid))
             {
-                // Provider view: only show their own schedule items
+                // Provider view: only show booked customer appointments, not availability
                 _calendarItems = items
-                    .Where(i => i.ProviderId.Value == providerGuid)
+                    .Where(i => i.ProviderId.Value == providerGuid && !i.TimeBlock.IsAvailable)
                     .ToList();
 
                 // Fallback: fetch pending bookings to map ScheduleId → BookingId

@@ -51,6 +51,8 @@ builder.Services.AddScoped<ITenantService, TenantService>();
 builder.Services.AddScoped<IScheduleService, ScheduleService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 
 var app = builder.Build();
 

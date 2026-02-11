@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.JSInterop;
 using BookingScheduleSystem.Contracts.Auth;
 
 namespace BookingScheduleSystem.Web.Services;
@@ -7,34 +8,45 @@ namespace BookingScheduleSystem.Web.Services;
 public class CustomAuthenticationStateProvider : AuthenticationStateProvider
 {
     private readonly ILocalStorageService _localStorage;
+    private readonly IJSRuntime _jsRuntime;
+    private AuthenticationState? _cachedState;
 
-    public CustomAuthenticationStateProvider(ILocalStorageService localStorage)
+    public CustomAuthenticationStateProvider(ILocalStorageService localStorage, IJSRuntime jsRuntime)
     {
         _localStorage = localStorage;
+        _jsRuntime = jsRuntime;
     }
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
+        // During prerender, JS interop is not available.
+        // Return cached state if we have one, otherwise return a "pending" anonymous state
+        // that won't trigger redirects (pages should handle prerender gracefully).
+        if (_jsRuntime is not IJSInProcessRuntime && !IsInteractiveRendering())
+        {
+            return _cachedState ?? new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+        }
+
         try
         {
             var token = await _localStorage.GetItemAsync<string>("authToken");
 
             if (string.IsNullOrWhiteSpace(token))
             {
-                return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+                _cachedState = new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+                return _cachedState;
             }
 
             var user = await _localStorage.GetItemAsync<AuthenticationResponse>("currentUser");
 
             if (user == null)
             {
-                // Token exists but user data couldn't be retrieved (token might be expired)
                 await _localStorage.RemoveItemAsync("authToken");
                 await _localStorage.RemoveItemAsync("currentUser");
-                return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+                _cachedState = new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+                return _cachedState;
             }
 
-            // Create claims from user data
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.UserId.Value.ToString()),
@@ -44,7 +56,6 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
                 new Claim(ClaimTypes.Surname, user.LastName)
             };
 
-            // Add role claims based on admin/provider status
             if (user.IsGlobalAdmin)
             {
                 claims.Add(new Claim(ClaimTypes.Role, "GlobalAdmin"));
@@ -58,7 +69,6 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
                 claims.Add(new Claim(ClaimTypes.Role, "Customer"));
             }
 
-            // Add tenant ID claim if available
             if (user.TenantId.HasValue)
             {
                 claims.Add(new Claim("TenantId", user.TenantId.Value.Value.ToString()));
@@ -67,11 +77,20 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
             var identity = new ClaimsIdentity(claims, "jwt");
             var claimsPrincipal = new ClaimsPrincipal(identity);
 
-            return new AuthenticationState(claimsPrincipal);
+            _cachedState = new AuthenticationState(claimsPrincipal);
+            return _cachedState;
+        }
+        catch (InvalidOperationException)
+        {
+            // JS interop called during prerender — return cached or anonymous
+            return _cachedState ?? new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+        }
+        catch (JSDisconnectedException)
+        {
+            return _cachedState ?? new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
         }
         catch
         {
-            // If anything fails, return unauthenticated state
             return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
         }
     }
@@ -79,5 +98,14 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
     public void NotifyAuthenticationStateChanged()
     {
         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+    }
+
+    private bool IsInteractiveRendering()
+    {
+        // RemoteJSRuntime (used in Blazor Server interactive mode) is not IJSInProcessRuntime
+        // but it IS ready for async calls. The prerender runtime throws InvalidOperationException.
+        // We detect prerender by checking the runtime type name.
+        var typeName = _jsRuntime.GetType().Name;
+        return typeName != "UnsupportedJavaScriptRuntime";
     }
 }
