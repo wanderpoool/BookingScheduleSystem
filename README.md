@@ -1,4 +1,4 @@
-# BookingScheduleSystem
+# Book me App!
 
 A multi-tenant booking and scheduling platform built with .NET 9. Organizations can manage provider schedules, and customers can browse availability and book appointments in real time.
 
@@ -83,3 +83,4 @@ This starts PostgreSQL, the API (port 5059), and the Web app (port 5288).
 ## License
 
 Private - All rights reserved.
+
