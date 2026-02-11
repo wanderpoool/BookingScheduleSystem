@@ -102,9 +102,6 @@
     min-width: unset !important;
 }
 
-.landing-page section {
-    display: block;
-}
 
 /* Override global-styles.css a:hover color */
 .landing-page .lp-nav-links a:hover {
