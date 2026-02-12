@@ -58,6 +58,7 @@
     private MudThemeProvider? _mudThemeProvider;
     private string _userName = string.Empty;
     private string _organizationName = "Booking Schedule System";
+    private bool _contextLoaded = false;
 
     private MudTheme _customTheme = new MudTheme()
     {
@@ -211,8 +212,21 @@
         await LoadUserContextAsync();
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_contextLoaded)
+        {
+            await LoadUserContextAsync();
+            if (_contextLoaded)
+            {
+                StateHasChanged();
+            }
+        }
+    }
+
     private async void OnAuthenticationStateChanged(Task<AuthenticationState> task)
     {
+        _contextLoaded = false;
         await LoadUserContextAsync();
         await InvokeAsync(StateHasChanged);
     }
@@ -247,6 +261,8 @@
                         _organizationName = tenant.Name;
                     }
                 }
+
+                _contextLoaded = true;
             }
             catch
             {

@@ -515,6 +515,13 @@
 
             if (orgResult != null)
             {
+                // Re-login to get a fresh token with TenantId and Provider role
+                await AuthService.LoginAsync(new LoginRequest
+                {
+                    Email = _model.Email,
+                    Password = _model.Password
+                });
+
                 Snackbar.Add($"Welcome to {orgResult.Name}! Your 7-day trial has started.", Severity.Success);
                 await Task.Delay(1500);
                 Navigation.NavigateTo("/dashboard");

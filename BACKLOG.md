@@ -291,6 +291,40 @@ Web portal for tenants to manage their subscriptions.
 
 ---
 
+## 👥 Multi-Tenant Customer Experience
+
+### 16. **Multi-Tenant Customer Accounts**
+**Priority**: High
+**Effort**: High
+
+**Description**:
+Allow a single Customer account to be associated with multiple tenants (organizations). When a customer registers via an invitation link for a new tenant, link their existing account to that tenant instead of requiring a new account. On login, present a tenant selector so the customer can choose which provider/organization to book with, setting it as the active tenant for the session.
+
+**Requirements**:
+- Support many-to-many relationship between Customer accounts and Tenants
+- When a customer registers for a new tenant and their email already exists, link the existing account to the new tenant
+- After login, if the customer belongs to multiple tenants, show a dropdown/selector to choose the active tenant
+- Store the selected tenant as the current session tenant (X-Tenant-Id header)
+- Allow switching tenants without re-logging in
+- Dashboard and booking flows use the currently selected tenant context
+- Persist last-used tenant preference for convenience
+
+**Technical Notes**:
+- Requires new `UserTenant` join table/document (UserId + TenantId + JoinedAt)
+- Update auth flow: after JWT validation, check tenant memberships
+- Add tenant switcher component in MainLayout (visible only for multi-tenant customers)
+- Update `TenantResolutionMiddleware` to support session-based tenant selection
+- JWT token may need to omit TenantId claim (resolve at session level instead)
+- Consider impact on existing single-tenant customers (backward compatible)
+
+**UI/UX**:
+- Tenant selector: dropdown in nav bar or modal after login
+- Show organization name + logo for each tenant
+- "Switch Organization" option in profile/settings
+- Mobile: bottom sheet selector for tenant switching
+
+---
+
 ## 📈 Future Enhancements
 
 ### 14. **Add-Ons & Custom Features**
@@ -331,6 +365,7 @@ Reward users for referring new customers.
 - [x] Email Notification System (Partial — OTP via AWS SES/SNS, subscription emails pending)
 
 ### Phase 2 (Important)
+- [ ] Multi-Tenant Customer Accounts
 - [x] Upgrade/Downgrade Subscriptions (API complete, UI partial)
 - [x] Usage Statistics Reset Job
 - [x] Additional Limit Enforcement

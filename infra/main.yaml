@@ -455,7 +455,7 @@ Resources:
                 Action:
                   - ses:SendEmail
                   - ses:SendRawEmail
-                Resource: !Sub 'arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/${SenderEmail}'
+                Resource: !Sub 'arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/*'
 
   # --- CloudWatch Log Groups ---
   ApiLogGroup:
