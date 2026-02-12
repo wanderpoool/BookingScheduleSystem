@@ -16,4 +16,5 @@ public interface IAuthenticationService
     Task<bool> IsAuthenticatedAsync();
     Task<string?> GetTokenAsync();
     Task<AuthenticationResponse?> GetCurrentUserAsync();
+    Task<bool> ResetPasswordAsync(ResetPasswordRequest request);
 }

@@ -7,6 +7,7 @@
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 @inject NavigationManager Navigation
+@inject IQrCodeService QrCodeService
 
 <AuthorizeView Roles="Provider,GlobalAdmin">
     <Authorized>
@@ -17,6 +18,12 @@
                     <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">Manage Schedules</MudText>
                     <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Create, edit, and manage your schedule slots</MudText>
                 </div>
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Share"
+                           OnClick="OpenShareDialog"
+                           Size="Size.Small">
+                    Share
+                </MudButton>
                 <MudButton Variant="Variant.Filled" Color="Color.Primary"
                            StartIcon="@Icons.Material.Filled.Add"
                            OnClick="OpenCreateDialog"
@@ -479,6 +486,18 @@
         {
             await LoadSchedules();
         }
+    }
+
+    private async Task OpenShareDialog()
+    {
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.ExtraSmall,
+            FullWidth = true
+        };
+
+        await DialogService.ShowAsync<ShareScheduleDialog>("Share Booking Page", options);
     }
 
     private static double GetBookingPercentage(ScheduleResponse schedule)

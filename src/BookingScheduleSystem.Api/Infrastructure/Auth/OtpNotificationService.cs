@@ -1,52 +1,76 @@
+using Amazon.SimpleEmail;
+using Amazon.SimpleEmail.Model;
+using Amazon.SimpleNotificationService;
+using Amazon.SimpleNotificationService.Model;
+
 namespace BookingScheduleSystem.Api.Infrastructure.Auth;
 
 /// <summary>
-/// Service for sending OTP notifications via email and SMS
-/// In production, integrate with SendGrid, Twilio, or similar services
+/// Service for sending OTP notifications via AWS SES (email) and AWS SNS (SMS).
+/// Falls back to console logging in Development environment.
 /// </summary>
 public class OtpNotificationService
 {
     private readonly ILogger<OtpNotificationService> _logger;
+    private readonly IAmazonSimpleEmailService? _sesClient;
+    private readonly IAmazonSimpleNotificationService? _snsClient;
+    private readonly AwsNotificationOptions _options;
+    private readonly bool _isDevelopment;
 
-    public OtpNotificationService(ILogger<OtpNotificationService> logger)
+    public OtpNotificationService(
+        ILogger<OtpNotificationService> logger,
+        IConfiguration configuration,
+        IHostEnvironment environment,
+        IAmazonSimpleEmailService? sesClient = null,
+        IAmazonSimpleNotificationService? snsClient = null)
     {
         _logger = logger;
+        _sesClient = sesClient;
+        _snsClient = snsClient;
+        _isDevelopment = environment.IsDevelopment();
+        _options = configuration.GetSection(AwsNotificationOptions.SectionName).Get<AwsNotificationOptions>()
+                   ?? new AwsNotificationOptions();
     }
 
     public async Task<bool> SendEmailOtpAsync(string email, string otpCode, string purpose)
     {
         try
         {
-            // TODO: Integrate with email service (SendGrid, Mailgun, etc.)
-            // For now, just log the OTP (NEVER do this in production!)
-            _logger.LogInformation("=== EMAIL OTP ===");
-            _logger.LogInformation("To: {Email}", email);
-            _logger.LogInformation("Purpose: {Purpose}", purpose);
-            _logger.LogInformation("OTP Code: {OtpCode}", otpCode);
-            _logger.LogInformation("This OTP will expire in 10 minutes.");
-            _logger.LogInformation("================");
+            if (_isDevelopment && _sesClient is null)
+            {
+                LogOtpToConsole("EMAIL", email, otpCode, purpose);
+                return true;
+            }
 
-            // Simulate email sending delay
-            await Task.Delay(500);
+            ArgumentNullException.ThrowIfNull(_sesClient);
 
-            // In production, replace with actual email sending:
-            /*
-            var message = new SendGridMessage();
-            message.SetFrom("noreply@yourdomain.com", "Booking System");
-            message.AddTo(email);
-            message.SetSubject($"Your verification code: {otpCode}");
-            message.AddContent(MimeType.Html, GetEmailTemplate(otpCode, purpose));
+            var htmlBody = GetEmailTemplate(otpCode, purpose);
+            var subject = $"Your verification code: {otpCode}";
 
-            var client = new SendGridClient(apiKey);
-            var response = await client.SendEmailAsync(message);
-            return response.IsSuccessStatusCode;
-            */
+            var sendRequest = new SendEmailRequest
+            {
+                Source = _options.SenderEmail,
+                Destination = new Destination { ToAddresses = [email] },
+                Message = new Message
+                {
+                    Subject = new Content(subject),
+                    Body = new Body
+                    {
+                        Html = new Content { Charset = "UTF-8", Data = htmlBody },
+                        Text = new Content { Charset = "UTF-8", Data = $"Your verification code is: {otpCode}. This code will expire in 10 minutes." }
+                    }
+                }
+            };
+
+            var response = await _sesClient.SendEmailAsync(sendRequest);
+            _logger.LogInformation("Email OTP sent to {Email}, SES MessageId: {MessageId}",
+                MaskEmail(email), response.MessageId);
 
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send email OTP to {Email}", email);
+            _logger.LogError(ex, "Failed to send email OTP to {Email}", MaskEmail(email));
             return false;
         }
     }
@@ -55,50 +79,69 @@ public class OtpNotificationService
     {
         try
         {
-            // TODO: Integrate with SMS service (Twilio, Semaphore, Vonage, etc.)
-            // For now, just log the OTP (NEVER do this in production!)
-            _logger.LogInformation("=== SMS OTP ===");
-            _logger.LogInformation("To: {PhoneNumber}", phoneNumber);
-            _logger.LogInformation("Purpose: {Purpose}", purpose);
-            _logger.LogInformation("OTP Code: {OtpCode}", otpCode);
-            _logger.LogInformation("This OTP will expire in 10 minutes.");
-            _logger.LogInformation("===============");
-
-            // Simulate SMS sending delay
-            await Task.Delay(500);
-
-            // In production, replace with actual SMS sending (e.g., Twilio):
-            /*
-            var twilioClient = new TwilioRestClient(accountSid, authToken);
-            var message = await MessageResource.CreateAsync(
-                to: new PhoneNumber(phoneNumber),
-                from: new PhoneNumber(fromPhoneNumber),
-                body: $"Your verification code is: {otpCode}. This code will expire in 10 minutes."
-            );
-            return message.Status != MessageResource.StatusEnum.Failed;
-            */
-
-            // For Philippines, you can use Semaphore SMS API:
-            /*
-            var client = new HttpClient();
-            var content = new FormUrlEncodedContent(new[]
+            if (_isDevelopment && _snsClient is null)
             {
-                new KeyValuePair<string, string>("apikey", semaphoreApiKey),
-                new KeyValuePair<string, string>("number", phoneNumber),
-                new KeyValuePair<string, string>("message", $"Your OTP is: {otpCode}. Valid for 10 minutes.")
-            });
+                LogOtpToConsole("SMS", phoneNumber, otpCode, purpose);
+                return true;
+            }
 
-            var response = await client.PostAsync("https://api.semaphore.co/api/v4/messages", content);
-            return response.IsSuccessStatusCode;
-            */
+            ArgumentNullException.ThrowIfNull(_snsClient);
+
+            var message = $"[BookMeApp] Your verification code is: {otpCode}. This code will expire in 10 minutes.";
+
+            var publishRequest = new PublishRequest
+            {
+                PhoneNumber = phoneNumber,
+                Message = message,
+                MessageAttributes = new Dictionary<string, MessageAttributeValue>
+                {
+                    ["AWS.SNS.SMS.SenderID"] = new()
+                    {
+                        StringValue = _options.SmsSenderId,
+                        DataType = "String"
+                    },
+                    ["AWS.SNS.SMS.SMSType"] = new()
+                    {
+                        StringValue = "Transactional",
+                        DataType = "String"
+                    }
+                }
+            };
+
+            var response = await _snsClient.PublishAsync(publishRequest);
+            _logger.LogInformation("SMS OTP sent to {PhoneNumber}, SNS MessageId: {MessageId}",
+                MaskPhone(phoneNumber), response.MessageId);
 
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send SMS OTP to {PhoneNumber}", phoneNumber);
+            _logger.LogError(ex, "Failed to send SMS OTP to {PhoneNumber}", MaskPhone(phoneNumber));
             return false;
         }
+    }
+
+    private void LogOtpToConsole(string channel, string recipient, string otpCode, string purpose)
+    {
+        _logger.LogWarning("=== {Channel} OTP (DEV MODE - No AWS) ===", channel);
+        _logger.LogWarning("To: {Recipient}", recipient);
+        _logger.LogWarning("Purpose: {Purpose}", purpose);
+        _logger.LogWarning("OTP Code: {OtpCode}", otpCode);
+        _logger.LogWarning("Expires in 10 minutes.");
+        _logger.LogWarning("==========================================");
+    }
+
+    private static string MaskEmail(string email)
+    {
+        var parts = email.Split('@');
+        if (parts.Length != 2 || parts[0].Length < 2) return "***@***";
+        return parts[0][..2] + new string('*', Math.Max(parts[0].Length - 2, 1)) + "@" + parts[1];
+    }
+
+    private static string MaskPhone(string phone)
+    {
+        if (phone.Length < 4) return "***";
+        return new string('*', phone.Length - 4) + phone[^4..];
     }
 
     private string GetEmailTemplate(string otpCode, string purpose)
@@ -134,11 +177,20 @@ public class OtpNotificationService
             <p>You requested a verification code to {action}. Please use the following code:</p>
             <div class=""otp-code"">{otpCode}</div>
             <p>This code will expire in <strong>10 minutes</strong>.</p>
-            <p class=""warning"">⚠️ If you didn't request this code, please ignore this email and ensure your account is secure.</p>
-            <p>Best regards,<br>Booking System Team</p>
+            <p class=""warning"">If you didn't request this code, please ignore this email and ensure your account is secure.</p>
+            <p>Best regards,<br>BookMeApp Team</p>
         </div>
     </div>
 </body>
 </html>";
     }
+}
+
+public sealed class AwsNotificationOptions
+{
+    public const string SectionName = "AwsNotification";
+
+    public string SenderEmail { get; set; } = "noreply@bookmeapp.com";
+    public string SmsSenderId { get; set; } = "BookMeApp";
+    public string AwsRegion { get; set; } = "ap-southeast-1";
 }

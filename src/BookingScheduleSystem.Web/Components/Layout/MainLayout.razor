@@ -50,6 +50,8 @@
     </MudMainContent>
 </MudLayout>
 
+@implements IDisposable
+
 @code {
     private bool _drawerOpen = false;
     private bool _isDarkMode = false;
@@ -199,7 +201,23 @@
         }
     };
 
+    protected override void OnInitialized()
+    {
+        AuthStateProvider.AuthenticationStateChanged += OnAuthenticationStateChanged;
+    }
+
     protected override async Task OnInitializedAsync()
+    {
+        await LoadUserContextAsync();
+    }
+
+    private async void OnAuthenticationStateChanged(Task<AuthenticationState> task)
+    {
+        await LoadUserContextAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadUserContextAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
@@ -235,6 +253,16 @@
                 // localStorage may not be available during prerender
             }
         }
+        else
+        {
+            _userName = string.Empty;
+            _organizationName = "Booking Schedule System";
+        }
+    }
+
+    public void Dispose()
+    {
+        AuthStateProvider.AuthenticationStateChanged -= OnAuthenticationStateChanged;
     }
 
     private void ToggleDrawer()

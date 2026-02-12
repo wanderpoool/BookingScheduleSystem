@@ -1,0 +1,121 @@
+@layout EmptyLayout
+@inject NavigationManager Navigation
+
+<PageTitle>404 — Page Not Found | Book Me App!</PageTitle>
+
+<div class="notfound-page">
+    @* Background Ambient Shapes *@
+    <div class="bg-shape bg-shape-1"></div>
+    <div class="bg-shape bg-shape-2"></div>
+    <div class="bg-shape bg-shape-3"></div>
+
+    <div class="nf-container">
+
+        @* Calendar Illustration *@
+        <div class="illustration">
+            <span class="q-marks q-mark-1">?</span>
+            <span class="q-marks q-mark-2">?</span>
+
+            @* Floating missed appointment cards *@
+            <div class="float-card float-card-1">
+                <div class="float-card-icon" style="background: rgba(99,102,241,0.1);">&#x1F9B7;</div>
+                <div class="float-card-text">
+                    <span class="float-card-title">Dental Cleaning</span>
+                    <span class="float-card-sub">Page not found...</span>
+                </div>
+            </div>
+            <div class="float-card float-card-2">
+                <div class="float-card-icon" style="background: rgba(20,184,166,0.1);">&#x1F486;</div>
+                <div class="float-card-text">
+                    <span class="float-card-title">Hilot Massage</span>
+                    <span class="float-card-sub">Hindi makita...</span>
+                </div>
+            </div>
+            <div class="float-card float-card-3">
+                <div class="float-card-icon" style="background: rgba(236,72,153,0.1);">&#x1F485;</div>
+                <div class="float-card-text">
+                    <span class="float-card-title">Gel Nail Art</span>
+                    <span class="float-card-sub">Nawawala 'yung page!</span>
+                </div>
+            </div>
+            <div class="float-card float-card-4">
+                <div class="float-card-icon" style="background: rgba(245,158,11,0.1);">&#x1F488;</div>
+                <div class="float-card-text">
+                    <span class="float-card-title">Fade Haircut</span>
+                    <span class="float-card-sub">Walang schedule dito</span>
+                </div>
+            </div>
+
+            @* Main Calendar Card *@
+            <div class="cal-card">
+                <div class="cal-card-header">
+                    <span class="cal-card-month">@DateTime.Now.ToString("MMMM yyyy")</span>
+                    <div class="cal-card-dots">
+                        <span></span><span></span><span></span>
+                    </div>
+                </div>
+                <div class="cal-card-body">
+                    <div class="cal-grid">
+                        <span class="cal-day-label">Su</span>
+                        <span class="cal-day-label">Mo</span>
+                        <span class="cal-day-label">Tu</span>
+                        <span class="cal-day-label">We</span>
+                        <span class="cal-day-label">Th</span>
+                        <span class="cal-day-label">Fr</span>
+                        <span class="cal-day-label">Sa</span>
+                        @for (int i = 1; i <= 14; i++)
+                        {
+                            var day = i;
+                            <span class="cal-num @(day == DateTime.Now.Day ? "highlight" : "")">@day</span>
+                        }
+                    </div>
+                    <div class="cal-empty-lines">
+                        <div class="cal-empty-line"></div>
+                        <div class="cal-empty-line"></div>
+                        <div class="cal-empty-line"></div>
+                    </div>
+                    <div class="cal-face">&#x1F615;</div>
+                </div>
+            </div>
+        </div>
+
+        @* 404 Text *@
+        <div class="error-code">404</div>
+        <h1 class="error-title">Ay, wala ditong appointment!</h1>
+        <p class="error-desc">Mukhang nawawala ang page na hinahanap mo. Baka na-reschedule, na-cancel, o hindi talaga nag-exist. Pero don't worry — let's get you back on track!</p>
+
+        @* Action Buttons *@
+        <div class="actions">
+            <a href="/dashboard" class="btn-nf btn-nf-primary" @onclick:preventDefault @onclick="GoToDashboard">&#x2190; Back to Dashboard</a>
+            <a href="/browse-schedules" class="btn-nf btn-nf-secondary" @onclick:preventDefault @onclick="GoToCalendar">View Calendar</a>
+        </div>
+
+        @* Quick Links *@
+        <div class="quick-links">
+            <a href="/browse-schedules" class="quick-link" @onclick:preventDefault @onclick="GoToCalendar">
+                <span class="quick-link-icon">&#x1F4C5;</span>
+                Browse Schedules
+            </a>
+            <a href="/my-bookings" class="quick-link" @onclick:preventDefault @onclick="GoToBookings">
+                <span class="quick-link-icon">&#x1F4CB;</span>
+                My Bookings
+            </a>
+            <a href="/" class="quick-link" @onclick:preventDefault @onclick="GoHome">
+                <span class="quick-link-icon">&#x1F3E0;</span>
+                Home
+            </a>
+        </div>
+    </div>
+
+    @* Footer *@
+    <div class="footer-note">
+        &copy; @DateTime.Now.Year <a href="/" @onclick:preventDefault @onclick="GoHome">Book Me App!</a> &middot; Built for Filipino service businesses &#x1F1F5;&#x1F1ED;
+    </div>
+</div>
+
+@code {
+    private void GoToDashboard() => Navigation.NavigateTo("/dashboard");
+    private void GoToCalendar() => Navigation.NavigateTo("/browse-schedules");
+    private void GoToBookings() => Navigation.NavigateTo("/my-bookings");
+    private void GoHome() => Navigation.NavigateTo("/");
+}

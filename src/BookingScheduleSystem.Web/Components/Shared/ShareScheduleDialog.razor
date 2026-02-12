@@ -1,0 +1,115 @@
+@inject IQrCodeService QrCodeService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+
+<MudDialog>
+    <DialogContent>
+        <MudStack AlignItems="AlignItems.Center" Spacing="3">
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                Share this link with customers so they can browse and book your schedules.
+            </MudText>
+
+            @if (!string.IsNullOrEmpty(_qrCodeBase64))
+            {
+                <div style="padding: 12px; background: white; border-radius: 12px; border: 1px solid var(--mud-palette-divider);">
+                    <img src="data:image/png;base64,@_qrCodeBase64"
+                         alt="QR Code for booking page"
+                         style="width: 200px; height: 200px;" />
+                </div>
+            }
+
+            <MudTextField @bind-Value="_bookingUrl"
+                          Variant="Variant.Outlined"
+                          ReadOnly="true"
+                          Adornment="Adornment.End"
+                          AdornmentIcon="@Icons.Material.Filled.ContentCopy"
+                          OnAdornmentClick="CopyToClipboard"
+                          Style="font-size: 16px;"
+                          FullWidth="true" />
+
+            @* Desktop: side-by-side buttons *@
+            <MudHidden Breakpoint="Breakpoint.SmAndDown">
+                <MudStack Row="true" Spacing="2" Justify="Justify.Center">
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Download"
+                               OnClick="DownloadQrCode"
+                               Style="min-height: 44px;">
+                        Download QR
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.ContentCopy"
+                               OnClick="CopyToClipboard"
+                               Style="min-height: 44px;">
+                        Copy Link
+                    </MudButton>
+                </MudStack>
+            </MudHidden>
+
+            @* Mobile: stacked full-width buttons *@
+            <MudHidden Breakpoint="Breakpoint.MdAndUp">
+                <MudStack Spacing="2" Style="width: 100%;">
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Download"
+                               OnClick="DownloadQrCode"
+                               FullWidth="true"
+                               Style="min-height: 48px;">
+                        Download QR
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.ContentCopy"
+                               OnClick="CopyToClipboard"
+                               FullWidth="true"
+                               Style="min-height: 48px;">
+                        Copy Link
+                    </MudButton>
+                </MudStack>
+            </MudHidden>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Close" Style="min-height: 44px;">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public string? ScheduleTitle { get; set; }
+
+    private string _bookingUrl = string.Empty;
+    private string _qrCodeBase64 = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        _bookingUrl = Navigation.ToAbsoluteUri("/browse-schedules").ToString();
+        _qrCodeBase64 = QrCodeService.GenerateQrCodeBase64(_bookingUrl, 8);
+    }
+
+    private async Task CopyToClipboard()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", _bookingUrl);
+            Snackbar.Add("Link copied to clipboard!", Severity.Success);
+        }
+        catch
+        {
+            Snackbar.Add("Could not copy — please copy the link manually.", Severity.Warning);
+        }
+    }
+
+    private async Task DownloadQrCode()
+    {
+        var fileName = "booking-qr-code.png";
+        await JS.InvokeVoidAsync("downloadFileFromBase64", fileName, _qrCodeBase64);
+    }
+
+    private void Close() => MudDialog.Cancel();
+}

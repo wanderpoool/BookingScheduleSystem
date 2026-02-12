@@ -61,7 +61,25 @@ jobs:
           docker push $ECR_REGISTRY/$APP_NAME-web:latest
           docker push $ECR_REGISTRY/$APP_NAME-web:$IMAGE_TAG
 
-      - name: Deploy API to ECS
+      - name: Update CloudFormation stack
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+        run: |
+          aws cloudformation deploy \
+            --template-file infra/main.yaml \
+            --stack-name $APP_NAME-production \
+            --parameter-overrides \
+              Environment=production \
+              AppName=$APP_NAME \
+              ApiImageUri=$ECR_REGISTRY/$APP_NAME-api:latest \
+              WebImageUri=$ECR_REGISTRY/$APP_NAME-web:latest \
+              GlobalAdminEmail=${{ secrets.GLOBAL_ADMIN_EMAIL }} \
+              GlobalAdminPassword=${{ secrets.GLOBAL_ADMIN_PASSWORD }} \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --region $AWS_REGION \
+            --no-fail-on-empty-changeset
+
+      - name: Force ECS redeployment
         run: |
           aws ecs update-service \
             --cluster $ECS_CLUSTER \
@@ -69,8 +87,6 @@ jobs:
             --force-new-deployment \
             --region $AWS_REGION
 
-      - name: Deploy Web to ECS
-        run: |
           aws ecs update-service \
             --cluster $ECS_CLUSTER \
             --service $APP_NAME-web \

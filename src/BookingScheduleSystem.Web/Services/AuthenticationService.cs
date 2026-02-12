@@ -206,6 +206,19 @@ public class AuthenticationService : IAuthenticationService
         return await _localStorage.GetItemAsync<AuthenticationResponse>(UserKey);
     }
 
+    public async Task<bool> ResetPasswordAsync(ResetPasswordRequest request)
+    {
+        var response = await _httpClient.PostAsJsonAsync("/api/auth/reset-password", request);
+
+        if (response.IsSuccessStatusCode)
+            return true;
+
+        var errorContent = await response.Content.ReadAsStringAsync();
+        var message = ApiErrorHelper.ExtractMessage(errorContent)
+                      ?? "We couldn't reset your password right now. Please try again.";
+        throw new HttpRequestException(message, null, response.StatusCode);
+    }
+
     private void SetTenantHeader(AuthenticationResponse authResponse)
     {
         _httpClient.DefaultRequestHeaders.Remove("X-Tenant-Id");

@@ -17,8 +17,9 @@
     <MudPaper Elevation="3" Class="pa-4 pa-sm-6 pa-md-8" Style="width: 100%; max-width: 500px;">
         <MudStack Spacing="3">
             @* Logo/Branding *@
-            <MudStack Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="2">
-                <img src="logo.png" alt="Book me App!" style="max-width: 200px; height: auto;" />
+            <MudStack Row="true" Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="2">
+                <div style="width: 38px; height: 38px; background: #E85D2A; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 18px; font-family: 'Fraunces', Georgia, serif;">B</div>
+                <span style="font-family: 'Fraunces', Georgia, serif; font-weight: 700; font-size: 20px;">Book Me App!</span>
             </MudStack>
 
             @if (_companyInfo != null)

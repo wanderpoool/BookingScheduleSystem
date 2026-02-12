@@ -1,7 +1,11 @@
 using System.Text;
+using Amazon;
+using Amazon.SimpleEmail;
+using Amazon.SimpleNotificationService;
 using BookingScheduleSystem.Api.Infrastructure.Auth;
 using BookingScheduleSystem.Api.Infrastructure.BackgroundJobs;
 using BookingScheduleSystem.Api.Infrastructure.Bookings;
+using BookingScheduleSystem.Api.Infrastructure.Database;
 using BookingScheduleSystem.Api.Infrastructure.MultiTenancy;
 using BookingScheduleSystem.Api.Infrastructure.Schedules;
 using BookingScheduleSystem.Api.Infrastructure.Notifications;
@@ -51,6 +55,16 @@ builder.Services.AddMarten(options =>
 
 // Register multi-tenancy services
 builder.Services.AddScoped<ITenantContext, TenantContext>();
+
+// Register AWS services (SES for email, SNS for SMS)
+var awsRegion = builder.Configuration["AwsNotification:AwsRegion"] ?? "ap-southeast-1";
+if (!builder.Environment.IsDevelopment())
+{
+    builder.Services.AddSingleton<IAmazonSimpleEmailService>(_ =>
+        new AmazonSimpleEmailServiceClient(RegionEndpoint.GetBySystemName(awsRegion)));
+    builder.Services.AddSingleton<IAmazonSimpleNotificationService>(_ =>
+        new AmazonSimpleNotificationServiceClient(RegionEndpoint.GetBySystemName(awsRegion)));
+}
 
 // Register authentication services
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
@@ -111,6 +125,9 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// Seed Global Admin user (idempotent)
+await GlobalAdminSeeder.SeedAsync(app.Services);
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())

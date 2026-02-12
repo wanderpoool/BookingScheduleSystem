@@ -328,17 +328,17 @@ Reward users for referring new customers.
 ### Phase 1 (Critical)
 - [x] Auto-Expire Subscriptions Job
 - [ ] Payment Gateway Integration
-- [ ] Email Notification System
+- [x] Email Notification System (Partial — OTP via AWS SES/SNS, subscription emails pending)
 
 ### Phase 2 (Important)
-- [x] Upgrade/Downgrade Subscriptions
+- [x] Upgrade/Downgrade Subscriptions (API complete, UI partial)
 - [x] Usage Statistics Reset Job
 - [x] Additional Limit Enforcement
 
 ### Phase 3 (Nice to Have)
-- [ ] Subscription Analytics Dashboard
+- [x] Subscription Analytics Dashboard (Admin revenue + tenant usage views)
 - [ ] Audit Logging
-- [ ] Tenant Billing Portal
+- [x] Tenant Billing Portal (View-only — no payment processing yet)
 
 ### Phase 4 (Future)
 - [ ] Coupon & Discount Codes
@@ -349,4 +349,4 @@ Reward users for referring new customers.
 
 ---
 
-**Last Updated**: 2026-02-11
+**Last Updated**: 2026-02-12
