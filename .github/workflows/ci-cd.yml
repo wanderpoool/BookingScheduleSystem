@@ -13,10 +13,9 @@ env:
   APP_NAME: bookmeapp
 
 jobs:
-  build:
-    name: Build & Validate
+  build-api:
+    name: Build API
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -26,25 +25,32 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Restore dependencies
-        run: |
-          dotnet restore src/BookingScheduleSystem.Api/BookingScheduleSystem.Api.csproj
-          dotnet restore src/BookingScheduleSystem.Web/BookingScheduleSystem.Web.csproj
+      - name: Restore & Build
+        run: dotnet build src/BookingScheduleSystem.Api/BookingScheduleSystem.Api.csproj -c Release
 
-      - name: Build API
-        run: dotnet build src/BookingScheduleSystem.Api/BookingScheduleSystem.Api.csproj --no-restore -c Release
-
-      - name: Build Web
-        run: dotnet build src/BookingScheduleSystem.Web/BookingScheduleSystem.Web.csproj --no-restore -c Release
-
-      - name: Build API Docker image
+      - name: Build Docker image
         run: |
           docker build \
             -t bookmeapp-api:ci \
             -f src/BookingScheduleSystem.Api/Dockerfile \
             src/
 
-      - name: Build Web Docker image
+  build-web:
+    name: Build Web
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore & Build
+        run: dotnet build src/BookingScheduleSystem.Web/BookingScheduleSystem.Web.csproj -c Release
+
+      - name: Build Docker image
         run: |
           docker build \
             -t bookmeapp-web:ci \
@@ -53,7 +59,7 @@ jobs:
 
   deploy:
     name: Deploy to AWS
-    needs: build
+    needs: [build-api, build-web]
     runs-on: ubuntu-latest
     environment: Production
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
@@ -137,20 +143,12 @@ jobs:
             --force-new-deployment \
             --region $AWS_REGION
 
-      - name: Wait for API service stability
+      - name: Wait for services to stabilize
         run: |
-          echo "Waiting for API service to stabilize..."
+          echo "Waiting for services to stabilize..."
           aws ecs wait services-stable \
             --cluster $ECS_CLUSTER \
-            --services $APP_NAME-api \
-            --region $AWS_REGION
-
-      - name: Wait for Web service stability
-        run: |
-          echo "Waiting for Web service to stabilize..."
-          aws ecs wait services-stable \
-            --cluster $ECS_CLUSTER \
-            --services $APP_NAME-web \
+            --services $APP_NAME-api $APP_NAME-web \
             --region $AWS_REGION
 
       - name: Deployment summary
