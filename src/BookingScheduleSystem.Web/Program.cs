@@ -67,7 +67,11 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+// HTTPS redirection is handled by the ALB/reverse proxy in production
+if (app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 app.UseStatusCodePagesWithRedirects("/not-found");
 app.UseAntiforgery();
 
