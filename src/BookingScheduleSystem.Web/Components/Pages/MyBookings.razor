@@ -1,5 +1,6 @@
 @page "/my-bookings"
 @rendermode InteractiveServer
+@attribute [Authorize]
 @using System.Security.Claims
 @using Microsoft.AspNetCore.Components.Authorization
 @inject IBookingService BookingService

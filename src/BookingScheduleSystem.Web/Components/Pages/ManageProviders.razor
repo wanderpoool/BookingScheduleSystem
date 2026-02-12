@@ -1,5 +1,6 @@
 @page "/providers"
 @rendermode InteractiveServer
+@attribute [Authorize]
 @using Microsoft.AspNetCore.Components.Authorization
 @using BookingScheduleSystem.Contracts.Users
 @inject IUserService UserService

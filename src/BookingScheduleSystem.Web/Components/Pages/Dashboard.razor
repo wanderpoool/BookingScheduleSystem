@@ -1,5 +1,6 @@
 @page "/dashboard"
 @rendermode InteractiveServer
+@attribute [Authorize]
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
 @inject IBookingService BookingService

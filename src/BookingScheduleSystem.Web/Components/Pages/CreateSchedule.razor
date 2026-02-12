@@ -1,5 +1,6 @@
 @page "/schedules/create"
 @rendermode InteractiveServer
+@attribute [Authorize]
 @using Microsoft.AspNetCore.Components.Authorization
 @inject IScheduleService ScheduleService
 @inject ISnackbar Snackbar
