@@ -277,7 +277,7 @@ Resources:
       EngineVersion: '16.4'
       DBInstanceClass: db.t4g.micro
       AllocatedStorage: 20
-      StorageType: gp3
+      StorageType: gp2
       DBName: !Ref DbName
       MasterUsername: !Ref DbUsername
       MasterUserPassword: !Sub '{{resolve:secretsmanager:${DbPasswordSecret}:SecretString}}'
@@ -285,9 +285,9 @@ Resources:
       VPCSecurityGroups:
         - !Ref RdsSecurityGroup
       PubliclyAccessible: false
-      BackupRetentionPeriod: 7
+      BackupRetentionPeriod: 1
       MultiAZ: false
-      StorageEncrypted: true
+      StorageEncrypted: false
       Tags:
         - Key: Name
           Value: !Sub '${AppName}-${Environment}-postgres'
