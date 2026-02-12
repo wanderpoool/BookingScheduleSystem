@@ -1,7 +1,9 @@
-name: Deploy to AWS
+name: CI/CD Pipeline
 
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
   workflow_dispatch:
 
@@ -12,12 +14,57 @@ env:
   AWS_REGION: ap-southeast-1
 
 jobs:
-  build-and-push:
-    name: Build & Push Images
+  build-api:
+    name: Build API
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore & Build
+        run: dotnet build src/BookingScheduleSystem.Api/BookingScheduleSystem.Api.csproj -c Release
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t bookmeapp-api:ci \
+            -f src/BookingScheduleSystem.Api/Dockerfile \
+            src/
+
+  build-web:
+    name: Build Web
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore & Build
+        run: dotnet build src/BookingScheduleSystem.Web/BookingScheduleSystem.Web.csproj -c Release
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t bookmeapp-web:ci \
+            -f src/BookingScheduleSystem.Web/Dockerfile \
+            src/
+
+  deploy:
+    name: Deploy to AWS
+    needs: [build-api, build-web]
     runs-on: ubuntu-latest
     environment: Production
-    outputs:
-      image-tag: ${{ github.sha }}
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -67,26 +114,6 @@ jobs:
 
           docker push $ECR_REGISTRY/$APP_NAME-web:latest
           docker push $ECR_REGISTRY/$APP_NAME-web:$IMAGE_TAG
-
-  deploy:
-    name: Deploy to ECS
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    environment: Production
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Login to Amazon ECR
-        id: ecr-login
-        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Update CloudFormation stack
         env:
