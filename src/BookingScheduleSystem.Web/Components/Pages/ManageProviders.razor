@@ -31,9 +31,19 @@
 
                     @if (_isLoading)
                     {
-                        <MudStack AlignItems="AlignItems.Center" Class="pa-8">
-                            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
-                            <MudText>Loading providers...</MudText>
+                        <MudStack Spacing="2">
+                            @for (var i = 0; i < 3; i++)
+                            {
+                                <MudPaper Elevation="0" Class="pa-4" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px;">
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+                                        <MudSkeleton SkeletonType="SkeletonType.Circle" Width="40px" Height="40px" />
+                                        <MudStack Spacing="1" Style="flex: 1;">
+                                            <MudSkeleton Width="50%" Height="18px" />
+                                            <MudSkeleton Width="70%" Height="14px" />
+                                        </MudStack>
+                                    </MudStack>
+                                </MudPaper>
+                            }
                         </MudStack>
                     }
                     else if (_providers == null || _providers.Count == 0)

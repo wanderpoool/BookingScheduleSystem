@@ -62,9 +62,20 @@
 
                     @if (_isLoading)
                     {
-                        <MudStack AlignItems="AlignItems.Center" Class="pa-8">
-                            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
-                            <MudText>Loading schedules...</MudText>
+                        <MudStack Spacing="2">
+                            @for (var i = 0; i < 3; i++)
+                            {
+                                <MudPaper Elevation="0" Class="pa-4" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px;">
+                                    <MudStack Spacing="2">
+                                        <MudStack Row="true" Justify="Justify.SpaceBetween">
+                                            <MudSkeleton Width="50%" Height="20px" />
+                                            <MudSkeleton Width="60px" Height="24px" Style="border-radius: 12px;" />
+                                        </MudStack>
+                                        <MudSkeleton Width="70%" Height="16px" />
+                                        <MudSkeleton Width="40%" Height="16px" />
+                                    </MudStack>
+                                </MudPaper>
+                            }
                         </MudStack>
                     }
                     else if (_viewMode == ViewMode.Calendar)
@@ -73,8 +84,8 @@
                         <div style="position: relative;">
                             @if (_isCalendarLoading)
                             {
-                                <div style="position: absolute; inset: 0; z-index: 10; background: rgba(255,255,255,0.7); display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                                    <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" />
+                                <div style="position: absolute; top: 0; left: 0; right: 0; z-index: 10;">
+                                    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
                                 </div>
                             }
 

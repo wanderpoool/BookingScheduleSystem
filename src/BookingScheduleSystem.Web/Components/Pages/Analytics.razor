@@ -16,10 +16,13 @@
             <div class="pa-5">
                 @if (_isLoading)
                 {
-                    <MudStack AlignItems="AlignItems.Center" Class="pa-8">
-                        <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
-                        <MudText>Loading analytics...</MudText>
-                    </MudStack>
+                    <MudGrid Spacing="2">
+                        <MudItem xs="6" sm="3"><MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="90px" Style="border-radius: 14px;" /></MudItem>
+                        <MudItem xs="6" sm="3"><MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="90px" Style="border-radius: 14px;" /></MudItem>
+                        <MudItem xs="6" sm="3"><MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="90px" Style="border-radius: 14px;" /></MudItem>
+                        <MudItem xs="6" sm="3"><MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="90px" Style="border-radius: 14px;" /></MudItem>
+                        <MudItem xs="12"><MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="200px" Style="border-radius: 14px;" /></MudItem>
+                    </MudGrid>
                 }
                 else if (_subscription == null)
                 {

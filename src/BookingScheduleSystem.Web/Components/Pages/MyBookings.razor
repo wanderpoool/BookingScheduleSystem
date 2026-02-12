@@ -37,9 +37,17 @@
 
                     @if (_isLoading)
                     {
-                        <MudStack AlignItems="AlignItems.Center" Class="pa-8">
-                            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
-                            <MudText>Loading bookings...</MudText>
+                        <MudStack Spacing="2">
+                            @for (var i = 0; i < 3; i++)
+                            {
+                                <MudPaper Elevation="0" Class="pa-4" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px;">
+                                    <MudStack Spacing="2">
+                                        <MudSkeleton Width="60%" Height="20px" />
+                                        <MudSkeleton Width="80%" Height="16px" />
+                                        <MudSkeleton Width="40%" Height="16px" />
+                                    </MudStack>
+                                </MudPaper>
+                            }
                         </MudStack>
                     }
                     else if (_bookings == null || _bookings.Count == 0)

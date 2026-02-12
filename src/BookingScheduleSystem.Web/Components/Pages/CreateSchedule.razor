@@ -19,9 +19,11 @@
             <div class="pa-5">
                 @if (_isCreating)
                 {
-                    <MudStack AlignItems="AlignItems.Center" Class="pa-8">
-                        <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
-                        <MudText>Opening schedule form...</MudText>
+                    <MudStack Spacing="3">
+                        <MudSkeleton Width="40%" Height="20px" />
+                        <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="48px" Style="border-radius: 14px;" />
+                        <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="48px" Style="border-radius: 14px;" />
+                        <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="48px" Style="border-radius: 14px;" />
                     </MudStack>
                 }
             </div>

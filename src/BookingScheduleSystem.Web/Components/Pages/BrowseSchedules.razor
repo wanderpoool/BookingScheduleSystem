@@ -49,9 +49,8 @@
 
                 @if (_isLoading)
                 {
-                    <div style="position: absolute; inset: 0; z-index: 10; background: rgba(255,255,255,0.7); display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                        <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" />
-                        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2">Loading schedules...</MudText>
+                    <div style="position: absolute; top: 0; left: 0; right: 0; z-index: 10;">
+                        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
                     </div>
                 }
 
@@ -128,9 +127,8 @@
 
                 @if (_isLoading)
                 {
-                    <div style="position: absolute; inset: 0; z-index: 10; background: rgba(255,255,255,0.7); display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                        <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" />
-                        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2">Loading...</MudText>
+                    <div style="position: absolute; top: 0; left: 0; right: 0; z-index: 10;">
+                        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
                     </div>
                 }
 

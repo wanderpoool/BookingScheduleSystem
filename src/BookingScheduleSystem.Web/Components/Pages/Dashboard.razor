@@ -16,11 +16,24 @@
     <Authorized>
         @if (_isLoading)
         {
-            <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
-                <MudStack AlignItems="AlignItems.Center" Spacing="3">
-                    <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" />
-                    <MudText Typo="Typo.body1" Color="Color.Secondary">Loading your dashboard...</MudText>
-                </MudStack>
+            <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+                <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden;">
+                    <div class="pa-4 px-5" style="border-bottom: 1px solid var(--mud-palette-divider);">
+                        <MudSkeleton Width="200px" Height="24px" />
+                        <MudSkeleton Width="160px" Height="16px" Class="mt-1" />
+                    </div>
+                    <div class="pa-5">
+                        <MudStack Spacing="4">
+                            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="100px" Style="border-radius: 14px;" />
+                            <MudGrid Spacing="2">
+                                <MudItem xs="12" md="6"><MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="120px" Style="border-radius: 14px;" /></MudItem>
+                                <MudItem xs="12" md="6"><MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="120px" Style="border-radius: 14px;" /></MudItem>
+                            </MudGrid>
+                            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="80px" Style="border-radius: 14px;" />
+                            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="80px" Style="border-radius: 14px;" />
+                        </MudStack>
+                    </div>
+                </MudPaper>
             </MudContainer>
         }
         else if (!_hasTenant)
