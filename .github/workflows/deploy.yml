@@ -1,0 +1,116 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  ECS_CLUSTER: bookmeapp-production
+  APP_NAME: bookmeapp
+
+jobs:
+  deploy:
+    name: Build, Push & Deploy
+    runs-on: ubuntu-latest
+    # Only deploy on push to main or manual trigger, not on PRs
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push API image
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build \
+            -t $ECR_REGISTRY/$APP_NAME-api:latest \
+            -t $ECR_REGISTRY/$APP_NAME-api:$IMAGE_TAG \
+            -f src/BookingScheduleSystem.Api/Dockerfile \
+            src/
+
+          docker push $ECR_REGISTRY/$APP_NAME-api:latest
+          docker push $ECR_REGISTRY/$APP_NAME-api:$IMAGE_TAG
+
+      - name: Build, tag, and push Web image
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build \
+            -t $ECR_REGISTRY/$APP_NAME-web:latest \
+            -t $ECR_REGISTRY/$APP_NAME-web:$IMAGE_TAG \
+            -f src/BookingScheduleSystem.Web/Dockerfile \
+            src/
+
+          docker push $ECR_REGISTRY/$APP_NAME-web:latest
+          docker push $ECR_REGISTRY/$APP_NAME-web:$IMAGE_TAG
+
+      - name: Deploy API to ECS
+        run: |
+          aws ecs update-service \
+            --cluster $ECS_CLUSTER \
+            --service $APP_NAME-api \
+            --force-new-deployment \
+            --region $AWS_REGION
+
+      - name: Deploy Web to ECS
+        run: |
+          aws ecs update-service \
+            --cluster $ECS_CLUSTER \
+            --service $APP_NAME-web \
+            --force-new-deployment \
+            --region $AWS_REGION
+
+      - name: Wait for API service stability
+        run: |
+          echo "Waiting for API service to stabilize..."
+          aws ecs wait services-stable \
+            --cluster $ECS_CLUSTER \
+            --services $APP_NAME-api \
+            --region $AWS_REGION
+
+      - name: Wait for Web service stability
+        run: |
+          echo "Waiting for Web service to stabilize..."
+          aws ecs wait services-stable \
+            --cluster $ECS_CLUSTER \
+            --services $APP_NAME-web \
+            --region $AWS_REGION
+
+      - name: Deployment summary
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          ALB_DNS=$(aws cloudformation describe-stacks \
+            --stack-name $APP_NAME-production \
+            --query 'Stacks[0].Outputs[?OutputKey==`AlbDnsName`].OutputValue' \
+            --output text \
+            --region $AWS_REGION 2>/dev/null || echo "unknown")
+
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Cluster** | \`$ECS_CLUSTER\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **API Image** | \`$ECR_REGISTRY/$APP_NAME-api:$IMAGE_TAG\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Web Image** | \`$ECR_REGISTRY/$APP_NAME-web:$IMAGE_TAG\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Commit** | \`$IMAGE_TAG\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **ALB URL** | \`$ALB_DNS\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Health Check** | \`$ALB_DNS/api/health\` |" >> $GITHUB_STEP_SUMMARY
