@@ -288,7 +288,7 @@ Resources:
     Properties:
       DBInstanceIdentifier: !Sub '${AppName}-${Environment}-db'
       Engine: postgres
-      EngineVersion: '16.4'
+      EngineVersion: '16.6'
       DBInstanceClass: db.t3.micro
       AllocatedStorage: 20
       StorageType: gp2
