@@ -227,9 +227,12 @@
     private int _pageSize = 20;
     private int _totalCount;
     private DateRange? _lastDateRange;
+    private string? _tenantId;
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _tenantId = authState.User.FindFirst("TenantId")?.Value;
         await LoadSchedules();
     }
 
@@ -501,6 +504,11 @@
 
     private async Task OpenShareDialog()
     {
+        var parameters = new DialogParameters<ShareScheduleDialog>
+        {
+            { x => x.TenantId, _tenantId }
+        };
+
         var options = new DialogOptions
         {
             CloseButton = true,
@@ -508,7 +516,7 @@
             FullWidth = true
         };
 
-        await DialogService.ShowAsync<ShareScheduleDialog>("Share Booking Page", options);
+        await DialogService.ShowAsync<ShareScheduleDialog>("Share Booking Page", parameters, options);
     }
 
     private static double GetBookingPercentage(ScheduleResponse schedule)

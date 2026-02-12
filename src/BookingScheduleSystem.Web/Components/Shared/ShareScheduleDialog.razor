@@ -81,14 +81,17 @@
     private IMudDialogInstance MudDialog { get; set; } = default!;
 
     [Parameter]
-    public string? ScheduleTitle { get; set; }
+    public string? TenantId { get; set; }
 
     private string _bookingUrl = string.Empty;
     private string _qrCodeBase64 = string.Empty;
 
     protected override void OnInitialized()
     {
-        _bookingUrl = Navigation.ToAbsoluteUri("/browse-schedules").ToString();
+        var registrationPath = string.IsNullOrEmpty(TenantId)
+            ? "/register"
+            : $"/register?company={TenantId}";
+        _bookingUrl = Navigation.ToAbsoluteUri(registrationPath).ToString();
         _qrCodeBase64 = QrCodeService.GenerateQrCodeBase64(_bookingUrl, 8);
     }
 
