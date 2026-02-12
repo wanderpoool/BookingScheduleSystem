@@ -80,6 +80,17 @@ This starts PostgreSQL, the API (port 5059), and the Web app (port 5288).
 | API | 5059 |
 | PostgreSQL | 5432 |
 
+## Deployment
+
+The application is automatically deployed to AWS ECS when changes are pushed to the `main` branch.
+
+**📖 See [DEPLOYMENT.md](DEPLOYMENT.md) for:**
+- Where to find your application after deployment
+- How to access deployment summaries
+- AWS Console locations for your application URL
+- Deployment workflow details
+- Monitoring and troubleshooting tips
+
 ## License
 
 Private - All rights reserved.
