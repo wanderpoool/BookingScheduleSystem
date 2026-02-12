@@ -49,6 +49,11 @@
                     }
                 </MudSelect>
             }
+
+            <MudTextField T="string" @bind-Value="_notes" Label="Notes (optional)"
+                          Variant="Variant.Outlined" Lines="3"
+                          Placeholder="Add any notes or special requests..."
+                          HelperText="e.g., preferred room, accessibility needs" />
         </MudStack>
     </DialogContent>
     <DialogActions>
@@ -92,6 +97,7 @@
     private List<ProviderOption> _availableProviders = new();
     private ProviderOption? _selectedProvider;
     private bool _isBooking;
+    private string? _notes;
 
     private sealed record ProviderOption(UserId ProviderId, string Name, ScheduleId? ScheduleId);
 
@@ -225,7 +231,8 @@
 
             var request = new CreateBookingRequest
             {
-                ScheduleId = scheduleId.Value.Value
+                ScheduleId = scheduleId.Value.Value,
+                Notes = string.IsNullOrWhiteSpace(_notes) ? null : _notes.Trim()
             };
 
             var result = await BookingService.CreateBookingAsync(request);

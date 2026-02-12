@@ -1,0 +1,280 @@
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+
+<div class="bm-calendar" style="@Style" @attributes="AdditionalAttributes">
+    @* ===== HEADER ===== *@
+    @if (ShowNavigation)
+    {
+        <div class="bm-cal-header">
+            <div class="bm-cal-header-left">
+                <h2 class="bm-cal-title">@_currentDate.ToString("MMMM yyyy")</h2>
+                <span class="bm-cal-subtitle">@GetSubtitleText()</span>
+            </div>
+            <div class="bm-cal-controls">
+                <div class="bm-cal-nav-group">
+                    <button class="bm-nav-btn" @onclick="GoPrevious" aria-label="Previous">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                    <button class="bm-today-btn" @onclick="GoToday">Today</button>
+                    <button class="bm-nav-btn" @onclick="GoNext" aria-label="Next">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 4L10 8L6 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                </div>
+                @if (ShowViewToggle)
+                {
+                    <div class="bm-view-toggle">
+                        <button class="bm-view-btn @(View == BookMeCalendarView.Day ? "active" : "")"
+                                @onclick="@(() => SetView(BookMeCalendarView.Day))">Day</button>
+                        <button class="bm-view-btn @(View == BookMeCalendarView.Week ? "active" : "")"
+                                @onclick="@(() => SetView(BookMeCalendarView.Week))">Week</button>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    @* ===== DAY HEADERS ===== *@
+    <div class="bm-week-header" style="--bm-day-count: @GetVisibleDays().Count">
+        <div class="bm-time-spacer"></div>
+        @foreach (var day in GetVisibleDays())
+        {
+            var isToday = day.Date == DateTime.Today;
+            <div class="bm-day-header @(isToday ? "bm-today" : "")">
+                <span class="bm-day-name">@day.ToString("ddd").ToUpper()</span>
+                <span class="bm-day-num">@day.Day</span>
+            </div>
+        }
+    </div>
+
+    @* ===== SCROLLABLE TIME GRID ===== *@
+    <div class="bm-grid-scroll" @ref="_gridScrollRef">
+        <div class="bm-time-grid" style="--bm-day-count: @GetVisibleDays().Count">
+            @* Time labels column *@
+            <div class="bm-time-labels">
+                @for (var hour = MinVisibleTime.Hour; hour <= MaxVisibleTime.Hour; hour++)
+                {
+                    var displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+                    var amPm = hour < 12 ? "AM" : "PM";
+                    <div class="bm-time-label" style="height: @(HourHeightPx)px;">
+                        <span>@displayHour @amPm</span>
+                    </div>
+                }
+            </div>
+
+            @* Day columns *@
+            @foreach (var day in GetVisibleDays())
+            {
+                var isToday = day.Date == DateTime.Today;
+                var dayItems = GetItemsForDay(day);
+
+                <div class="bm-day-column">
+                    @* Hour grid lines *@
+                    @for (var hour = MinVisibleTime.Hour; hour <= MaxVisibleTime.Hour; hour++)
+                    {
+                        var cellTime = day.Date.AddHours(hour);
+                        <div class="bm-hour-row" style="height: @(HourHeightPx)px;"
+                             @onclick="@(() => OnCellClick(cellTime))">
+                        </div>
+                    }
+
+                    @* Appointment blocks *@
+                    @foreach (var item in dayItems)
+                    {
+                        var top = CalculateTopPx(item.Start);
+                        var height = CalculateHeightPx(item.Start, item.End ?? item.Start.AddHours(1));
+                        <div class="bm-appt-block"
+                             style="top: @(top)px; height: @(height)px;"
+                             @onclick="@(() => OnItemClick(item))"
+                             @onclick:stopPropagation="true"
+                             role="button"
+                             tabindex="0">
+                            @if (CellTemplate is not null)
+                            {
+                                <div class="bm-appt-cell-wrap">
+                                    @CellTemplate(item)
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="bm-appt-default">
+                                    <span class="bm-appt-title">@item.Title</span>
+                                    @if (!string.IsNullOrEmpty(item.Text))
+                                    {
+                                        <span class="bm-appt-text">@item.Text</span>
+                                    }
+                                    <span class="bm-appt-time">@item.Start.ToString("h:mm tt") - @((item.End ?? item.Start.AddHours(1)).ToString("h:mm tt"))</span>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    @* Current time indicator *@
+                    @if (isToday)
+                    {
+                        var now = DateTime.Now;
+                        var nowTimeOnly = new TimeOnly(now.Hour, now.Minute);
+                        if (nowTimeOnly >= MinVisibleTime && nowTimeOnly <= MaxVisibleTime)
+                        {
+                            var timeTop = CalculateTopPx(now);
+                            <div class="bm-current-time" style="top: @(timeTop)px;"></div>
+                        }
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private ElementReference _gridScrollRef;
+
+    [Parameter] public List<ScheduleCalendarItem> Items { get; set; } = new();
+    [Parameter] public BookMeCalendarView View { get; set; } = BookMeCalendarView.Week;
+    [Parameter] public EventCallback<BookMeCalendarView> ViewChanged { get; set; }
+    [Parameter] public TimeOnly MinVisibleTime { get; set; } = new(7, 0);
+    [Parameter] public TimeOnly MaxVisibleTime { get; set; } = new(19, 0);
+    [Parameter] public EventCallback<ScheduleCalendarItem> ItemClicked { get; set; }
+    [Parameter] public EventCallback<DateTime> CellClicked { get; set; }
+    [Parameter] public EventCallback<DateRange> DateRangeChanged { get; set; }
+    [Parameter] public RenderFragment<ScheduleCalendarItem>? CellTemplate { get; set; }
+    [Parameter] public bool ShowViewToggle { get; set; } = true;
+    [Parameter] public bool ShowNavigation { get; set; } = true;
+    [Parameter] public string? Style { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private DateTime _currentDate = DateTime.Today;
+    private int HourHeightPx => 80;
+
+    private string GetSubtitleText()
+    {
+        if (View == BookMeCalendarView.Day)
+        {
+            return _currentDate.ToString("ddd, MMM d");
+        }
+
+        var days = GetVisibleDays();
+        if (days.Count > 1)
+        {
+            return $"{days[0]:MMM d} - {days[^1]:MMM d}";
+        }
+        return _currentDate.ToString("ddd, MMM d");
+    }
+
+    private List<DateTime> GetVisibleDays()
+    {
+        if (View == BookMeCalendarView.Day)
+        {
+            return [_currentDate];
+        }
+
+        // Week view: Monday to Sunday
+        var dayOfWeek = _currentDate.DayOfWeek;
+        var daysToMonday = dayOfWeek == DayOfWeek.Sunday ? 6 : (int)dayOfWeek - 1;
+        var monday = _currentDate.AddDays(-daysToMonday);
+
+        var days = new List<DateTime>();
+        for (var i = 0; i < 7; i++)
+        {
+            days.Add(monday.AddDays(i));
+        }
+        return days;
+    }
+
+    private DateRange GetDateRange()
+    {
+        var days = GetVisibleDays();
+        var start = new DateTime(days[0].Year, days[0].Month, days[0].Day, 0, 0, 0, DateTimeKind.Utc);
+        var end = new DateTime(days[^1].Year, days[^1].Month, days[^1].Day, 0, 0, 0, DateTimeKind.Utc);
+        return new DateRange(start, end);
+    }
+
+    private List<ScheduleCalendarItem> GetItemsForDay(DateTime day)
+    {
+        return Items
+            .Where(i => i.Start.Date == day.Date)
+            .OrderBy(i => i.Start)
+            .ToList();
+    }
+
+    private double CalculateTopPx(DateTime time)
+    {
+        var minutesFromStart = (time.Hour - MinVisibleTime.Hour) * 60 + time.Minute - MinVisibleTime.Minute;
+        return minutesFromStart * HourHeightPx / 60.0;
+    }
+
+    private double CalculateHeightPx(DateTime start, DateTime end)
+    {
+        var durationMinutes = (end - start).TotalMinutes;
+        return Math.Max(24, durationMinutes * HourHeightPx / 60.0);
+    }
+
+    private async Task SetView(BookMeCalendarView view)
+    {
+        View = view;
+        await ViewChanged.InvokeAsync(view);
+        await FireDateRangeChanged();
+    }
+
+    private async Task GoToday()
+    {
+        _currentDate = DateTime.Today;
+        await FireDateRangeChanged();
+    }
+
+    private async Task GoNext()
+    {
+        _currentDate = View == BookMeCalendarView.Day
+            ? _currentDate.AddDays(1)
+            : _currentDate.AddDays(7);
+        await FireDateRangeChanged();
+    }
+
+    private async Task GoPrevious()
+    {
+        _currentDate = View == BookMeCalendarView.Day
+            ? _currentDate.AddDays(-1)
+            : _currentDate.AddDays(-7);
+        await FireDateRangeChanged();
+    }
+
+    private async Task FireDateRangeChanged()
+    {
+        await DateRangeChanged.InvokeAsync(GetDateRange());
+    }
+
+    private async Task OnItemClick(ScheduleCalendarItem item)
+    {
+        await ItemClicked.InvokeAsync(item);
+    }
+
+    private async Task OnCellClick(DateTime cellTime)
+    {
+        await CellClicked.InvokeAsync(cellTime);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Fire initial date range so parent loads data
+            await FireDateRangeChanged();
+
+            // Scroll to business hours start
+            await ScrollToBusinessHours();
+        }
+    }
+
+    private async Task ScrollToBusinessHours()
+    {
+        try
+        {
+            // Scroll to MinVisibleTime (or a bit before to show context)
+            var scrollOffset = Math.Max(0, (MinVisibleTime.Hour - MinVisibleTime.Hour)) * HourHeightPx;
+            await JS.InvokeVoidAsync("bookMeCalendar.scrollToTime", _gridScrollRef, scrollOffset);
+        }
+        catch
+        {
+            // JS interop can fail during prerender
+        }
+    }
+}

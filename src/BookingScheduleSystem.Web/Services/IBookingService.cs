@@ -11,6 +11,7 @@ public interface IBookingService
     Task<BookingResponse?> CancelBookingAsync(Guid bookingId, string? reason = null);
     Task<BookingResponse?> ApproveBookingAsync(Guid bookingId);
     Task<BookingResponse?> RejectBookingAsync(Guid bookingId, string? reason = null);
+    Task<BookingResponse?> UpdateBookingNotesAsync(Guid bookingId, string? notes);
 }
 
 public sealed record ListBookingsResponse

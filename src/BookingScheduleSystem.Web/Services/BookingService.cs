@@ -178,6 +178,37 @@ public class BookingService : IBookingService
         }
     }
 
+    public async Task<BookingResponse?> UpdateBookingNotesAsync(Guid bookingId, string? notes)
+    {
+        try
+        {
+            var request = new UpdateBookingNotesRequest { Notes = notes };
+            var httpRequest = new HttpRequestMessage(HttpMethod.Patch, $"/api/bookings/{bookingId}/notes")
+            {
+                Content = JsonContent.Create(request)
+            };
+            var response = await _httpClient.SendAsync(httpRequest);
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<BookingResponse>();
+            }
+
+            var error = await response.Content.ReadAsStringAsync();
+            _logger.LogWarning("Failed to update booking notes {BookingId}: {StatusCode} - {Error}", bookingId, response.StatusCode, error);
+            var message = ApiErrorHelper.ExtractMessage(error) ?? GetUpdateNotesError(response.StatusCode);
+            throw new HttpRequestException(message, null, response.StatusCode);
+        }
+        catch (HttpRequestException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating booking notes {BookingId}", bookingId);
+            throw new HttpRequestException("Unable to connect to the server. Please check your connection and try again.", ex);
+        }
+    }
+
     private static string GetCreateBookingError(HttpStatusCode statusCode) => statusCode switch
     {
         HttpStatusCode.NotFound => "This schedule is no longer available. It may have been removed or rescheduled.",
@@ -229,6 +260,14 @@ public class BookingService : IBookingService
         HttpStatusCode.Unauthorized => "Your session has expired. Please sign in again to continue.",
         HttpStatusCode.Forbidden => "You don't have permission to reject this booking.",
         _ => "Something went wrong while rejecting the booking. Please try again in a moment."
+    };
+
+    private static string GetUpdateNotesError(HttpStatusCode statusCode) => statusCode switch
+    {
+        HttpStatusCode.NotFound => "This booking could not be found.",
+        HttpStatusCode.Unauthorized => "Your session has expired. Please sign in again to continue.",
+        HttpStatusCode.Forbidden => "You don't have permission to update notes on this booking.",
+        _ => "Something went wrong while updating the notes. Please try again in a moment."
     };
 
 }

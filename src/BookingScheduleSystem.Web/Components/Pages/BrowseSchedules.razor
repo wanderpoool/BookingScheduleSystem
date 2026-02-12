@@ -55,55 +55,56 @@
                     </div>
                 }
 
-                <MudCalendar T="ScheduleCalendarItem"
-                             Items="@_calendarItems"
-                             View="CalendarView.Day"
-                             MinVisibleTime="@_businessStartTime"
-                             ShowMonth="false"
-                             ShowWeek="false"
-                             ShowWorkWeek="false"
-                             ItemClicked="@OnItemClicked"
-                             CellClicked="@OnCellClicked"
-                             DateRangeChanged="@OnDateRangeChanged"
-                             Use24HourClock="false"
-                             ShowPrevNextButtons="false"
-                             Style="height: calc(100vh - 220px); min-height: 300px;">
+                <BookMeCalendar Items="@_calendarItems"
+                                View="BookMeCalendarView.Day"
+                                MinVisibleTime="@_businessStartTime"
+                                ShowViewToggle="false"
+                                ItemClicked="@OnItemClicked"
+                                CellClicked="@OnCellClicked"
+                                DateRangeChanged="@OnDateRangeChanged"
+                                Style="height: calc(100vh - 220px); min-height: 300px;">
                     <CellTemplate Context="calItem">
                         @if (!calItem.TimeBlock.IsAvailable && calItem.TimeBlock.CustomerName == _userFullName)
                         {
                             @* Current user's booking — show details *@
-                            <div style="width: 100%; height: 100%; border: 2px solid @(GetBookingStatusColor(calItem.TimeBlock.BookingStatus)); background: @(GetBookingStatusBg(calItem.TimeBlock.BookingStatus)); display: flex; flex-direction: column;">
-                                <div style="background: @(GetBookingStatusColor(calItem.TimeBlock.BookingStatus)); padding: 2px 8px; display: flex; align-items: center; justify-content: space-between;">
+                            <div style="width: 100%; height: 100%; border: 2px solid @(GetBookingStatusColor(calItem.TimeBlock.BookingStatus)); background: @(GetBookingStatusBg(calItem.TimeBlock.BookingStatus)); display: flex; flex-direction: column; border-radius: 6px;">
+                                <div style="background: @(GetBookingStatusColor(calItem.TimeBlock.BookingStatus)); padding: 2px 8px; display: flex; align-items: center; justify-content: space-between; border-radius: 4px 4px 0 0;">
                                     <span style="color: #fff; font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">YOUR BOOKING</span>
                                     <span style="color: #fff; font-size: 10px; font-weight: 700; background: rgba(0,0,0,0.15); border-radius: 4px; padding: 1px 6px;">@(GetBookingStatusLabel(calItem.TimeBlock.BookingStatus))</span>
                                 </div>
                                 <div style="padding: 4px 8px; flex: 1; display: flex; flex-direction: column; gap: 2px;">
                                     @if (!string.IsNullOrWhiteSpace(calItem.TimeBlock.ScheduleTitle))
                                     {
-                                        <span style="font-size: 12px; font-weight: 700; color: #1F2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@calItem.TimeBlock.ScheduleTitle</span>
+                                        <span style="font-size: 12px; font-weight: 700; color: #1B2D45; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@calItem.TimeBlock.ScheduleTitle</span>
                                     }
-                                    <span style="font-size: 11px; color: #6B7280; display: flex; align-items: center; gap: 4px;">
-                                        <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Style="font-size: 14px; color: #6B7280;" />
+                                    <span style="font-size: 11px; color: #5A6B80; display: flex; align-items: center; gap: 4px;">
+                                        <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Style="font-size: 14px; color: #5A6B80;" />
                                         @calItem.ProviderName
                                     </span>
+                                    @if (!string.IsNullOrWhiteSpace(calItem.TimeBlock.BookingNotes))
+                                    {
+                                        <span style="font-size: 10px; color: #5A6B80; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                            @calItem.TimeBlock.BookingNotes
+                                        </span>
+                                    }
                                 </div>
                             </div>
                         }
                         else if (!calItem.TimeBlock.IsAvailable)
                         {
                             @* Someone else's booking — just red, no info *@
-                            <div style="width: 100%; height: 100%; background: #EF4444; display: flex; align-items: center; justify-content: center;">
+                            <div style="width: 100%; height: 100%; background: #EF4444; display: flex; align-items: center; justify-content: center; border-radius: 6px;">
                                 <span style="color: #fff; font-size: 12px; font-weight: 700;">Booked</span>
                             </div>
                         }
                         else
                         {
                             @* Available slot *@
-                            <div style="width: 100%; height: 100%; background: #D1FAE5; border-left: 3px solid #10B981;">
+                            <div style="width: 100%; height: 100%; background: #D1FAE5; border-left: 3px solid #10B981; border-radius: 6px;">
                             </div>
                         }
                     </CellTemplate>
-                </MudCalendar>
+                </BookMeCalendar>
             </MudPaper>
         }
         else
@@ -133,30 +134,36 @@
                     </div>
                 }
 
-                <MudCalendar T="ScheduleCalendarItem"
-                             Items="@_calendarItems"
-                             @bind-View="_providerView"
-                             MinVisibleTime="@_businessStartTime"
-                             ShowMonth="false"
-                             ShowWorkWeek="false"
-                             ItemClicked="@OnItemClicked"
-                             DateRangeChanged="@OnDateRangeChanged"
-                             Use24HourClock="false"
-                             Style="height: calc(100vh - 220px); min-height: 500px;">
+                <BookMeCalendar Items="@_calendarItems"
+                                View="@_providerView"
+                                ViewChanged="@((v) => _providerView = v)"
+                                MinVisibleTime="@_businessStartTime"
+                                ItemClicked="@OnItemClicked"
+                                DateRangeChanged="@OnDateRangeChanged"
+                                Style="height: calc(100vh - 220px); min-height: 500px;">
                     <CellTemplate Context="item">
-                        <div style="width: 100%; height: 100%; background: @GetProviderCellBg(item); border-left: 3px solid @GetProviderCellAccent(item); display: flex; flex-direction: column; padding: 4px 8px; cursor: pointer;">
-                            <span style="font-size: 12px; font-weight: 600; color: @GetProviderCellAccent(item); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                @GetProviderCellLabel(item)
-                            </span>
-                            @if (!string.IsNullOrWhiteSpace(item.TimeBlock.CustomerName))
-                            {
-                                <span style="font-size: 11px; color: #6B7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                    @item.TimeBlock.CustomerName
+                        @if (item.TimeBlock.BookingId is not null)
+                        {
+                            <div style="width: 100%; height: 100%; background: @GetProviderCellBg(item); border-left: 3px solid @GetProviderCellAccent(item); display: flex; flex-direction: column; padding: 4px 8px; cursor: pointer; border-radius: 6px;">
+                                <span style="font-size: 12px; font-weight: 600; color: @GetProviderCellAccent(item); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    @GetProviderCellLabel(item)
                                 </span>
-                            }
-                        </div>
+                                @if (!string.IsNullOrWhiteSpace(item.TimeBlock.CustomerName))
+                                {
+                                    <span style="font-size: 11px; color: #5A6B80; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                        @item.TimeBlock.CustomerName
+                                    </span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(item.TimeBlock.BookingNotes))
+                                {
+                                    <span style="font-size: 10px; color: #5A6B80; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                        @item.TimeBlock.BookingNotes
+                                    </span>
+                                }
+                            </div>
+                        }
                     </CellTemplate>
-                </MudCalendar>
+                </BookMeCalendar>
             </MudPaper>
         }
     </Authorized>
@@ -177,21 +184,21 @@
     private bool _isProvider;
     private bool _isLoading;
     private DateRange? _lastDateRange;
-    private CalendarView _providerView = CalendarView.Week;
+    private BookMeCalendarView _providerView = BookMeCalendarView.Week;
     private TimeOnly _businessStartTime = new(9, 0);
 
     private static string GetBookingStatusColor(BookingStatus? status) => status switch
     {
         BookingStatus.Confirmed => "#10B981",
         BookingStatus.Pending => "#F59E0B",
-        _ => "#1D4ED8"
+        _ => "#E85D2A"
     };
 
     private static string GetBookingStatusBg(BookingStatus? status) => status switch
     {
         BookingStatus.Confirmed => "#D1FAE5",
         BookingStatus.Pending => "#FEF3C7",
-        _ => "#DBEAFE"
+        _ => "#FEE8DE"
     };
 
     private static string GetBookingStatusLabel(BookingStatus? status) => status switch
@@ -209,7 +216,7 @@
             Color.Error => ("#EF4444", "#FEE2E2"),
             Color.Warning => ("#F59E0B", "#FEF3C7"),
             Color.Info => ("#3B82F6", "#DBEAFE"),
-            _ => ("#6B7280", "#F3F4F6")
+            _ => ("#5A6B80", "#FFF5EC")
         };
         return solid ? hex : light;
     }
@@ -319,9 +326,11 @@
             }
             else if (_isProvider && Guid.TryParse(_userId, out var providerGuid))
             {
-                // Provider view: only show booked customer appointments, not availability
+                // Provider view: only show time blocks with an actual booking
                 _calendarItems = items
-                    .Where(i => i.ProviderId.Value == providerGuid && !i.TimeBlock.IsAvailable)
+                    .Where(i => i.ProviderId.Value == providerGuid
+                                && !i.TimeBlock.IsAvailable
+                                && i.TimeBlock.BookingId is not null)
                     .ToList();
 
                 // Fallback: fetch pending bookings to map ScheduleId → BookingId
@@ -330,8 +339,10 @@
             }
             else
             {
-                // Admin view: show all
-                _calendarItems = items;
+                // Admin view: only show time blocks with actual bookings
+                _calendarItems = items
+                    .Where(i => !i.TimeBlock.IsAvailable && i.TimeBlock.BookingId is not null)
+                    .ToList();
             }
         }
         catch (Exception ex)

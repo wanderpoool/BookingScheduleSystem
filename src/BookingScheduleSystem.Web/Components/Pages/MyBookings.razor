@@ -89,6 +89,46 @@
                                             </MudText>
                                         </MudStack>
 
+                                        @* Notes display / inline editing *@
+                                        @if (_editingNotesBookingId == booking.Id)
+                                        {
+                                            <MudTextField T="string" @bind-Value="_editNotesText"
+                                                          Label="Notes" Variant="Variant.Outlined" Lines="3"
+                                                          Placeholder="Add any notes or special requests..." />
+                                            <MudStack Row="true" Spacing="2" Justify="Justify.FlexEnd">
+                                                <MudButton Variant="Variant.Text" Size="Size.Small"
+                                                           OnClick="CancelEditNotes">Cancel</MudButton>
+                                                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                                                           OnClick="@(() => SaveNotes(booking))"
+                                                           Disabled="@_isSavingNotes"
+                                                           StartIcon="@Icons.Material.Filled.Check">
+                                                    @(_isSavingNotes ? "Saving..." : "Save")
+                                                </MudButton>
+                                            </MudStack>
+                                        }
+                                        else if (!string.IsNullOrWhiteSpace(booking.Notes))
+                                        {
+                                            <MudStack Row="true" AlignItems="AlignItems.Start" Spacing="1">
+                                                <MudIcon Icon="@Icons.Material.Filled.Notes" Size="Size.Small" Color="Color.Secondary" Class="mt-1" />
+                                                <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary); white-space: pre-line;">
+                                                    @booking.Notes
+                                                </MudText>
+                                                @if (booking.Status != BookingStatus.Cancelled)
+                                                {
+                                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                                                                   OnClick="@(() => StartEditNotes(booking))" />
+                                                }
+                                            </MudStack>
+                                        }
+                                        else if (booking.Status != BookingStatus.Cancelled)
+                                        {
+                                            <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small"
+                                                       StartIcon="@Icons.Material.Filled.NoteAdd"
+                                                       OnClick="@(() => StartEditNotes(booking))">
+                                                Add Notes
+                                            </MudButton>
+                                        }
+
                                         @if (booking.Status != BookingStatus.Cancelled)
                                         {
                                             <MudButton Variant="Variant.Outlined" Color="Color.Error" FullWidth="true"
@@ -127,11 +167,14 @@
 @code {
     private List<BookingResponse>? _bookings;
     private bool _isLoading = true;
-    private bool _isCancelling = false;
+    private bool _isCancelling;
+    private bool _isSavingNotes;
     private BookingStatus? _statusFilter;
     private int _currentPage = 1;
     private int _pageSize = 20;
-    private int _totalCount = 0;
+    private int _totalCount;
+    private BookingId? _editingNotesBookingId;
+    private string? _editNotesText;
 
     protected override async Task OnInitializedAsync()
     {
@@ -197,6 +240,45 @@
     {
         _currentPage = page;
         await LoadBookings();
+    }
+
+    private void StartEditNotes(BookingResponse booking)
+    {
+        _editingNotesBookingId = booking.Id;
+        _editNotesText = booking.Notes;
+    }
+
+    private void CancelEditNotes()
+    {
+        _editingNotesBookingId = null;
+        _editNotesText = null;
+    }
+
+    private async Task SaveNotes(BookingResponse booking)
+    {
+        _isSavingNotes = true;
+        StateHasChanged();
+
+        try
+        {
+            var notes = string.IsNullOrWhiteSpace(_editNotesText) ? null : _editNotesText.Trim();
+            var result = await BookingService.UpdateBookingNotesAsync(booking.Id.Value, notes);
+            if (result != null)
+            {
+                Snackbar.Add("Notes updated.", Severity.Success);
+                _editingNotesBookingId = null;
+                _editNotesText = null;
+                await LoadBookings();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isSavingNotes = false;
+        }
     }
 
     private Color GetStatusColor(BookingStatus status) => status switch

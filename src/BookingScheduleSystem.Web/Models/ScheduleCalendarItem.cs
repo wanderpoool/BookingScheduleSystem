@@ -1,12 +1,15 @@
 using BookingScheduleSystem.Contracts.Common;
 using BookingScheduleSystem.Contracts.Schedules;
-using Heron.MudCalendar;
 using MudBlazor;
 
 namespace BookingScheduleSystem.Web.Models;
 
-public class ScheduleCalendarItem : CalendarItem
+public class ScheduleCalendarItem
 {
+    public DateTime Start { get; set; }
+    public DateTime? End { get; set; }
+    public string Text { get; set; } = string.Empty;
+
     public required TimeBlock TimeBlock { get; init; }
     public required UserId ProviderId { get; init; }
     public required string ProviderName { get; init; }

@@ -71,53 +71,25 @@
                                 </div>
                             }
 
-                            @* Day view on mobile, Week view on sm+ *@
-                            <MudHidden Breakpoint="Breakpoint.SmAndUp">
-                                <MudCalendar T="ScheduleCalendarItem"
-                                             Items="@_calendarItems"
-                                             View="CalendarView.Day"
-                                             MinVisibleTime="@(new TimeOnly(7, 0))"
-                                             ShowMonth="false"
-                                             ShowWeek="false"
-                                             ShowWorkWeek="false"
-                                             ItemClicked="@OnCalendarItemClicked"
-                                             DateRangeChanged="@OnDateRangeChanged"
-                                             Use24HourClock="false"
-                                             Style="height: calc(100vh - 340px); min-height: 300px;">
-                                    <CellTemplate Context="calItem">
-                                        <div style="width: 100%; height: 100%; border: 2px solid @(calItem.TimeBlock.IsAvailable ? "#10B981" : "#EF4444"); background: @(calItem.TimeBlock.IsAvailable ? "#D1FAE5" : "#FEE2E2"); cursor: pointer;">
-                                            <div style="background: @(calItem.TimeBlock.IsAvailable ? "#10B981" : "#EF4444"); padding: 2px 6px;">
-                                                <MudText Style="color: #fff; font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                                    @calItem.Title
-                                                </MudText>
-                                            </div>
+                            <BookMeCalendar Items="@_calendarItems"
+                                            View="BookMeCalendarView.Week"
+                                            MinVisibleTime="@(new TimeOnly(7, 0))"
+                                            ItemClicked="@OnCalendarItemClicked"
+                                            DateRangeChanged="@OnDateRangeChanged"
+                                            Style="height: calc(100vh - 340px); min-height: 400px;">
+                                <CellTemplate Context="calItem">
+                                    <div style="width: 100%; height: 100%; border: 2px solid @(calItem.TimeBlock.IsAvailable ? "#10B981" : "#EF4444"); background: @(calItem.TimeBlock.IsAvailable ? "#D1FAE5" : "#FEE2E2"); cursor: pointer; border-radius: 6px;">
+                                        <div style="background: @(calItem.TimeBlock.IsAvailable ? "#10B981" : "#EF4444"); padding: 2px 6px; border-radius: 4px 4px 0 0;">
+                                            <span style="color: #fff; font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">
+                                                @calItem.Title
+                                            </span>
                                         </div>
-                                    </CellTemplate>
-                                </MudCalendar>
-                            </MudHidden>
-                            <MudHidden Breakpoint="Breakpoint.Xs">
-                                <MudCalendar T="ScheduleCalendarItem"
-                                             Items="@_calendarItems"
-                                             View="CalendarView.Week"
-                                             MinVisibleTime="@(new TimeOnly(7, 0))"
-                                             ItemClicked="@OnCalendarItemClicked"
-                                             DateRangeChanged="@OnDateRangeChanged"
-                                             Use24HourClock="false"
-                                             Style="height: calc(100vh - 340px); min-height: 400px;">
-                                    <CellTemplate Context="calItem">
-                                        <div style="width: 100%; height: 100%; border: 2px solid @(calItem.TimeBlock.IsAvailable ? "#10B981" : "#EF4444"); background: @(calItem.TimeBlock.IsAvailable ? "#D1FAE5" : "#FEE2E2"); cursor: pointer;">
-                                            <div style="background: @(calItem.TimeBlock.IsAvailable ? "#10B981" : "#EF4444"); padding: 2px 6px;">
-                                                <MudText Style="color: #fff; font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                                    @calItem.Title
-                                                </MudText>
-                                            </div>
-                                            <div class="pa-1">
-                                                <MudText Typo="Typo.caption">@calItem.Text</MudText>
-                                            </div>
+                                        <div style="padding: 4px 6px;">
+                                            <span style="font-size: 12px; color: var(--color-text-secondary);">@calItem.Text</span>
                                         </div>
-                                    </CellTemplate>
-                                </MudCalendar>
-                            </MudHidden>
+                                    </div>
+                                </CellTemplate>
+                            </BookMeCalendar>
                         </div>
                     }
                     else if (_schedules == null || _schedules.Count == 0)

@@ -9,23 +9,23 @@
      COLOR PALETTE - LIGHT MODE
      ======================================== */
 
-  /* Primary Blue - Trustworthy & Professional */
-  --color-primary: #1D4ED8;
-  --color-primary-light: #3B82F6;
-  --color-primary-dark: #1E3A8A;
+  /* Primary Orange - Warm & Inviting */
+  --color-primary: #E85D2A;
+  --color-primary-light: #F28B5F;
+  --color-primary-dark: #C94A1D;
   --color-primary-contrast: #FFFFFF;
 
-  /* Secondary Teal - Energetic & Modern */
-  --color-secondary: #0D9488;
-  --color-secondary-light: #5EEAD4;
-  --color-secondary-dark: #0F766E;
+  /* Secondary Navy - Professional & Grounded */
+  --color-secondary: #1B2D45;
+  --color-secondary-light: #3D5A80;
+  --color-secondary-dark: #0F1D30;
   --color-secondary-contrast: #FFFFFF;
 
-  /* Tertiary Purple - Special Features */
-  --color-tertiary: #7C3AED;
-  --color-tertiary-light: #A78BFA;
-  --color-tertiary-dark: #7C3AED;
-  --color-tertiary-contrast: #FFFFFF;
+  /* Tertiary Gold - Accent & Highlights */
+  --color-tertiary: #FFC53D;
+  --color-tertiary-light: #FFD97A;
+  --color-tertiary-dark: #D9A020;
+  --color-tertiary-contrast: #1B2D45;
 
   /* Semantic Colors */
   --color-success: #10B981;
@@ -44,26 +44,26 @@
   --color-info-light: #DBEAFE;
   --color-info-contrast: #FFFFFF;
 
-  /* Neutral Palette - Low Eye Strain */
-  --color-background: #FFFFFF;
-  --color-background-grey: #F8F9FA;
+  /* Neutral Palette - Warm Cream Tones */
+  --color-background: #FFF8F0;
+  --color-background-grey: #FFF1E6;
   --color-surface: #FFFFFF;
-  --color-surface-variant: #F3F4F6;
+  --color-surface-variant: #FFF5EC;
 
-  --color-text-primary: #111827;
-  --color-text-secondary: #6B7280;
+  --color-text-primary: #1B2D45;
+  --color-text-secondary: #5A6B80;
   --color-text-disabled: #9CA3AF;
   --color-text-hint: #D1D5DB;
 
-  --color-divider: #EAECF0;
-  --color-divider-light: #F2F4F7;
-  --color-border: #E5E7EB;
-  --color-border-light: #F2F4F7;
+  --color-divider: #E8DFD5;
+  --color-divider-light: #F5EDE4;
+  --color-border: #E8DFD5;
+  --color-border-light: #F5EDE4;
 
   /* Action States */
-  --color-action-hover: rgba(29, 78, 216, 0.06);
-  --color-action-selected: rgba(29, 78, 216, 0.10);
-  --color-action-disabled: #F3F4F6;
+  --color-action-hover: rgba(232, 93, 42, 0.06);
+  --color-action-selected: rgba(232, 93, 42, 0.10);
+  --color-action-disabled: #FFF5EC;
   --color-action-disabled-text: #9CA3AF;
 
   /* ========================================
@@ -71,7 +71,8 @@
      ======================================== */
 
   /* Font Families */
-  --font-family-base: 'Inter', 'Roboto', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family-base: 'DM Sans', 'Roboto', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family-display: 'Fraunces', Georgia, serif;
   --font-family-mono: 'Roboto Mono', 'Consolas', 'Monaco', 'Courier New', monospace;
 
   /* Font Sizes */
@@ -220,23 +221,23 @@
 
 [data-theme="dark"],
 .mud-theme-dark {
-  /* Primary - Lighter for dark backgrounds */
-  --color-primary: #60A5FA;
-  --color-primary-light: #93C5FD;
-  --color-primary-dark: #2563EB;
-  --color-primary-contrast: #0F1419;
+  /* Primary - Lighter orange for dark backgrounds */
+  --color-primary: #F28B5F;
+  --color-primary-light: #F5A880;
+  --color-primary-dark: #E85D2A;
+  --color-primary-contrast: #1A1612;
 
-  /* Secondary - Lighter teal */
-  --color-secondary: #5EEAD4;
-  --color-secondary-light: #99F6E4;
-  --color-secondary-dark: #2DD4BF;
-  --color-secondary-contrast: #0F1419;
+  /* Secondary - Lighter navy */
+  --color-secondary: #8BA4C4;
+  --color-secondary-light: #A8BDD6;
+  --color-secondary-dark: #3D5A80;
+  --color-secondary-contrast: #1A1612;
 
-  /* Tertiary - Lighter purple */
-  --color-tertiary: #A78BFA;
-  --color-tertiary-light: #C4B5FD;
-  --color-tertiary-dark: #8B5CF6;
-  --color-tertiary-contrast: #0F1419;
+  /* Tertiary - Lighter gold */
+  --color-tertiary: #FFD97A;
+  --color-tertiary-light: #FFE6A0;
+  --color-tertiary-dark: #FFC53D;
+  --color-tertiary-contrast: #1A1612;
 
   /* Semantic Colors - Adjusted for dark mode */
   --color-success: #34D399;
@@ -255,27 +256,27 @@
   --color-info-light: #1E3A8A;
   --color-info-contrast: #0F1419;
 
-  /* Neutrals - Dark theme */
-  --color-background: #111318;
-  --color-background-grey: #1A1F2E;
-  --color-surface: #1C1F2A;
-  --color-surface-variant: #252A3A;
+  /* Neutrals - Warm Dark theme */
+  --color-background: #1A1612;
+  --color-background-grey: #221C16;
+  --color-surface: #262018;
+  --color-surface-variant: #332B20;
 
-  --color-text-primary: #F9FAFB;
-  --color-text-secondary: #9CA3AF;
-  --color-text-disabled: #6B7280;
-  --color-text-hint: #4B5563;
+  --color-text-primary: #F9F5F0;
+  --color-text-secondary: #A89B8C;
+  --color-text-disabled: #6B6050;
+  --color-text-hint: #4B4238;
 
-  --color-divider: #374151;
-  --color-divider-light: #252A3A;
-  --color-border: #4B5563;
-  --color-border-light: #374151;
+  --color-divider: #3D3328;
+  --color-divider-light: #332B20;
+  --color-border: #4D4030;
+  --color-border-light: #3D3328;
 
   /* Action States */
-  --color-action-hover: rgba(96, 165, 250, 0.12);
-  --color-action-selected: rgba(96, 165, 250, 0.2);
-  --color-action-disabled: #252A3A;
-  --color-action-disabled-text: #6B7280;
+  --color-action-hover: rgba(242, 139, 95, 0.12);
+  --color-action-selected: rgba(242, 139, 95, 0.2);
+  --color-action-disabled: #332B20;
+  --color-action-disabled-text: #6B6050;
 
   /* Shadows - Deeper for dark mode */
   --elevation-1: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
