@@ -45,6 +45,7 @@ Parameters:
   GlobalAdminEmail:
     Type: String
     Default: ''
+    NoEcho: true
     Description: Email for the seeded Global Admin user (leave empty to skip seeding)
 
   GlobalAdminPassword:
@@ -60,6 +61,12 @@ Parameters:
   WebImageUri:
     Type: String
     Description: ECR image URI for the Web container
+
+# =============================================================================
+# CONDITIONS
+# =============================================================================
+Conditions:
+  HasGlobalAdmin: !Not [!Equals [!Ref GlobalAdminEmail, '']]
 
 # =============================================================================
 # NETWORKING - VPC, Subnets, Security Groups
@@ -257,8 +264,15 @@ Resources:
         PasswordLength: 64
         ExcludeCharacters: '"@/\\'
 
+  GlobalAdminPasswordSecret:
+    Type: AWS::SecretsManager::Secret
+    Condition: HasGlobalAdmin
+    Properties:
+      Name: !Sub '${AppName}/${Environment}/global-admin-password'
+      SecretString: !Ref GlobalAdminPassword
+
   # =============================================================================
-  # RDS POSTGRESQL (db.t4g.micro — cheapest, ARM-based, free tier eligible)
+  # RDS POSTGRESQL (db.t3.micro — free tier eligible in all regions)
   # =============================================================================
   RdsSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
@@ -275,7 +289,7 @@ Resources:
       DBInstanceIdentifier: !Sub '${AppName}-${Environment}-db'
       Engine: postgres
       EngineVersion: '16.4'
-      DBInstanceClass: db.t4g.micro
+      DBInstanceClass: db.t3.micro
       AllocatedStorage: 20
       StorageType: gp2
       DBName: !Ref DbName
@@ -287,7 +301,7 @@ Resources:
       PubliclyAccessible: false
       BackupRetentionPeriod: 1
       MultiAZ: false
-      StorageEncrypted: false
+      StorageEncrypted: true
       Tags:
         - Key: Name
           Value: !Sub '${AppName}-${Environment}-postgres'
@@ -321,7 +335,6 @@ Resources:
   EcsTaskExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub '${AppName}-${Environment}-ecs-exec-role'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -342,11 +355,14 @@ Resources:
                 Resource:
                   - !Ref DbPasswordSecret
                   - !Ref JwtSecretKey
+                  - !If
+                    - HasGlobalAdmin
+                    - !Ref GlobalAdminPasswordSecret
+                    - !Ref 'AWS::NoValue'
 
   EcsTaskRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub '${AppName}-${Environment}-ecs-task-role'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -370,10 +386,7 @@ Resources:
                 Action:
                   - ses:SendEmail
                   - ses:SendRawEmail
-                Resource: '*'
-                Condition:
-                  StringEquals:
-                    'ses:FromAddress': !Ref SenderEmail
+                Resource: !Sub 'arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/${SenderEmail}'
 
   # --- CloudWatch Log Groups ---
   ApiLogGroup:
@@ -497,10 +510,17 @@ Resources:
               Value: BookMeApp
             - Name: AwsNotification__AwsRegion
               Value: !Ref 'AWS::Region'
-            - Name: Seed__GlobalAdmin__Email
-              Value: !Ref GlobalAdminEmail
-            - Name: Seed__GlobalAdmin__Password
-              Value: !Ref GlobalAdminPassword
+            - !If
+              - HasGlobalAdmin
+              - Name: Seed__GlobalAdmin__Email
+                Value: !Ref GlobalAdminEmail
+              - !Ref 'AWS::NoValue'
+          Secrets:
+            - !If
+              - HasGlobalAdmin
+              - Name: Seed__GlobalAdmin__Password
+                ValueFrom: !Ref GlobalAdminPasswordSecret
+              - !Ref 'AWS::NoValue'
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -547,6 +567,7 @@ Resources:
       TaskDefinition: !Ref ApiTaskDefinition
       DesiredCount: 1
       LaunchType: FARGATE
+      HealthCheckGracePeriodSeconds: 90
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: DISABLED
@@ -569,6 +590,7 @@ Resources:
       TaskDefinition: !Ref WebTaskDefinition
       DesiredCount: 1
       LaunchType: FARGATE
+      HealthCheckGracePeriodSeconds: 90
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: DISABLED
