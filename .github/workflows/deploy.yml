@@ -15,6 +15,7 @@ jobs:
   deploy:
     name: Build, Push & Deploy
     runs-on: ubuntu-latest
+    environment: Production
     # Only deploy on push to main or manual trigger, not on PRs
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
