@@ -293,53 +293,8 @@ Resources:
           Value: !Sub '${AppName}-${Environment}-postgres'
 
   # =============================================================================
-  # ECR REPOSITORIES
+  # ECR REPOSITORIES - Managed by CI/CD workflow (created if not exist)
   # =============================================================================
-  ApiEcrRepo:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: !Sub '${AppName}-api'
-      ImageScanningConfiguration:
-        ScanOnPush: true
-      LifecyclePolicy:
-        LifecyclePolicyText: |
-          {
-            "rules": [
-              {
-                "rulePriority": 1,
-                "description": "Keep last 5 images",
-                "selection": {
-                  "tagStatus": "any",
-                  "countType": "imageCountMoreThan",
-                  "countNumber": 5
-                },
-                "action": { "type": "expire" }
-              }
-            ]
-          }
-
-  WebEcrRepo:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: !Sub '${AppName}-web'
-      ImageScanningConfiguration:
-        ScanOnPush: true
-      LifecyclePolicy:
-        LifecyclePolicyText: |
-          {
-            "rules": [
-              {
-                "rulePriority": 1,
-                "description": "Keep last 5 images",
-                "selection": {
-                  "tagStatus": "any",
-                  "countType": "imageCountMoreThan",
-                  "countNumber": 5
-                },
-                "action": { "type": "expire" }
-              }
-            ]
-          }
 
   # =============================================================================
   # ECS CLUSTER + FARGATE SPOT
@@ -653,11 +608,11 @@ Outputs:
 
   ApiEcrRepoUri:
     Description: ECR repository URI for API
-    Value: !GetAtt ApiEcrRepo.RepositoryUri
+    Value: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${AppName}-api'
 
   WebEcrRepoUri:
     Description: ECR repository URI for Web
-    Value: !GetAtt WebEcrRepo.RepositoryUri
+    Value: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${AppName}-web'
 
   RdsEndpoint:
     Description: PostgreSQL endpoint
