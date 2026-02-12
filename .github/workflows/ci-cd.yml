@@ -115,6 +115,21 @@ jobs:
           docker push $ECR_REGISTRY/$APP_NAME-web:latest
           docker push $ECR_REGISTRY/$APP_NAME-web:$IMAGE_TAG
 
+      - name: Delete failed stack if in ROLLBACK_COMPLETE
+        run: |
+          STACK_STATUS=$(aws cloudformation describe-stacks \
+            --stack-name $APP_NAME-production \
+            --query 'Stacks[0].StackStatus' \
+            --output text \
+            --region $AWS_REGION 2>/dev/null || echo "DOES_NOT_EXIST")
+          echo "Current stack status: $STACK_STATUS"
+          if [ "$STACK_STATUS" = "ROLLBACK_COMPLETE" ] || [ "$STACK_STATUS" = "ROLLBACK_FAILED" ] || [ "$STACK_STATUS" = "CREATE_FAILED" ] || [ "$STACK_STATUS" = "DELETE_FAILED" ]; then
+            echo "Stack is in $STACK_STATUS state — deleting before re-creating..."
+            aws cloudformation delete-stack --stack-name $APP_NAME-production --region $AWS_REGION
+            aws cloudformation wait stack-delete-complete --stack-name $APP_NAME-production --region $AWS_REGION
+            echo "Stack deleted successfully."
+          fi
+
       - name: Update CloudFormation stack
         env:
           ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
