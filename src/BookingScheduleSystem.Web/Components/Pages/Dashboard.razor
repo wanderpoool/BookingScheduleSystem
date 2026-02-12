@@ -403,6 +403,9 @@
     [CascadingParameter]
     private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
 
+    [SupplyParameterFromQuery]
+    public bool? SkipOnboarding { get; set; }
+
     private string _userName = "User";
     private bool _isLoading = true;
     private bool _hasTenant;
@@ -446,6 +449,13 @@
         try
         {
             await LoadDashboardData();
+
+            // Redirect first-time customers (no upcoming bookings) to onboarding wizard
+            if (SkipOnboarding != true && !_isProviderOrAdmin && _hasTenant && _upcomingBookings.Count == 0)
+            {
+                Navigation.NavigateTo("/onboarding");
+                return;
+            }
         }
         catch
         {

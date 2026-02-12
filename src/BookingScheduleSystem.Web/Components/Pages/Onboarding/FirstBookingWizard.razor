@@ -1,0 +1,657 @@
+@page "/onboarding"
+@rendermode InteractiveServer
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IScheduleService ScheduleService
+@inject IBookingService BookingService
+@inject ITenantService TenantService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Get Started - Book Me App</PageTitle>
+
+<AuthorizeView>
+    <Authorized>
+        <MudContainer MaxWidth="MaxWidth.Small" Class="py-6">
+            <MudStack Spacing="4">
+                @* Header *@
+                <MudStack AlignItems="AlignItems.Center" Spacing="1">
+                    <MudText Typo="Typo.h5" Style="font-weight: 700;">Book Your First Appointment</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Follow the steps below to get started</MudText>
+                </MudStack>
+
+                @* Stepper *@
+                <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden;">
+                    <MudStepper @bind-ActiveIndex="_activeStepIndex" Class="custom-stepper">
+
+                        @* Step 1: Select Date *@
+                        <MudStep Title="Date" Icon="@Icons.Material.Filled.CalendarToday">
+                            <ChildContent>
+                                <MudStack Spacing="3" Class="mt-4 pa-4">
+                                    <MudText Typo="Typo.h6">When would you like to come in?</MudText>
+
+                                    <div class="d-flex justify-center">
+                                        <MudDatePicker @bind-Date="_selectedDate"
+                                                       PickerVariant="PickerVariant.Static"
+                                                       MinDate="DateTime.Today"
+                                                       IsDateDisabledFunc="IsDateDisabled"
+                                                       Elevation="0"
+                                                       Color="Color.Primary" />
+                                    </div>
+
+                                    @if (_selectedDate is not null && IsDateDisabled(_selectedDate.Value))
+                                    {
+                                        <MudAlert Severity="Severity.Warning" Dense="true">
+                                            This business is closed on @_selectedDate.Value.ToString("dddd")s.
+                                        </MudAlert>
+                                    }
+
+                                    @* Desktop: right-aligned *@
+                                    <MudHidden Breakpoint="Breakpoint.SmAndDown">
+                                        <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-2">
+                                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                                       OnClick="GoToTimeStep"
+                                                       Disabled="@(_selectedDate is null || IsDateDisabled(_selectedDate.Value))"
+                                                       EndIcon="@Icons.Material.Filled.ArrowForward"
+                                                       Style="min-height: 44px;">
+                                                @if (_isLoadingSchedules)
+                                                {
+                                                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-1" />
+                                                    <text>Loading...</text>
+                                                }
+                                                else
+                                                {
+                                                    <text>Next</text>
+                                                }
+                                            </MudButton>
+                                        </MudStack>
+                                    </MudHidden>
+                                    @* Mobile: full-width *@
+                                    <MudHidden Breakpoint="Breakpoint.MdAndUp">
+                                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                                   OnClick="GoToTimeStep"
+                                                   Disabled="@(_selectedDate is null || IsDateDisabled(_selectedDate.Value))"
+                                                   EndIcon="@Icons.Material.Filled.ArrowForward"
+                                                   FullWidth="true"
+                                                   Style="min-height: 48px;">
+                                            @if (_isLoadingSchedules)
+                                            {
+                                                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-1" />
+                                                <text>Loading...</text>
+                                            }
+                                            else
+                                            {
+                                                <text>Next</text>
+                                            }
+                                        </MudButton>
+                                    </MudHidden>
+                                </MudStack>
+                            </ChildContent>
+                        </MudStep>
+
+                        @* Step 2: Select Time *@
+                        <MudStep Title="Time" Icon="@Icons.Material.Filled.Schedule">
+                            <ChildContent>
+                                <MudStack Spacing="3" Class="mt-4 pa-4">
+                                    <MudStack Spacing="0">
+                                        <MudText Typo="Typo.h6">Pick a time</MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                            @(_selectedDate?.ToString("dddd, MMMM dd, yyyy") ?? "")
+                                        </MudText>
+                                    </MudStack>
+
+                                    @if (_availableTimeSlots.Count == 0)
+                                    {
+                                        <MudAlert Severity="Severity.Info">
+                                            No available time slots on this date. Try a different day.
+                                        </MudAlert>
+                                    }
+                                    else
+                                    {
+                                        <MudGrid Spacing="2">
+                                            @foreach (var slot in _availableTimeSlots)
+                                            {
+                                                var isSelected = _selectedTimeSlot == slot.Start;
+                                                <MudItem xs="6" sm="4">
+                                                    <MudPaper Elevation="0"
+                                                              Class="pa-3"
+                                                              Style="@GetTimeSlotStyle(isSelected)"
+                                                              @onclick="() => SelectTimeSlot(slot.Start)">
+                                                        <MudStack AlignItems="AlignItems.Center" Spacing="0">
+                                                            <MudText Typo="Typo.body1" Style="font-weight: 700;">
+                                                                @slot.Start.ToString("h:mm tt")
+                                                            </MudText>
+                                                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                                1 hour
+                                                            </MudText>
+                                                        </MudStack>
+                                                    </MudPaper>
+                                                </MudItem>
+                                            }
+                                        </MudGrid>
+                                    }
+
+                                    @* Desktop: horizontal buttons *@
+                                    <MudHidden Breakpoint="Breakpoint.SmAndDown">
+                                        <MudStack Row="true" Justify="Justify.SpaceBetween" Class="mt-2">
+                                            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                                                       OnClick="PreviousStep"
+                                                       StartIcon="@Icons.Material.Filled.ArrowBack"
+                                                       Style="min-height: 44px;">
+                                                Back
+                                            </MudButton>
+                                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                                       OnClick="GoToProviderStep"
+                                                       Disabled="@(_selectedTimeSlot is null)"
+                                                       EndIcon="@Icons.Material.Filled.ArrowForward"
+                                                       Style="min-height: 44px;">
+                                                Next
+                                            </MudButton>
+                                        </MudStack>
+                                    </MudHidden>
+                                    @* Mobile: stacked full-width buttons *@
+                                    <MudHidden Breakpoint="Breakpoint.MdAndUp">
+                                        <MudStack Spacing="2" Class="mt-2">
+                                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                                       OnClick="GoToProviderStep"
+                                                       Disabled="@(_selectedTimeSlot is null)"
+                                                       EndIcon="@Icons.Material.Filled.ArrowForward"
+                                                       FullWidth="true"
+                                                       Style="min-height: 48px;">
+                                                Next
+                                            </MudButton>
+                                            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                                                       OnClick="PreviousStep"
+                                                       StartIcon="@Icons.Material.Filled.ArrowBack"
+                                                       FullWidth="true"
+                                                       Style="min-height: 44px;">
+                                                Back
+                                            </MudButton>
+                                        </MudStack>
+                                    </MudHidden>
+                                </MudStack>
+                            </ChildContent>
+                        </MudStep>
+
+                        @* Step 3: Select Provider *@
+                        <MudStep Title="Provider" Icon="@Icons.Material.Filled.Person">
+                            <ChildContent>
+                                <MudStack Spacing="3" Class="mt-4 pa-4">
+                                    <MudStack Spacing="0">
+                                        <MudText Typo="Typo.h6">Choose a provider</MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                            @(_selectedDate?.ToString("ddd, MMM dd") ?? "") at @(_selectedTimeSlot?.ToString("h:mm tt") ?? "")
+                                        </MudText>
+                                    </MudStack>
+
+                                    @if (_availableProviders.Count == 0)
+                                    {
+                                        <MudAlert Severity="Severity.Info">
+                                            No providers available at this time. Try a different slot.
+                                        </MudAlert>
+                                    }
+                                    else
+                                    {
+                                        <MudGrid Spacing="2">
+                                            @foreach (var provider in _availableProviders)
+                                            {
+                                                var isSelected = _selectedProvider?.ProviderId == provider.ProviderId;
+                                                <MudItem xs="12" sm="6">
+                                                    <MudPaper Elevation="0"
+                                                              Class="pa-4"
+                                                              Style="@GetProviderCardStyle(isSelected)"
+                                                              @onclick="() => SelectProvider(provider)">
+                                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+                                                            <MudAvatar Color="@(isSelected ? Color.Primary : Color.Default)" Size="Size.Medium">
+                                                                <MudIcon Icon="@Icons.Material.Filled.Person" />
+                                                            </MudAvatar>
+                                                            <MudText Typo="Typo.body1" Style="font-weight: 600;">
+                                                                @provider.Name
+                                                            </MudText>
+                                                            @if (isSelected)
+                                                            {
+                                                                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Primary" Class="ml-auto" />
+                                                            }
+                                                        </MudStack>
+                                                    </MudPaper>
+                                                </MudItem>
+                                            }
+                                        </MudGrid>
+                                    }
+
+                                    @* Desktop: horizontal buttons *@
+                                    <MudHidden Breakpoint="Breakpoint.SmAndDown">
+                                        <MudStack Row="true" Justify="Justify.SpaceBetween" Class="mt-2">
+                                            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                                                       OnClick="PreviousStep"
+                                                       StartIcon="@Icons.Material.Filled.ArrowBack"
+                                                       Style="min-height: 44px;">
+                                                Back
+                                            </MudButton>
+                                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                                       OnClick="GoToConfirmStep"
+                                                       Disabled="@(_selectedProvider is null)"
+                                                       EndIcon="@Icons.Material.Filled.ArrowForward"
+                                                       Style="min-height: 44px;">
+                                                Next
+                                            </MudButton>
+                                        </MudStack>
+                                    </MudHidden>
+                                    @* Mobile: stacked full-width buttons *@
+                                    <MudHidden Breakpoint="Breakpoint.MdAndUp">
+                                        <MudStack Spacing="2" Class="mt-2">
+                                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                                       OnClick="GoToConfirmStep"
+                                                       Disabled="@(_selectedProvider is null)"
+                                                       EndIcon="@Icons.Material.Filled.ArrowForward"
+                                                       FullWidth="true"
+                                                       Style="min-height: 48px;">
+                                                Next
+                                            </MudButton>
+                                            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                                                       OnClick="PreviousStep"
+                                                       StartIcon="@Icons.Material.Filled.ArrowBack"
+                                                       FullWidth="true"
+                                                       Style="min-height: 44px;">
+                                                Back
+                                            </MudButton>
+                                        </MudStack>
+                                    </MudHidden>
+                                </MudStack>
+                            </ChildContent>
+                        </MudStep>
+
+                        @* Step 4: Confirm *@
+                        <MudStep Title="Confirm" Icon="@Icons.Material.Filled.CheckCircle">
+                            <ChildContent>
+                                <MudStack Spacing="3" Class="mt-4 pa-4">
+                                    <MudText Typo="Typo.h6">Confirm your booking</MudText>
+
+                                    <MudPaper Elevation="0" Class="pa-4" Style="background: var(--mud-palette-background-grey); border-radius: 14px;">
+                                        <MudStack Spacing="2">
+                                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                                <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Color="Color.Primary" Size="Size.Small" />
+                                                <MudText Typo="Typo.body1" Style="font-weight: 600;">
+                                                    @(_selectedDate?.ToString("dddd, MMMM dd, yyyy") ?? "")
+                                                </MudText>
+                                            </MudStack>
+                                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                                <MudIcon Icon="@Icons.Material.Filled.Schedule" Color="Color.Primary" Size="Size.Small" />
+                                                <MudText Typo="Typo.body1">
+                                                    @(_selectedTimeSlot?.ToString("h:mm tt") ?? "") - @(_selectedTimeSlot?.AddHours(1).ToString("h:mm tt") ?? "")
+                                                </MudText>
+                                            </MudStack>
+                                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                                <MudIcon Icon="@Icons.Material.Filled.Person" Color="Color.Primary" Size="Size.Small" />
+                                                <MudText Typo="Typo.body1">@(_selectedProvider?.Name ?? "")</MudText>
+                                            </MudStack>
+                                        </MudStack>
+                                    </MudPaper>
+
+                                    <MudTextField T="string" @bind-Value="_notes"
+                                                  Label="Notes (optional)"
+                                                  Variant="Variant.Outlined"
+                                                  Lines="3"
+                                                  Placeholder="Any special requests or notes..." />
+
+                                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                               OnClick="ConfirmBooking"
+                                               Disabled="_isBooking"
+                                               StartIcon="@Icons.Material.Filled.Check"
+                                               FullWidth="true"
+                                               Size="Size.Large"
+                                               Style="min-height: 48px;">
+                                        @if (_isBooking)
+                                        {
+                                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-1" />
+                                            <text>Booking...</text>
+                                        }
+                                        else
+                                        {
+                                            <text>Confirm Booking</text>
+                                        }
+                                    </MudButton>
+
+                                    <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                                               OnClick="PreviousStep"
+                                               StartIcon="@Icons.Material.Filled.ArrowBack"
+                                               FullWidth="true"
+                                               Style="min-height: 44px;">
+                                        Back
+                                    </MudButton>
+                                </MudStack>
+                            </ChildContent>
+                        </MudStep>
+                    </MudStepper>
+                </MudPaper>
+
+                @* Skip option *@
+                <MudButton Variant="Variant.Text" Color="Color.Secondary"
+                           Href="/dashboard?skipOnboarding=true"
+                           FullWidth="true"
+                           Style="min-height: 44px;">
+                    Skip for now
+                </MudButton>
+            </MudStack>
+        </MudContainer>
+    </Authorized>
+    <NotAuthorized>
+        <RedirectToLogin />
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private int _activeStepIndex;
+    private DateTime? _selectedDate;
+    private DateTime? _selectedTimeSlot;
+    private ProviderOption? _selectedProvider;
+    private string? _notes;
+    private bool _isLoadingSchedules;
+    private bool _isBooking;
+
+    private Guid _tenantId;
+    private string _customerName = "Customer";
+    private Dictionary<DayOfWeek, DayScheduleModel>? _operatingHours;
+    private List<ScheduleCalendarItem> _allCalendarItems = new();
+    private List<ScheduleCalendarItem> _availableTimeSlots = new();
+    private List<ProviderOption> _availableProviders = new();
+
+    private sealed record ProviderOption(UserId ProviderId, string Name, ScheduleId? ScheduleId);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        var tenantIdClaim = user.FindFirst("TenantId")?.Value;
+        if (string.IsNullOrEmpty(tenantIdClaim) || !Guid.TryParse(tenantIdClaim, out var tenantGuid))
+        {
+            Navigation.NavigateTo("/dashboard");
+            return;
+        }
+
+        _tenantId = tenantGuid;
+        var firstName = user.FindFirst(ClaimTypes.GivenName)?.Value ?? "";
+        var lastName = user.FindFirst(ClaimTypes.Surname)?.Value ?? "";
+        _customerName = $"{firstName} {lastName}".Trim();
+        if (string.IsNullOrWhiteSpace(_customerName))
+            _customerName = "Customer";
+
+        try
+        {
+            var tenant = await TenantService.GetTenantAsync(_tenantId);
+            _operatingHours = OperatingHoursHelper.Parse(tenant?.OperatingHours)
+                              ?? OperatingHoursHelper.GetDefaultHours();
+        }
+        catch
+        {
+            _operatingHours = OperatingHoursHelper.GetDefaultHours();
+        }
+    }
+
+    private bool IsDateDisabled(DateTime date)
+    {
+        if (_operatingHours is null) return false;
+        return _operatingHours.TryGetValue(date.DayOfWeek, out var day) && !day.IsOpen;
+    }
+
+    private async Task GoToTimeStep()
+    {
+        if (_selectedDate is null) return;
+
+        _isLoadingSchedules = true;
+        StateHasChanged();
+
+        try
+        {
+            var startDate = new DateTime(_selectedDate.Value.Year, _selectedDate.Value.Month, _selectedDate.Value.Day, 0, 0, 0, DateTimeKind.Utc);
+            var endDate = startDate.AddDays(1);
+
+            var result = await ScheduleService.ListPublicSchedulesAsync(_tenantId, startDate, endDate, 1, 200);
+
+            var items = result?.Providers != null
+                ? ScheduleCalendarItem.FromProviders(result.Providers)
+                : new();
+
+            _allCalendarItems = SplitIntoHourlySlots(items);
+
+            // Build unique available time slots (distinct start times with at least one available provider)
+            _availableTimeSlots = _allCalendarItems
+                .Where(c => c.TimeBlock.IsAvailable)
+                .GroupBy(c => c.Start)
+                .Select(g => g.First())
+                .OrderBy(c => c.Start)
+                .ToList();
+
+            _selectedTimeSlot = null;
+            _selectedProvider = null;
+            _activeStepIndex = 1;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load schedules: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoadingSchedules = false;
+        }
+    }
+
+    private void SelectTimeSlot(DateTime slotStart)
+    {
+        _selectedTimeSlot = slotStart;
+        _selectedProvider = null;
+    }
+
+    private void GoToProviderStep()
+    {
+        if (_selectedTimeSlot is null) return;
+        FilterProviders();
+        _activeStepIndex = 2;
+    }
+
+    private void FilterProviders()
+    {
+        if (_selectedTimeSlot is null)
+        {
+            _availableProviders = new();
+            _selectedProvider = null;
+            return;
+        }
+
+        var startDt = _selectedTimeSlot.Value;
+        var endDt = startDt.AddHours(1);
+        var result = new List<ProviderOption>();
+
+        foreach (var group in _allCalendarItems.GroupBy(c => c.ProviderId))
+        {
+            var providerId = group.Key;
+            var providerName = group.First().ProviderName;
+            var items = group.ToList();
+
+            // Exclude if provider has a fully-booked schedule overlapping this time
+            var hasFullyBookedOverlap = items.Any(c =>
+                !c.TimeBlock.IsAvailable
+                && c.TimeBlock.ScheduleId is not null
+                && c.TimeBlock.StartTime < endDt
+                && c.TimeBlock.EndTime > startDt);
+
+            if (hasFullyBookedOverlap) continue;
+
+            // Prefer booking against an existing schedule that has capacity
+            var availableSchedule = items.FirstOrDefault(c =>
+                c.TimeBlock.IsAvailable
+                && c.TimeBlock.ScheduleId is not null
+                && c.TimeBlock.StartTime <= startDt
+                && c.TimeBlock.EndTime >= endDt);
+
+            if (availableSchedule is not null)
+            {
+                result.Add(new ProviderOption(providerId, providerName, availableSchedule.TimeBlock.ScheduleId));
+                continue;
+            }
+
+            // Fall back to gap — only if no existing schedule overlaps at all
+            var hasAnyScheduleOverlap = items.Any(c =>
+                c.TimeBlock.ScheduleId is not null
+                && c.TimeBlock.StartTime < endDt
+                && c.TimeBlock.EndTime > startDt);
+
+            var hasGap = items.Any(c =>
+                c.TimeBlock.IsAvailable
+                && c.TimeBlock.ScheduleId is null
+                && c.TimeBlock.StartTime <= startDt
+                && c.TimeBlock.EndTime >= endDt);
+
+            if (hasGap && !hasAnyScheduleOverlap)
+            {
+                result.Add(new ProviderOption(providerId, providerName, null));
+            }
+        }
+
+        _availableProviders = result;
+
+        if (_selectedProvider is null || !_availableProviders.Any(p => p.ProviderId == _selectedProvider.ProviderId))
+        {
+            _selectedProvider = _availableProviders.FirstOrDefault();
+        }
+    }
+
+    private void SelectProvider(ProviderOption provider)
+    {
+        _selectedProvider = provider;
+    }
+
+    private void GoToConfirmStep()
+    {
+        if (_selectedProvider is null) return;
+        _activeStepIndex = 3;
+    }
+
+    private void PreviousStep()
+    {
+        if (_activeStepIndex > 0)
+            _activeStepIndex--;
+    }
+
+    private async Task ConfirmBooking()
+    {
+        if (_selectedProvider is null || _selectedTimeSlot is null) return;
+
+        _isBooking = true;
+        StateHasChanged();
+
+        try
+        {
+            var scheduleId = _selectedProvider.ScheduleId;
+
+            // If no existing schedule, create one for the selected provider
+            if (scheduleId is null)
+            {
+                var startDt = _selectedTimeSlot.Value;
+                var endDt = startDt.AddHours(1);
+
+                var scheduleRequest = new CreateScheduleRequest
+                {
+                    ProviderId = _selectedProvider.ProviderId.Value,
+                    Title = $"Booking with {_customerName}",
+                    StartTime = startDt,
+                    EndTime = endDt,
+                    MaxCapacity = 1
+                };
+
+                var schedule = await ScheduleService.CreateScheduleAsync(scheduleRequest);
+                if (schedule is null)
+                {
+                    Snackbar.Add("Failed to create the schedule. Please try again.", Severity.Error);
+                    return;
+                }
+
+                scheduleId = schedule.Id;
+            }
+
+            var request = new CreateBookingRequest
+            {
+                ScheduleId = scheduleId.Value.Value,
+                Notes = string.IsNullOrWhiteSpace(_notes) ? null : _notes.Trim()
+            };
+
+            var bookingResult = await BookingService.CreateBookingAsync(request);
+
+            if (bookingResult != null)
+            {
+                var statusMessage = bookingResult.Status == BookingStatus.Confirmed
+                    ? "Your booking has been confirmed!"
+                    : "Your booking is pending provider approval.";
+                Snackbar.Add($"Booking created! {statusMessage}", Severity.Success);
+                Navigation.NavigateTo("/dashboard");
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isBooking = false;
+        }
+    }
+
+    private static List<ScheduleCalendarItem> SplitIntoHourlySlots(List<ScheduleCalendarItem> items)
+    {
+        var result = new List<ScheduleCalendarItem>();
+
+        foreach (var item in items)
+        {
+            var duration = (item.End ?? item.Start.AddHours(1)) - item.Start;
+            if (duration.TotalHours <= 1)
+            {
+                result.Add(item);
+                continue;
+            }
+
+            var current = item.Start;
+            var endTime = item.End ?? item.Start.AddHours(1);
+            while (current.AddHours(1) <= endTime)
+            {
+                result.Add(new ScheduleCalendarItem
+                {
+                    TimeBlock = item.TimeBlock,
+                    ProviderId = item.ProviderId,
+                    ProviderName = item.ProviderName,
+                    Title = item.Title,
+                    Text = item.Text,
+                    Start = current,
+                    End = current.AddHours(1),
+                    Color = item.Color
+                });
+                current = current.AddHours(1);
+            }
+        }
+
+        return result;
+    }
+
+    private static string GetTimeSlotStyle(bool isSelected)
+    {
+        var border = isSelected
+            ? "border: 2px solid var(--mud-palette-primary);"
+            : "border: 1px solid var(--mud-palette-divider);";
+        var bg = isSelected
+            ? "background: var(--mud-palette-primary-lighten);"
+            : "";
+        return $"{border} {bg} border-radius: 14px; cursor: pointer; min-height: 56px; text-align: center; display: flex; align-items: center; justify-content: center;";
+    }
+
+    private static string GetProviderCardStyle(bool isSelected)
+    {
+        var border = isSelected
+            ? "border: 2px solid var(--mud-palette-primary);"
+            : "border: 1px solid var(--mud-palette-divider);";
+        var bg = isSelected
+            ? "background: var(--mud-palette-primary-lighten);"
+            : "";
+        return $"{border} {bg} border-radius: 14px; cursor: pointer; min-height: 44px;";
+    }
+}

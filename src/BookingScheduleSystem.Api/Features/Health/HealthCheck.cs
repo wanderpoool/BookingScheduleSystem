@@ -16,6 +16,6 @@ public sealed class HealthCheckEndpoint : EndpointWithoutRequest
     public override Task HandleAsync(CancellationToken ct)
     {
         HttpContext.Response.StatusCode = 200;
-        return Task.CompletedTask;
+        return HttpContext.Response.WriteAsync("ok", ct);
     }
 }

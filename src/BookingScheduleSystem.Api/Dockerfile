@@ -16,5 +16,7 @@ RUN dotnet publish BookingScheduleSystem.Api/BookingScheduleSystem.Api.csproj -c
 
 FROM base AS final
 WORKDIR /app
-COPY --from=build /app/publish .
+RUN addgroup --system --gid 1000 appgroup && adduser --system --uid 1000 --ingroup appgroup appuser
+COPY --from=build --chown=appuser:appgroup /app/publish .
+USER appuser
 ENTRYPOINT ["dotnet", "BookingScheduleSystem.Api.dll"]

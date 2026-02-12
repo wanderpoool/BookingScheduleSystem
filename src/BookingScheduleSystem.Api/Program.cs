@@ -135,7 +135,8 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
 }
 
-if (!app.Environment.IsDevelopment())
+// HTTPS redirect disabled — ALB terminates SSL in production
+if (!app.Environment.IsDevelopment() && !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_HTTPS_PORT")))
 {
     app.UseHttpsRedirection();
 }
