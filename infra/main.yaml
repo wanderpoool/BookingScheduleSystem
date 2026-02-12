@@ -35,7 +35,7 @@ Parameters:
 
   SenderEmail:
     Type: String
-    Default: noreply@bookmeapp.com
+    Default: noreply@bookmeapp.ph
 
   DomainName:
     Type: String
