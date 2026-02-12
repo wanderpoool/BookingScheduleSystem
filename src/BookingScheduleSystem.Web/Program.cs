@@ -11,6 +11,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 // Add authentication and authorization services
+builder.Services.AddAuthentication();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthorization();
 
@@ -55,6 +56,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 builder.Services.AddScoped<IAdminSubscriptionService, AdminSubscriptionService>();
 builder.Services.AddScoped<IQrCodeService, QrCodeService>();
+builder.Services.AddScoped<ITenantSlugService, TenantSlugService>();
 
 var app = builder.Build();
 
