@@ -7,6 +7,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 env:
   DOTNET_VERSION: "9.0.x"
   ECS_CLUSTER: bookmeapp-production
@@ -80,12 +83,56 @@ jobs:
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Ensure ECR repositories exist
+      - name: Delete failed stack if in ROLLBACK_COMPLETE
         run: |
-          for repo in $APP_NAME-api $APP_NAME-web; do
-            aws ecr describe-repositories --repository-names "$repo" --region $AWS_REGION 2>/dev/null || \
-            aws ecr create-repository --repository-name "$repo" --region $AWS_REGION --image-scanning-configuration scanOnPush=true
-          done
+          STACK_STATUS=$(aws cloudformation describe-stacks \
+            --stack-name "${APP_NAME}-production" \
+            --query 'Stacks[0].StackStatus' \
+            --output text \
+            --region "$AWS_REGION" 2>/dev/null || echo "DOES_NOT_EXIST")
+          echo "Current stack status: $STACK_STATUS"
+          if [ "$STACK_STATUS" = "ROLLBACK_COMPLETE" ] || [ "$STACK_STATUS" = "ROLLBACK_FAILED" ] || [ "$STACK_STATUS" = "CREATE_FAILED" ] || [ "$STACK_STATUS" = "DELETE_FAILED" ]; then
+            echo "Stack is in $STACK_STATUS state — deleting before re-creating..."
+            aws cloudformation delete-stack --stack-name "${APP_NAME}-production" --region "$AWS_REGION"
+            aws cloudformation wait stack-delete-complete --stack-name "${APP_NAME}-production" --region "$AWS_REGION"
+            echo "Stack deleted successfully."
+          fi
+
+      - name: Deploy CloudFormation stack (creates ECR repos, RDS, ALB, ECS)
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+        run: |
+          aws cloudformation deploy \
+            --template-file infra/main.yaml \
+            --stack-name "${APP_NAME}-production" \
+            --parameter-overrides \
+              "Environment=production" \
+              "AppName=${APP_NAME}" \
+              "ApiImageUri=${ECR_REGISTRY}/${APP_NAME}-api:latest" \
+              "WebImageUri=${ECR_REGISTRY}/${APP_NAME}-web:latest" \
+              "GlobalAdminEmail=${{ secrets.GLOBAL_ADMIN_EMAIL }}" \
+              "GlobalAdminPassword=${{ secrets.GLOBAL_ADMIN_PASSWORD }}" \
+            --capabilities CAPABILITY_IAM \
+            --region "$AWS_REGION" \
+            --no-fail-on-empty-changeset
+
+      - name: Show CloudFormation failure events
+        if: failure()
+        run: |
+          echo "=== CloudFormation Stack Events (failures) ==="
+          aws cloudformation describe-stack-events \
+            --stack-name "${APP_NAME}-production" \
+            --region "$AWS_REGION" \
+            --query 'StackEvents[?ResourceStatus==`CREATE_FAILED` || ResourceStatus==`UPDATE_FAILED` || ResourceStatus==`ROLLBACK_IN_PROGRESS`].[LogicalResourceId,ResourceStatus,ResourceStatusReason]' \
+            --output table 2>/dev/null || true
+
+          echo ""
+          echo "=== Last 20 Stack Events ==="
+          aws cloudformation describe-stack-events \
+            --stack-name "${APP_NAME}-production" \
+            --region "$AWS_REGION" \
+            --query 'StackEvents[:20].[Timestamp,LogicalResourceId,ResourceStatus,ResourceStatusReason]' \
+            --output table 2>/dev/null || true
 
       - name: Build, tag, and push API image
         env:
@@ -93,13 +140,13 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         run: |
           docker build \
-            -t $ECR_REGISTRY/$APP_NAME-api:latest \
-            -t $ECR_REGISTRY/$APP_NAME-api:$IMAGE_TAG \
+            -t "$ECR_REGISTRY/${APP_NAME}-api:latest" \
+            -t "$ECR_REGISTRY/${APP_NAME}-api:${IMAGE_TAG}" \
             -f src/BookingScheduleSystem.Api/Dockerfile \
             src/
 
-          docker push $ECR_REGISTRY/$APP_NAME-api:latest
-          docker push $ECR_REGISTRY/$APP_NAME-api:$IMAGE_TAG
+          docker push "$ECR_REGISTRY/${APP_NAME}-api:latest"
+          docker push "$ECR_REGISTRY/${APP_NAME}-api:${IMAGE_TAG}"
 
       - name: Build, tag, and push Web image
         env:
@@ -107,68 +154,35 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         run: |
           docker build \
-            -t $ECR_REGISTRY/$APP_NAME-web:latest \
-            -t $ECR_REGISTRY/$APP_NAME-web:$IMAGE_TAG \
+            -t "$ECR_REGISTRY/${APP_NAME}-web:latest" \
+            -t "$ECR_REGISTRY/${APP_NAME}-web:${IMAGE_TAG}" \
             -f src/BookingScheduleSystem.Web/Dockerfile \
             src/
 
-          docker push $ECR_REGISTRY/$APP_NAME-web:latest
-          docker push $ECR_REGISTRY/$APP_NAME-web:$IMAGE_TAG
-
-      - name: Delete failed stack if in ROLLBACK_COMPLETE
-        run: |
-          STACK_STATUS=$(aws cloudformation describe-stacks \
-            --stack-name $APP_NAME-production \
-            --query 'Stacks[0].StackStatus' \
-            --output text \
-            --region $AWS_REGION 2>/dev/null || echo "DOES_NOT_EXIST")
-          echo "Current stack status: $STACK_STATUS"
-          if [ "$STACK_STATUS" = "ROLLBACK_COMPLETE" ] || [ "$STACK_STATUS" = "ROLLBACK_FAILED" ] || [ "$STACK_STATUS" = "CREATE_FAILED" ] || [ "$STACK_STATUS" = "DELETE_FAILED" ]; then
-            echo "Stack is in $STACK_STATUS state — deleting before re-creating..."
-            aws cloudformation delete-stack --stack-name $APP_NAME-production --region $AWS_REGION
-            aws cloudformation wait stack-delete-complete --stack-name $APP_NAME-production --region $AWS_REGION
-            echo "Stack deleted successfully."
-          fi
-
-      - name: Update CloudFormation stack
-        env:
-          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
-        run: |
-          aws cloudformation deploy \
-            --template-file infra/main.yaml \
-            --stack-name $APP_NAME-production \
-            --parameter-overrides \
-              Environment=production \
-              AppName=$APP_NAME \
-              ApiImageUri=$ECR_REGISTRY/$APP_NAME-api:latest \
-              WebImageUri=$ECR_REGISTRY/$APP_NAME-web:latest \
-              GlobalAdminEmail=${{ secrets.GLOBAL_ADMIN_EMAIL }} \
-              GlobalAdminPassword=${{ secrets.GLOBAL_ADMIN_PASSWORD }} \
-            --capabilities CAPABILITY_NAMED_IAM \
-            --region $AWS_REGION \
-            --no-fail-on-empty-changeset
+          docker push "$ECR_REGISTRY/${APP_NAME}-web:latest"
+          docker push "$ECR_REGISTRY/${APP_NAME}-web:${IMAGE_TAG}"
 
       - name: Force ECS redeployment
         run: |
           aws ecs update-service \
-            --cluster $ECS_CLUSTER \
-            --service $APP_NAME-api \
+            --cluster "$ECS_CLUSTER" \
+            --service "${APP_NAME}-api" \
             --force-new-deployment \
-            --region $AWS_REGION
+            --region "$AWS_REGION"
 
           aws ecs update-service \
-            --cluster $ECS_CLUSTER \
-            --service $APP_NAME-web \
+            --cluster "$ECS_CLUSTER" \
+            --service "${APP_NAME}-web" \
             --force-new-deployment \
-            --region $AWS_REGION
+            --region "$AWS_REGION"
 
       - name: Wait for services to stabilize
         run: |
           echo "Waiting for ECS services to stabilize..."
           aws ecs wait services-stable \
-            --cluster $ECS_CLUSTER \
-            --services $APP_NAME-api $APP_NAME-web \
-            --region $AWS_REGION
+            --cluster "$ECS_CLUSTER" \
+            --services "${APP_NAME}-api" "${APP_NAME}-web" \
+            --region "$AWS_REGION"
 
       - name: Deployment summary
         env:
@@ -176,18 +190,18 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         run: |
           ALB_DNS=$(aws cloudformation describe-stacks \
-            --stack-name $APP_NAME-production \
+            --stack-name "${APP_NAME}-production" \
             --query 'Stacks[0].Outputs[?OutputKey==`AlbDnsName`].OutputValue' \
             --output text \
-            --region $AWS_REGION 2>/dev/null || echo "unknown")
+            --region "$AWS_REGION" 2>/dev/null || echo "unknown")
 
-          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| **Cluster** | \`$ECS_CLUSTER\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| **API Image** | \`$ECR_REGISTRY/$APP_NAME-api:$IMAGE_TAG\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Web Image** | \`$ECR_REGISTRY/$APP_NAME-web:$IMAGE_TAG\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Commit** | \`$IMAGE_TAG\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| **ALB URL** | \`$ALB_DNS\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Health Check** | \`$ALB_DNS/api/health\` |" >> $GITHUB_STEP_SUMMARY
+          echo "## Deployment Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Item | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Cluster** | \`${ECS_CLUSTER}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **API Image** | \`${ECR_REGISTRY}/${APP_NAME}-api:${IMAGE_TAG}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Web Image** | \`${ECR_REGISTRY}/${APP_NAME}-web:${IMAGE_TAG}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Commit** | \`${IMAGE_TAG}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **ALB URL** | \`${ALB_DNS}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Health Check** | \`${ALB_DNS}/api/health\` |" >> "$GITHUB_STEP_SUMMARY"
