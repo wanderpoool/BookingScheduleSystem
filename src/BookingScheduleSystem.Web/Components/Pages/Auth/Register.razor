@@ -238,8 +238,8 @@
                                    Color="Color.Secondary"
                                    FullWidth="true"
                                    OnClick="ResendOtp"
-                                   Disabled="@_isLoading">
-                            Didn't receive the code? Resend
+                                   Disabled="@(_isLoading || _resendCooldown > 0)">
+                            @(_resendCooldown > 0 ? $"Resend in {_resendCooldown}s" : "Didn't receive the code? Resend")
                         </MudButton>
 
                         <MudButton Variant="Variant.Text"
@@ -329,6 +329,7 @@
     private bool _isLoading = false;
     private RegistrationStep _currentStep = RegistrationStep.PersonalInfo;
     private DateTime? _otpExpiresAt;
+    private int _resendCooldown;
     private System.Timers.Timer? _timer;
     private TenantResponse? _companyInfo;
 
@@ -343,9 +344,13 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Start a timer to update OTP countdown
+        // Start a timer to update OTP countdown and resend cooldown
         _timer = new System.Timers.Timer(1000);
-        _timer.Elapsed += (s, e) => InvokeAsync(StateHasChanged);
+        _timer.Elapsed += (s, e) => InvokeAsync(() =>
+        {
+            if (_resendCooldown > 0) _resendCooldown--;
+            StateHasChanged();
+        });
         _timer.Start();
 
         // Load company info if company GUID is provided
@@ -449,6 +454,7 @@
             if (response.Success)
             {
                 _otpExpiresAt = response.ExpiresAt;
+                _resendCooldown = 30;
                 _currentStep = RegistrationStep.OtpVerification;
                 Snackbar.Add(response.Message ?? "OTP sent successfully!", Severity.Success);
             }

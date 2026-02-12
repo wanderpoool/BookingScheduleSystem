@@ -23,12 +23,6 @@ public sealed class ResetPassword : Endpoint<ResetPasswordRequest>
 
     public override async Task HandleAsync(ResetPasswordRequest req, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(req.Email))
-        {
-            ThrowError("Email is required");
-            return;
-        }
-
         if (string.IsNullOrWhiteSpace(req.NewPassword) || req.NewPassword.Length < 6)
         {
             ThrowError("Password must be at least 6 characters");
@@ -41,10 +35,34 @@ public sealed class ResetPassword : Endpoint<ResetPasswordRequest>
             return;
         }
 
-        var normalizedEmail = req.Email.Trim().ToLowerInvariant();
+        // Resolve identifier the same way VerifyOtp does
+        string identifier;
+        if (req.ContactMethod.ToLower() == "email")
+        {
+            if (string.IsNullOrWhiteSpace(req.Email))
+            {
+                ThrowError("Email is required when using email contact method");
+                return;
+            }
+            identifier = req.Email.ToLower();
+        }
+        else if (req.ContactMethod.ToLower() == "phone")
+        {
+            if (string.IsNullOrWhiteSpace(req.PhoneNumber))
+            {
+                ThrowError("Phone number is required when using phone contact method");
+                return;
+            }
+            identifier = req.PhoneNumber;
+        }
+        else
+        {
+            ThrowError("Contact method must be 'email' or 'phone'");
+            return;
+        }
 
         // Validate OTP verification token
-        var isTokenValid = OtpService.ValidateVerificationToken(normalizedEmail, req.OtpVerificationToken, "password-reset");
+        var isTokenValid = OtpService.ValidateVerificationToken(identifier, req.OtpVerificationToken, "password-reset");
         if (!isTokenValid)
         {
             ThrowError("Invalid or expired verification token. Please request a new password reset.");
@@ -53,12 +71,21 @@ public sealed class ResetPassword : Endpoint<ResetPasswordRequest>
 
         await using var session = DocumentStore.LightweightSession();
 
-        var user = await session.Query<User>()
-            .FirstOrDefaultAsync(u => u.Email == normalizedEmail, token: ct);
+        User? user;
+        if (req.ContactMethod.ToLower() == "email")
+        {
+            user = await session.Query<User>()
+                .FirstOrDefaultAsync(u => u.Email == identifier, token: ct);
+        }
+        else
+        {
+            user = await session.Query<User>()
+                .FirstOrDefaultAsync(u => u.PhoneNumber == identifier, token: ct);
+        }
 
         if (user is null)
         {
-            ThrowError("No account found with this email address");
+            ThrowError("No account found with this contact information");
             return;
         }
 
@@ -72,7 +99,7 @@ public sealed class ResetPassword : Endpoint<ResetPasswordRequest>
         session.Update(user);
         await session.SaveChangesAsync(ct);
 
-        Logger.LogInformation("Password reset successfully for user {Email}", normalizedEmail);
+        Logger.LogInformation("Password reset successfully for user {Identifier}", identifier);
 
         HttpContext.Response.StatusCode = 200;
     }

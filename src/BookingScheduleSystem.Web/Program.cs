@@ -65,6 +65,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStatusCodePagesWithRedirects("/not-found");
 app.UseAntiforgery();
 
 app.MapStaticAssets();

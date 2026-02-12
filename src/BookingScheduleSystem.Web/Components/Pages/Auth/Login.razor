@@ -221,8 +221,8 @@
                                        OnClick="SendLoginOtp"
                                        StartIcon="@Icons.Material.Filled.Refresh"
                                        Size="Size.Small"
-                                       Disabled="@_isLoading">
-                                Resend Code
+                                       Disabled="@(_isLoading || _resendCooldown > 0)">
+                                @(_resendCooldown > 0 ? $"Resend in {_resendCooldown}s" : "Resend Code")
                             </MudButton>
                         </MudStack>
                     }
@@ -264,6 +264,7 @@
     private string CleanPhone => "+63" + new string(_otpPhone.Where(char.IsDigit).ToArray());
     private string _otpCode = string.Empty;
     private DateTime? _otpExpiresAt;
+    private int _resendCooldown;
     private System.Timers.Timer? _timer;
 
     private enum OtpLoginStep
@@ -375,6 +376,7 @@
                 _otpExpiresAt = result.ExpiresAt;
                 _otpStep = OtpLoginStep.VerifyOtp;
                 _otpCode = string.Empty;
+                _resendCooldown = 30;
                 StartCountdownTimer();
                 Snackbar.Add("Verification code sent!", Severity.Success);
             }
@@ -461,7 +463,11 @@
         _timer?.Stop();
         _timer?.Dispose();
         _timer = new System.Timers.Timer(1000);
-        _timer.Elapsed += (_, _) => InvokeAsync(StateHasChanged);
+        _timer.Elapsed += (_, _) => InvokeAsync(() =>
+        {
+            if (_resendCooldown > 0) _resendCooldown--;
+            StateHasChanged();
+        });
         _timer.Start();
     }
 
