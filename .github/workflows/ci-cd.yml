@@ -1,23 +1,66 @@
-name: Deploy to AWS
+name: CI/CD Pipeline
 
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 env:
-  AWS_REGION: ${{ secrets.AWS_REGION }}
-  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  DOTNET_VERSION: "9.0.x"
   ECS_CLUSTER: bookmeapp-production
   APP_NAME: bookmeapp
 
 jobs:
+  build:
+    name: Build & Validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: |
+          dotnet restore src/BookingScheduleSystem.Api/BookingScheduleSystem.Api.csproj
+          dotnet restore src/BookingScheduleSystem.Web/BookingScheduleSystem.Web.csproj
+
+      - name: Build API
+        run: dotnet build src/BookingScheduleSystem.Api/BookingScheduleSystem.Api.csproj --no-restore -c Release
+
+      - name: Build Web
+        run: dotnet build src/BookingScheduleSystem.Web/BookingScheduleSystem.Web.csproj --no-restore -c Release
+
+      - name: Build API Docker image
+        run: |
+          docker build \
+            -t bookmeapp-api:ci \
+            -f src/BookingScheduleSystem.Api/Dockerfile \
+            src/
+
+      - name: Build Web Docker image
+        run: |
+          docker build \
+            -t bookmeapp-web:ci \
+            -f src/BookingScheduleSystem.Web/Dockerfile \
+            src/
+
   deploy:
-    name: Build, Push & Deploy
+    name: Deploy to AWS
+    needs: build
     runs-on: ubuntu-latest
     environment: Production
-    # Only deploy on push to main or manual trigger, not on PRs
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
 
     steps:
       - name: Checkout code
