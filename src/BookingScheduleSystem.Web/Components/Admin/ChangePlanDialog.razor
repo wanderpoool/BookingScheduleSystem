@@ -1,0 +1,118 @@
+@using BookingScheduleSystem.Contracts.Common
+@using BookingScheduleSystem.Contracts.Subscriptions
+
+<MudDialog ClassContent="overflow-visible">
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudText Typo="Typo.body1">
+                Change plan for <strong>@TenantDisplayName</strong>
+            </MudText>
+
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Current plan: @CurrentPlanName (@CurrentBillingCycle)
+            </MudText>
+
+            <MudSelect T="SubscriptionPlanId"
+                       @bind-Value="_selectedPlanId"
+                       Label="New Plan"
+                       Variant="Variant.Outlined"
+                       Dense="true"
+                       ToStringFunc="@(id => _planNameLookup.GetValueOrDefault(id, "Select a plan"))">
+                @foreach (var plan in AvailablePlans)
+                {
+                    <MudSelectItem T="SubscriptionPlanId" Value="plan.Id">
+                        @plan.Name — $@plan.PricePerMonth/mo
+                    </MudSelectItem>
+                }
+            </MudSelect>
+
+            <MudSelect T="BillingCycleDto"
+                       @bind-Value="_selectedBillingCycle"
+                       Label="Billing Cycle"
+                       Variant="Variant.Outlined"
+                       Dense="true">
+                <MudSelectItem T="BillingCycleDto" Value="BillingCycleDto.Monthly">Monthly</MudSelectItem>
+                <MudSelectItem T="BillingCycleDto" Value="BillingCycleDto.Yearly">Yearly</MudSelectItem>
+            </MudSelect>
+
+            <MudTextField @bind-Value="_reason"
+                          Label="Reason (optional)"
+                          Variant="Variant.Outlined"
+                          Lines="2"
+                          Placeholder="Why is the plan being changed?"
+                          FullWidth="true" />
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudHidden Breakpoint="Breakpoint.Xs">
+            <MudButton OnClick="Cancel">Cancel</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Confirm"
+                       Disabled="@(_selectedPlanId == default)"
+                       StartIcon="@Icons.Material.Filled.SwapHoriz">
+                Change Plan
+            </MudButton>
+        </MudHidden>
+        <MudHidden Breakpoint="Breakpoint.SmAndUp">
+            <MudStack Spacing="2" Style="width: 100%;">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Confirm"
+                           Disabled="@(_selectedPlanId == default)"
+                           StartIcon="@Icons.Material.Filled.SwapHoriz"
+                           FullWidth="true"
+                           Size="Size.Medium"
+                           Style="min-height: 48px;">
+                    Change Plan
+                </MudButton>
+                <MudButton OnClick="Cancel"
+                           FullWidth="true"
+                           Size="Size.Medium"
+                           Style="min-height: 48px;">
+                    Cancel
+                </MudButton>
+            </MudStack>
+        </MudHidden>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public string TenantDisplayName { get; set; } = "this tenant";
+
+    [Parameter]
+    public string CurrentPlanName { get; set; } = "";
+
+    [Parameter]
+    public string CurrentBillingCycle { get; set; } = "";
+
+    [Parameter]
+    public TenantId TenantId { get; set; }
+
+    [Parameter]
+    public List<SubscriptionPlanResponse> AvailablePlans { get; set; } = new();
+
+    private Dictionary<SubscriptionPlanId, string> _planNameLookup = new();
+    private SubscriptionPlanId _selectedPlanId;
+    private BillingCycleDto _selectedBillingCycle = BillingCycleDto.Monthly;
+    private string? _reason;
+
+    protected override void OnParametersSet()
+    {
+        _planNameLookup = AvailablePlans.ToDictionary(p => p.Id, p => $"{p.Name} — ${p.PricePerMonth}/mo");
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void Confirm()
+    {
+        var request = new AdminChangePlanRequest
+        {
+            TenantId = TenantId,
+            NewPlanId = _selectedPlanId,
+            NewBillingCycle = _selectedBillingCycle,
+            Reason = _reason
+        };
+        MudDialog.Close(DialogResult.Ok(request));
+    }
+}

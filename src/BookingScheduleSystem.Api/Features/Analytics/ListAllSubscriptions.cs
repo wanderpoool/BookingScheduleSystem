@@ -1,3 +1,4 @@
+using BookingScheduleSystem.Api.Infrastructure.MultiTenancy;
 using BookingScheduleSystem.Api.Infrastructure.Subscriptions;
 using BookingScheduleSystem.Contracts.Common;
 using BookingScheduleSystem.Contracts.Subscriptions;
@@ -100,12 +101,15 @@ public sealed class ListAllSubscriptions : Endpoint<ListAllSubscriptionsRequest,
                 .ToListAsync(ct);
         }
 
-        // Load plan details for each subscription
-        var planIdGuids = subscriptions.Select(s => s.PlanId.Value).Distinct().ToArray();
-        var plans = await session.Query<SubscriptionPlan>()
-            .Where(p => planIdGuids.Contains(p.Id.Value))
-            .ToListAsync(ct);
-        var planDict = plans.ToDictionary(p => p.Id, p => p);
+        // Load plan details — filter in-memory because Marten LINQ can't handle strongly-typed ID .Value in Contains()
+        var planIds = subscriptions.Select(s => s.PlanId).Distinct().ToHashSet();
+        var allPlans = await session.Query<SubscriptionPlan>().ToListAsync(ct);
+        var planDict = allPlans.Where(p => planIds.Contains(p.Id)).ToDictionary(p => p.Id, p => p);
+
+        // Load tenant names — filter in-memory for the same strongly-typed ID reason
+        var tenantIds = subscriptions.Select(s => s.TenantId).Distinct().ToHashSet();
+        var allTenants = await session.Query<Tenant>().ToListAsync(ct);
+        var tenantDict = allTenants.Where(t => tenantIds.Contains(t.Id)).ToDictionary(t => t.Id, t => t.Name);
 
         Response = new ListAllSubscriptionsResponse
         {
@@ -116,6 +120,7 @@ public sealed class ListAllSubscriptions : Endpoint<ListAllSubscriptionsRequest,
                 {
                     Id = s.Id,
                     TenantId = s.TenantId,
+                    TenantName = tenantDict.GetValueOrDefault(s.TenantId),
                     PlanId = s.PlanId,
                     PlanName = plan?.Name ?? "Unknown",
                     Status = s.Status switch

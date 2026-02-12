@@ -6,6 +6,7 @@ public sealed record TenantSubscriptionResponse
 {
     public required TenantSubscriptionId Id { get; init; }
     public required TenantId TenantId { get; init; }
+    public string? TenantName { get; init; }
     public required SubscriptionPlanId PlanId { get; init; }
     public required string PlanName { get; init; }
     public required SubscriptionStatusDto Status { get; init; }

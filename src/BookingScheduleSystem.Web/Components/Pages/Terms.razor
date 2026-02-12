@@ -1,0 +1,1020 @@
+@page "/terms"
+@layout EmptyLayout
+@attribute [AllowAnonymous]
+@using Microsoft.AspNetCore.Authorization
+
+<PageTitle>Terms and Conditions | Book Me App!</PageTitle>
+
+<style>
+    .terms-page *, .terms-page *::before, .terms-page *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    .terms-page {
+        font-family: 'DM Sans', system-ui, sans-serif;
+        background: #FFF8F0;
+        color: #1B2D45;
+        line-height: 1.7;
+        -webkit-font-smoothing: antialiased;
+        min-height: 100vh;
+    }
+
+    /* ===== CSS VARIABLES ===== */
+    .terms-page {
+        --clr-bg: #FFF8F0;
+        --clr-surface: #FFFFFF;
+        --clr-primary: #E85D2A;
+        --clr-primary-dark: #C94A1D;
+        --clr-primary-light: rgba(232, 93, 42, 0.08);
+        --clr-secondary: #1B2D45;
+        --clr-accent: #FFC53D;
+        --clr-text: #1B2D45;
+        --clr-text-muted: #5A6B80;
+        --clr-text-light: #8A96A6;
+        --clr-border: #E8DFD5;
+        --clr-border-light: #F0EBE4;
+        --content-max: 720px;
+        --sidebar-w: 260px;
+    }
+
+    /* ===== ANIMATIONS ===== */
+    @@keyframes termsFadeIn {
+        from { opacity: 0; transform: translateY(16px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== NAV ===== */
+    .terms-nav {
+        position: sticky;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        padding: 14px 40px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        background: rgba(255, 248, 240, 0.88);
+        border-bottom: 1px solid rgba(232, 223, 213, 0.5);
+    }
+    .terms-nav-logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        color: #1B2D45;
+    }
+    .terms-nav-logo-icon {
+        width: 36px;
+        height: 36px;
+        background: #E85D2A;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 17px;
+    }
+    .terms-nav-logo-text {
+        font-weight: 700;
+        font-size: 18px;
+        letter-spacing: -0.3px;
+    }
+    .terms-nav-links {
+        display: flex;
+        align-items: center;
+        gap: 28px;
+        list-style: none;
+    }
+    .terms-nav-links a {
+        text-decoration: none;
+        color: #5A6B80;
+        font-size: 14px;
+        font-weight: 500;
+        transition: color 0.2s;
+    }
+    .terms-nav-links a:hover { color: #1B2D45; }
+    .terms-nav-btn {
+        padding: 10px 22px;
+        border-radius: 10px;
+        background: #E85D2A;
+        color: white !important;
+        font-weight: 600 !important;
+        transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1) !important;
+        box-shadow: 0 2px 10px rgba(232, 93, 42, 0.2);
+    }
+    .terms-nav-btn:hover {
+        background: #C94A1D !important;
+        transform: translateY(-1px);
+    }
+
+    /* ===== HERO ===== */
+    .terms-hero {
+        padding: 100px 40px 60px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        animation: termsFadeIn 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .terms-hero::before {
+        content: '';
+        position: absolute;
+        top: -30%;
+        right: -10%;
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle, rgba(232,93,42,0.06) 0%, transparent 70%);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+    .terms-hero-breadcrumb {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: #5A6B80;
+        margin-bottom: 20px;
+    }
+    .terms-hero-breadcrumb a {
+        color: #E85D2A;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    .terms-hero-breadcrumb a:hover { text-decoration: underline; }
+    .terms-hero-breadcrumb span { color: #E8DFD5; }
+    .terms-hero h1 {
+        font-size: clamp(36px, 5vw, 52px);
+        font-weight: 700;
+        letter-spacing: -1.5px;
+        line-height: 1.1;
+        margin-bottom: 16px;
+    }
+    .terms-hero-subtitle {
+        font-size: 17px;
+        color: #5A6B80;
+        max-width: 520px;
+        margin: 0 auto 24px;
+    }
+    .terms-hero-meta {
+        display: inline-flex;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .terms-hero-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: #8A96A6;
+        font-weight: 500;
+    }
+
+    /* ===== LAYOUT ===== */
+    .terms-layout {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 0 40px 100px;
+        display: grid;
+        grid-template-columns: var(--sidebar-w) 1fr;
+        gap: 60px;
+        align-items: flex-start;
+    }
+
+    /* ===== TABLE OF CONTENTS ===== */
+    .terms-toc-wrapper {
+        position: sticky;
+        top: 90px;
+        animation: termsFadeIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+    }
+    .terms-toc {
+        background: #FFFFFF;
+        border: 1px solid #E8DFD5;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 20px rgba(27,45,69,0.03);
+    }
+    .terms-toc-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: #1B2D45;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .terms-toc-title::before {
+        content: '';
+        width: 3px;
+        height: 16px;
+        background: #E85D2A;
+        border-radius: 3px;
+    }
+    .terms-toc-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    .terms-toc-list a {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 500;
+        color: #5A6B80;
+        transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .terms-toc-list a:hover {
+        background: rgba(232, 93, 42, 0.08);
+        color: #E85D2A;
+    }
+    .terms-toc-num {
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        background: #FFF8F0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        color: #8A96A6;
+        flex-shrink: 0;
+        transition: all 0.2s;
+    }
+    .terms-toc-list a:hover .terms-toc-num {
+        background: #E85D2A;
+        color: white;
+    }
+    .terms-toc-help {
+        margin-top: 16px;
+        background: #1B2D45;
+        border-radius: 14px;
+        padding: 20px;
+        color: white;
+    }
+    .terms-toc-help-title {
+        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 6px;
+    }
+    .terms-toc-help-desc {
+        font-size: 12px;
+        color: rgba(255,255,255,0.55);
+        line-height: 1.6;
+        margin-bottom: 14px;
+    }
+    .terms-toc-help-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border-radius: 8px;
+        background: rgba(255,255,255,0.12);
+        color: white;
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 600;
+        transition: background 0.2s;
+    }
+    .terms-toc-help-btn:hover { background: rgba(255,255,255,0.2); }
+
+    /* ===== CONTENT ===== */
+    .terms-content {
+        max-width: var(--content-max);
+        animation: termsFadeIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+    }
+    .terms-section {
+        margin-bottom: 48px;
+        scroll-margin-top: 100px;
+    }
+    .terms-section-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 9px;
+        background: rgba(232, 93, 42, 0.08);
+        color: #E85D2A;
+        font-weight: 700;
+        font-size: 14px;
+        margin-bottom: 10px;
+    }
+    .terms-section h2 {
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        margin-bottom: 16px;
+        line-height: 1.2;
+    }
+    .terms-section p {
+        font-size: 15px;
+        color: #5A6B80;
+        line-height: 1.8;
+        margin-bottom: 14px;
+    }
+    .terms-section p:last-child { margin-bottom: 0; }
+    .terms-section strong {
+        color: #1B2D45;
+        font-weight: 600;
+    }
+
+    /* ===== LISTS ===== */
+    .terms-list {
+        list-style: none;
+        margin: 12px 0 16px;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .terms-list li {
+        display: flex;
+        gap: 12px;
+        font-size: 15px;
+        color: #5A6B80;
+        line-height: 1.7;
+    }
+    .terms-list-icon {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        background: rgba(232, 93, 42, 0.08);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        flex-shrink: 0;
+        margin-top: 3px;
+        color: #E85D2A;
+        font-weight: 700;
+    }
+
+    /* ===== CALLOUTS ===== */
+    .terms-callout {
+        background: #FFFFFF;
+        border: 1px solid #E8DFD5;
+        border-radius: 14px;
+        padding: 20px 24px;
+        margin: 20px 0;
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
+    }
+    .terms-callout-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+    .terms-callout-icon.info { background: rgba(99, 102, 241, 0.1); }
+    .terms-callout-icon.warning { background: rgba(245, 158, 11, 0.12); }
+    .terms-callout-icon.ph { background: rgba(232, 93, 42, 0.1); }
+    .terms-callout-content { flex: 1; }
+    .terms-callout-title {
+        font-weight: 700;
+        font-size: 14px;
+        margin-bottom: 4px;
+    }
+    .terms-callout-text {
+        font-size: 13px;
+        color: #5A6B80;
+        line-height: 1.7;
+    }
+
+    /* ===== DIVIDER ===== */
+    .terms-section-divider {
+        height: 1px;
+        background: #F0EBE4;
+        margin: 48px 0;
+    }
+
+    /* ===== FOOTER ===== */
+    .terms-footer {
+        padding: 40px;
+        text-align: center;
+        border-top: 1px solid #E8DFD5;
+    }
+    .terms-footer-inner {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    .terms-footer-logo {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        color: #1B2D45;
+        margin-bottom: 12px;
+    }
+    .terms-footer-logo-icon {
+        width: 32px;
+        height: 32px;
+        background: #E85D2A;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 15px;
+    }
+    .terms-footer-logo-text {
+        font-weight: 700;
+        font-size: 16px;
+    }
+    .terms-footer-desc {
+        font-size: 13px;
+        color: #5A6B80;
+        margin-bottom: 16px;
+    }
+    .terms-footer-links {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+    .terms-footer-links a {
+        font-size: 13px;
+        color: #8A96A6;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s;
+    }
+    .terms-footer-links a:hover { color: #E85D2A; }
+    .terms-footer-copy {
+        margin-top: 20px;
+        font-size: 12px;
+        color: #8A96A6;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @@media (max-width: 900px) {
+        .terms-layout {
+            grid-template-columns: 1fr;
+            gap: 0;
+            padding: 0 24px 80px;
+        }
+        .terms-toc-wrapper {
+            position: relative;
+            top: 0;
+            margin-bottom: 40px;
+        }
+        .terms-hero { padding: 80px 24px 40px; }
+        .terms-nav { padding: 12px 20px; }
+        .terms-nav-links { display: none; }
+    }
+</style>
+
+<div class="terms-page">
+    <!-- NAV -->
+    <nav class="terms-nav">
+        <a href="/" class="terms-nav-logo">
+            <div class="terms-nav-logo-icon">B</div>
+            <span class="terms-nav-logo-text">Book Me App!</span>
+        </a>
+        <ul class="terms-nav-links">
+            <li><a href="/register" class="terms-nav-btn">Get Started Free</a></li>
+        </ul>
+    </nav>
+
+    <!-- HERO -->
+    <section class="terms-hero">
+        <div class="terms-hero-breadcrumb">
+            <a href="/">Home</a>
+            <span>&#8250;</span>
+            <a href="#">Legal</a>
+            <span>&#8250;</span>
+            Terms &amp; Conditions
+        </div>
+        <h1>Terms and Conditions</h1>
+        <p class="terms-hero-subtitle">Please read these terms carefully before using Book Me App! These terms govern your use of our platform for scheduling and managing appointments for service businesses in the Philippines.</p>
+        <div class="terms-hero-meta">
+            <div class="terms-hero-meta-item">
+                <span>&#128197;</span>
+                Effective: February 1, 2026
+            </div>
+            <div class="terms-hero-meta-item">
+                <span>&#128260;</span>
+                Last Updated: February 10, 2026
+            </div>
+            <div class="terms-hero-meta-item">
+                <span>&#127477;&#127469;</span>
+                Philippine Jurisdiction
+            </div>
+        </div>
+    </section>
+
+    <!-- LAYOUT -->
+    <div class="terms-layout">
+
+        <!-- TOC SIDEBAR -->
+        <aside class="terms-toc-wrapper">
+            <div class="terms-toc">
+                <div class="terms-toc-title">Table of Contents</div>
+                <ul class="terms-toc-list">
+                    <li><a href="#acceptance"><span class="terms-toc-num">1</span> Acceptance of Terms</a></li>
+                    <li><a href="#definitions"><span class="terms-toc-num">2</span> Definitions</a></li>
+                    <li><a href="#eligibility"><span class="terms-toc-num">3</span> Eligibility</a></li>
+                    <li><a href="#account"><span class="terms-toc-num">4</span> Account Registration</a></li>
+                    <li><a href="#services"><span class="terms-toc-num">5</span> Platform Services</a></li>
+                    <li><a href="#booking"><span class="terms-toc-num">6</span> Booking &amp; Scheduling</a></li>
+                    <li><a href="#payments"><span class="terms-toc-num">7</span> Payments &amp; Fees</a></li>
+                    <li><a href="#cancellation"><span class="terms-toc-num">8</span> Cancellation Policy</a></li>
+                    <li><a href="#privacy"><span class="terms-toc-num">9</span> Data Privacy</a></li>
+                    <li><a href="#conduct"><span class="terms-toc-num">10</span> User Conduct</a></li>
+                    <li><a href="#liability"><span class="terms-toc-num">11</span> Limitation of Liability</a></li>
+                    <li><a href="#ip"><span class="terms-toc-num">12</span> Intellectual Property</a></li>
+                    <li><a href="#termination"><span class="terms-toc-num">13</span> Termination</a></li>
+                    <li><a href="#governing"><span class="terms-toc-num">14</span> Governing Law</a></li>
+                    <li><a href="#changes"><span class="terms-toc-num">15</span> Changes to Terms</a></li>
+                    <li><a href="#contact"><span class="terms-toc-num">16</span> Contact Us</a></li>
+                </ul>
+            </div>
+
+            <div class="terms-toc-help">
+                <div class="terms-toc-help-title">Need help?</div>
+                <div class="terms-toc-help-desc">If you have questions about these terms, our support team is ready to help — in English or Filipino.</div>
+                <a href="mailto:support@bookmeapp.ph" class="terms-toc-help-btn">support&#64;bookmeapp.ph</a>
+            </div>
+        </aside>
+
+        <!-- CONTENT -->
+        <main class="terms-content">
+
+            <!-- 1. Acceptance -->
+            <div class="terms-section" id="acceptance">
+                <div class="terms-section-number">1</div>
+                <h2>Acceptance of Terms</h2>
+                <p>By accessing or using Book Me App! ("the Platform"), you agree to be bound by these Terms and Conditions ("Terms"). If you do not agree to these Terms, please do not use the Platform.</p>
+                <p>These Terms constitute a legally binding agreement between you and <strong>Book Me App! Philippines, Inc.</strong> ("we," "us," or "our"), a company registered under the laws of the Republic of the Philippines with principal office in Makati City, Metro Manila.</p>
+                <p>By creating an account, booking an appointment, or listing your services on the Platform — whether as a <strong>Service Provider</strong> (dental clinics, spas, nail salons, barbershops, and similar establishments) or a <strong>Client</strong> (individuals booking appointments) — you acknowledge that you have read, understood, and agree to be bound by these Terms.</p>
+            </div>
+
+            <div class="terms-section-divider"></div>
+
+            <!-- 2. Definitions -->
+            <div class="terms-section" id="definitions">
+                <div class="terms-section-number">2</div>
+                <h2>Definitions</h2>
+                <p>For the purposes of these Terms, the following definitions apply:</p>
+                <ul class="terms-list">
+                    <li>
+                        <span class="terms-list-icon">a</span>
+                        <span><strong>"Platform"</strong> refers to the Book Me App! website, mobile application, and all related services operated by Book Me App! Philippines, Inc.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">b</span>
+                        <span><strong>"Service Provider"</strong> refers to dental clinics, spa and massage centers, nail spas, barbershops, beauty salons, and other service-based establishments registered on the Platform within the Philippines.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">c</span>
+                        <span><strong>"Client"</strong> refers to any individual who uses the Platform to book, schedule, or manage appointments with a Service Provider.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">d</span>
+                        <span><strong>"Appointment"</strong> refers to a confirmed or pending booking for a specific service, date, time, and location made through the Platform.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">e</span>
+                        <span><strong>"Service Fee"</strong> refers to any fees charged by Book Me App! for the use of the Platform, including but not limited to subscription fees, transaction fees, and premium feature fees.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">f</span>
+                        <span><strong>"Payment Channels"</strong> refers to supported payment methods including GCash, Maya (formerly PayMaya), bank transfers (BPI, BDO, UnionBank, etc.), credit/debit cards, and cash.</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="terms-section-divider"></div>
+
+            <!-- 3. Eligibility -->
+            <div class="terms-section" id="eligibility">
+                <div class="terms-section-number">3</div>
+                <h2>Eligibility</h2>
+                <p>To use the Platform, you must meet the following requirements:</p>
+                <ul class="terms-list">
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>You must be at least <strong>18 years of age</strong>, or at least 13 years of age with verifiable parental or guardian consent, in accordance with Republic Act No. 10173 (Data Privacy Act of 2012).</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>If you are a Service Provider, your establishment must be a <strong>legally registered business</strong> in the Philippines, with valid DTI (Department of Trade and Industry) or SEC (Securities and Exchange Commission) registration, and applicable LGU business permits and licenses.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>Dental clinics must hold a valid <strong>PRC (Professional Regulation Commission) license</strong> for all practicing dentists, and comply with DOH (Department of Health) regulations for dental facilities.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>Spa, massage, nail spa, and barbershop establishments must comply with local government health and sanitation requirements and hold necessary <strong>sanitary permits</strong>.</span>
+                    </li>
+                </ul>
+                <div class="terms-callout">
+                    <div class="terms-callout-icon ph">&#127477;&#127469;</div>
+                    <div class="terms-callout-content">
+                        <div class="terms-callout-title">Philippine Regulatory Note</div>
+                        <div class="terms-callout-text">Service Providers are solely responsible for maintaining all required licenses, permits, and professional certifications as mandated by Philippine law. Book Me App! does not verify or guarantee the licensing status of any Service Provider and shall not be held liable for any regulatory non-compliance.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="terms-section-divider"></div>
+
+            <!-- 4. Account Registration -->
+            <div class="terms-section" id="account">
+                <div class="terms-section-number">4</div>
+                <h2>Account Registration</h2>
+                <p>To access the full features of the Platform, you must create an account by providing accurate, current, and complete information. You are responsible for maintaining the confidentiality of your account credentials.</p>
+                <ul class="terms-list">
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Service Provider accounts</strong> require business name, registered address, type of service (dental, spa, nail, barbershop), valid contact number (Philippine mobile format: +63), email address, and authorized representative information.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Client accounts</strong> require full name, valid Philippine mobile number, and email address. Registration via GCash, Maya, Google, or Facebook sign-in is also supported.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>You must not create multiple accounts, impersonate another person or business, or use misleading information. Violation may result in immediate suspension or termination.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>You are fully responsible for all activities conducted through your account. Report any unauthorized access immediately to <strong>support&#64;bookmeapp.ph</strong>.</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="terms-section-divider"></div>
+
+            <!-- 5. Platform Services -->
+            <div class="terms-section" id="services">
+                <div class="terms-section-number">5</div>
+                <h2>Platform Services</h2>
+                <p>Book Me App! provides a technology platform that enables Service Providers and Clients to connect for appointment scheduling. Our services include, but are not limited to:</p>
+                <ul class="terms-list">
+                    <li>
+                        <span class="terms-list-icon">&#128197;</span>
+                        <span><strong>Appointment Scheduling</strong> — Online booking for dental consultations, teeth cleaning, tooth extraction, braces adjustment, spa massage (Swedish, Hilot, Shiatsu, Ventosa), nail spa services (manicure, pedicure, gel nails, nail art), and barbershop services (haircut, shave, beard trim, hair coloring).</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#128276;</span>
+                        <span><strong>Automated Reminders</strong> — SMS notifications via Globe, Smart, TNT, and DITO networks; Viber messages; Facebook Messenger alerts; and email reminders.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#128179;</span>
+                        <span><strong>Payment Processing</strong> — Secure payment collection through GCash, Maya, bank transfers, and card payments in Philippine Peso (PHP).</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#128202;</span>
+                        <span><strong>Business Management Tools</strong> — Dashboard analytics, client records, multi-branch management, staff scheduling, and revenue tracking.</span>
+                    </li>
+                </ul>
+                <div class="terms-callout">
+                    <div class="terms-callout-icon info">&#8505;&#65039;</div>
+                    <div class="terms-callout-content">
+                        <div class="terms-callout-title">Important Disclaimer</div>
+                        <div class="terms-callout-text">Book Me App! is a scheduling and business management platform only. We are not a healthcare provider, medical facility, spa, salon, or barbershop. We do not employ the Service Providers listed on the Platform and are not responsible for the quality, safety, or outcome of any services rendered.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="terms-section-divider"></div>
+
+            <!-- 6. Booking & Scheduling -->
+            <div class="terms-section" id="booking">
+                <div class="terms-section-number">6</div>
+                <h2>Booking &amp; Scheduling</h2>
+                <p>When you book an appointment through Book Me App!, please note the following:</p>
+                <ul class="terms-list">
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>A booking is considered <strong>confirmed</strong> once you receive a confirmation notification via SMS, Viber, Messenger, or email. Pending bookings are subject to Service Provider approval.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>Appointment availability is determined solely by the Service Provider. Book Me App! does not guarantee that any particular time slot, service, or staff member will be available.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>Clients are expected to <strong>arrive on time</strong> at the specified branch location. A grace period of 15 minutes is standard, after which the Service Provider may cancel the appointment or mark it as a no-show at their discretion.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>Service Providers must maintain accurate and up-to-date availability on the Platform. Repeated inaccuracies may result in account penalties.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>Walk-in appointments managed through the Platform are subject to the same Terms as online bookings.</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="terms-section-divider"></div>
+
+            <!-- 7. Payments & Fees -->
+            <div class="terms-section" id="payments">
+                <div class="terms-section-number">7</div>
+                <h2>Payments &amp; Fees</h2>
+                <p>All prices displayed on the Platform are in <strong>Philippine Peso (PHP)</strong> and are inclusive of applicable taxes unless otherwise stated by the Service Provider.</p>
+                <ul class="terms-list">
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Service Provider Fees:</strong> Book Me App! charges a monthly subscription fee and/or a per-transaction fee depending on the selected plan.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Client Payments:</strong> Payments made through the Platform (via GCash, Maya, BPI, BDO, UnionBank, credit/debit card, or other supported channels) are processed by our third-party payment partners. Book Me App! does not directly handle or store payment credentials.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Deposits:</strong> Service Providers may require a non-refundable deposit (partial or full) at the time of booking. The deposit amount and refund policy are set by the Service Provider and must be clearly displayed on their booking page.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Refunds:</strong> Refund eligibility is determined by the Service Provider's cancellation policy. Book Me App! will facilitate the refund process but is not liable for delays caused by payment channel processing times (typically 5–14 business days for GCash/Maya, and up to 30 days for bank and card refunds).</span>
+                    </li>
+                </ul>
+                <div class="terms-callout">
+                    <div class="terms-callout-icon warning">&#9888;&#65039;</div>
+                    <div class="terms-callout-content">
+                        <div class="terms-callout-title">BSP Compliance</div>
+                        <div class="terms-callout-text">All payment processing through Book Me App! complies with Bangko Sentral ng Pilipinas (BSP) regulations on electronic payments and digital financial services. We partner only with BSP-registered or authorized payment service providers.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="terms-section-divider"></div>
+
+            <!-- 8. Cancellation Policy -->
+            <div class="terms-section" id="cancellation">
+                <div class="terms-section-number">8</div>
+                <h2>Cancellation &amp; No-Show Policy</h2>
+                <p>Both Clients and Service Providers may cancel or reschedule appointments, subject to the following guidelines:</p>
+                <ul class="terms-list">
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Free cancellation</strong> is available up to <strong>24 hours</strong> before the scheduled appointment, unless the Service Provider specifies a different cancellation window on their booking page.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Late cancellations</strong> (less than 24 hours before the appointment) may be subject to a cancellation fee as determined by the Service Provider, which may include forfeiture of any deposit paid.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>No-shows</strong> — Clients who fail to appear for a confirmed appointment without prior cancellation may be subject to penalties including: being charged the full service fee, temporary suspension of booking privileges, or being flagged in the system.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Service Provider cancellations</strong> — If a Service Provider cancels a confirmed appointment, the Client shall receive a full refund of any payment or deposit made. Repeated cancellations by Service Providers may result in reduced visibility or account suspension.</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="terms-section-divider"></div>
+
+            <!-- 9. Data Privacy -->
+            <div class="terms-section" id="privacy">
+                <div class="terms-section-number">9</div>
+                <h2>Data Privacy &amp; Protection</h2>
+                <p>Book Me App! is committed to protecting your personal information in accordance with <strong>Republic Act No. 10173</strong> (Data Privacy Act of 2012) and its Implementing Rules and Regulations. We are registered with the <strong>National Privacy Commission (NPC)</strong>.</p>
+                <ul class="terms-list">
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>We collect and process personal data only for legitimate purposes directly related to the Platform's services: appointment booking, payment processing, notifications, and analytics.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>Personal data collected includes: name, mobile number, email, appointment history, payment information (processed by third-party partners), and location data (for branch selection).</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Sensitive personal information</strong> — For dental clinic bookings, limited health-related information (such as dental history or medical conditions relevant to treatment) may be collected. This data is classified as sensitive personal information under the Data Privacy Act and is subject to enhanced protection measures.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>You have the right to <strong>access, correct, object to, and request deletion</strong> of your personal data. To exercise these rights, contact our Data Protection Officer at <strong>dpo&#64;bookmeapp.ph</strong>.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>For full details, please refer to our separate <strong>Privacy Policy</strong>.</span>
+                    </li>
+                </ul>
+                <div class="terms-callout">
+                    <div class="terms-callout-icon ph">&#128274;</div>
+                    <div class="terms-callout-content">
+                        <div class="terms-callout-title">NPC Registration</div>
+                        <div class="terms-callout-text">Book Me App! Philippines, Inc. is a registered personal information controller with the National Privacy Commission. Our NPC Registration Number is available upon request. For data privacy concerns, you may also file a complaint directly with the NPC at privacy.gov.ph.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="terms-section-divider"></div>
+
+            <!-- 10. User Conduct -->
+            <div class="terms-section" id="conduct">
+                <div class="terms-section-number">10</div>
+                <h2>User Conduct</h2>
+                <p>All users of the Platform agree to the following standards of conduct:</p>
+                <ul class="terms-list">
+                    <li>
+                        <span class="terms-list-icon">&#10007;</span>
+                        <span>Do not use the Platform for any unlawful, fraudulent, or unauthorized purpose.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#10007;</span>
+                        <span>Do not post false reviews, misleading service descriptions, or fabricated pricing to deceive other users.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#10007;</span>
+                        <span>Do not harass, threaten, or abuse other users, including Service Provider staff, through the Platform's messaging or review features.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#10007;</span>
+                        <span>Do not attempt to circumvent the Platform's booking or payment systems (e.g., arranging off-platform transactions to avoid service fees).</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#10007;</span>
+                        <span>Do not scrape, copy, or extract data from the Platform using automated tools, bots, or scripts.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#10007;</span>
+                        <span>Service Providers must not engage in discriminatory practices against Clients based on race, gender, religion, disability, or any other protected characteristic under Philippine law.</span>
+                    </li>
+                </ul>
+                <p>Violations may result in warnings, temporary suspension, permanent account termination, or legal action as appropriate.</p>
+            </div>
+
+            <div class="terms-section-divider"></div>
+
+            <!-- 11. Limitation of Liability -->
+            <div class="terms-section" id="liability">
+                <div class="terms-section-number">11</div>
+                <h2>Limitation of Liability</h2>
+                <p>To the maximum extent permitted by Philippine law:</p>
+                <ul class="terms-list">
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>Book Me App! shall not be liable for any <strong>direct, indirect, incidental, consequential, or punitive damages</strong> arising from your use of the Platform, including but not limited to injuries, health complications, property damage, or financial losses resulting from services rendered by Service Providers.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>Book Me App! does not warrant the <strong>quality, safety, legality, or suitability</strong> of any services offered by Service Providers. All services are provided by independent third parties.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>We make reasonable efforts to maintain Platform availability but do not guarantee uninterrupted or error-free service. We are not liable for service disruptions caused by natural disasters, power outages, internet connectivity issues, or other events beyond our reasonable control (<strong>force majeure</strong>).</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>Our total aggregate liability to you for any claims arising from or related to these Terms shall not exceed the total fees you have paid to Book Me App! during the <strong>twelve (12) months</strong> immediately preceding the claim.</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="terms-section-divider"></div>
+
+            <!-- 12. Intellectual Property -->
+            <div class="terms-section" id="ip">
+                <div class="terms-section-number">12</div>
+                <h2>Intellectual Property</h2>
+                <p>All content, features, and functionality of the Platform — including the Book Me App! name, logo, designs, source code, text, graphics, and user interfaces — are owned by Book Me App! Philippines, Inc. and are protected by <strong>Republic Act No. 8293</strong> (Intellectual Property Code of the Philippines) and applicable international intellectual property laws.</p>
+                <p>You are granted a limited, non-exclusive, non-transferable, revocable license to access and use the Platform solely for its intended purpose. You may not reproduce, distribute, modify, create derivative works of, or otherwise exploit any portion of the Platform without our prior written consent.</p>
+                <p>Service Providers retain ownership of their own business content (logos, service descriptions, images) uploaded to the Platform but grant Book Me App! a non-exclusive, royalty-free license to display such content on the Platform for the purpose of facilitating bookings.</p>
+            </div>
+
+            <div class="terms-section-divider"></div>
+
+            <!-- 13. Termination -->
+            <div class="terms-section" id="termination">
+                <div class="terms-section-number">13</div>
+                <h2>Termination</h2>
+                <p>Either party may terminate their use of the Platform at any time:</p>
+                <ul class="terms-list">
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Clients</strong> may delete their account through the app settings or by contacting support. All upcoming appointments will be cancelled upon account deletion.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Service Providers</strong> may close their account with 30 days' written notice. All existing confirmed appointments must be honored or properly cancelled before account closure.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>Book Me App! reserves the right to <strong>suspend or terminate</strong> any account at any time, with or without notice, for violation of these Terms, fraudulent activity, or conduct that harms the Platform community.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>Upon termination, your right to access the Platform ceases immediately. Provisions regarding Limitation of Liability, Intellectual Property, Governing Law, and Data Privacy shall survive termination.</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="terms-section-divider"></div>
+
+            <!-- 14. Governing Law -->
+            <div class="terms-section" id="governing">
+                <div class="terms-section-number">14</div>
+                <h2>Governing Law &amp; Dispute Resolution</h2>
+                <p>These Terms shall be governed by and construed in accordance with the laws of the <strong>Republic of the Philippines</strong>.</p>
+                <p>Any disputes arising from or in connection with these Terms shall first be settled through <strong>good-faith negotiation</strong> between the parties. If no resolution is reached within thirty (30) days, the dispute shall be submitted to <strong>mediation</strong> in accordance with the rules of the Philippine Mediation Center.</p>
+                <p>Should mediation fail, the dispute shall be resolved through <strong>arbitration</strong> under the Alternative Dispute Resolution Act of 2004 (Republic Act No. 9285), with the arbitration to be conducted in Makati City, Metro Manila. The arbitrator's decision shall be final and binding.</p>
+                <p>Notwithstanding the above, either party may seek injunctive or other equitable relief from the proper courts of Makati City for urgent matters that cannot await arbitration.</p>
+            </div>
+
+            <div class="terms-section-divider"></div>
+
+            <!-- 15. Changes to Terms -->
+            <div class="terms-section" id="changes">
+                <div class="terms-section-number">15</div>
+                <h2>Changes to Terms</h2>
+                <p>Book Me App! reserves the right to modify or update these Terms at any time. When we make material changes, we will:</p>
+                <ul class="terms-list">
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>Post the updated Terms on the Platform with a revised "Last Updated" date.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>Notify registered users via email, SMS, or in-app notification at least <strong>fifteen (15) days</strong> before the changes take effect.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>Your continued use of the Platform after the effective date of any changes constitutes your acceptance of the revised Terms.</span>
+                    </li>
+                </ul>
+                <p>We encourage you to review these Terms periodically. If you disagree with any changes, you may discontinue use of the Platform and close your account before the effective date.</p>
+            </div>
+
+            <div class="terms-section-divider"></div>
+
+            <!-- 16. Contact Us -->
+            <div class="terms-section" id="contact">
+                <div class="terms-section-number">16</div>
+                <h2>Contact Us</h2>
+                <p>If you have any questions, concerns, or feedback about these Terms and Conditions, please contact us through any of the following channels:</p>
+
+                <div class="terms-callout" style="flex-direction:column;gap:16px;">
+                    <div style="display:flex;gap:14px;align-items:flex-start;">
+                        <div class="terms-callout-icon ph">&#127970;</div>
+                        <div class="terms-callout-content">
+                            <div class="terms-callout-title">Book Me App! Philippines, Inc.</div>
+                            <div class="terms-callout-text">Unit 12F, One Ayala Tower, Makati Avenue corner Edsa, Makati City 1226, Metro Manila, Philippines</div>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:14px;align-items:center;">
+                        <div class="terms-callout-icon info">&#128231;</div>
+                        <div class="terms-callout-content">
+                            <div class="terms-callout-title">General Support</div>
+                            <div class="terms-callout-text">support&#64;bookmeapp.ph</div>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:14px;align-items:center;">
+                        <div class="terms-callout-icon info">&#128274;</div>
+                        <div class="terms-callout-content">
+                            <div class="terms-callout-title">Data Protection Officer</div>
+                            <div class="terms-callout-text">dpo&#64;bookmeapp.ph</div>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:14px;align-items:center;">
+                        <div class="terms-callout-icon warning">&#128222;</div>
+                        <div class="terms-callout-content">
+                            <div class="terms-callout-title">Hotline (Mon–Sat, 8 AM – 6 PM PHT)</div>
+                            <div class="terms-callout-text">(02) 8123-4567 | +63 917 123 4567</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="terms-footer">
+        <div class="terms-footer-inner">
+            <a href="/" class="terms-footer-logo">
+                <div class="terms-footer-logo-icon">B</div>
+                <span class="terms-footer-logo-text">Book Me App!</span>
+            </a>
+            <p class="terms-footer-desc">The modern booking platform built for Filipino dental clinics, spas, nail salons, and barbershops.</p>
+            <div class="terms-footer-links">
+                <a href="/privacy">Privacy Policy</a>
+                <a href="/terms">Terms &amp; Conditions</a>
+            </div>
+            <p class="terms-footer-copy">&#169; 2026 Book Me App! Philippines, Inc. All rights reserved.</p>
+        </div>
+    </footer>
+</div>

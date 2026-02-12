@@ -1,0 +1,67 @@
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined">
+                Suspending a subscription will immediately restrict the tenant's access to the platform.
+            </MudAlert>
+
+            <MudText Typo="Typo.body1">
+                Suspend subscription for <strong>@TenantDisplayName</strong>?
+            </MudText>
+
+            <MudTextField @bind-Value="_reason"
+                          Label="Reason (required)"
+                          Variant="Variant.Outlined"
+                          Lines="3"
+                          Placeholder="Provide a reason for suspension..."
+                          FullWidth="true"
+                          Required="true" />
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudHidden Breakpoint="Breakpoint.Xs">
+            <MudButton OnClick="Cancel">Cancel</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="Confirm"
+                       Disabled="@(string.IsNullOrWhiteSpace(_reason))"
+                       StartIcon="@Icons.Material.Filled.Block">
+                Suspend
+            </MudButton>
+        </MudHidden>
+        <MudHidden Breakpoint="Breakpoint.SmAndUp">
+            <MudStack Spacing="2" Style="width: 100%;">
+                <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="Confirm"
+                           Disabled="@(string.IsNullOrWhiteSpace(_reason))"
+                           StartIcon="@Icons.Material.Filled.Block"
+                           FullWidth="true"
+                           Size="Size.Medium"
+                           Style="min-height: 48px;">
+                    Suspend
+                </MudButton>
+                <MudButton OnClick="Cancel"
+                           FullWidth="true"
+                           Size="Size.Medium"
+                           Style="min-height: 48px;">
+                    Cancel
+                </MudButton>
+            </MudStack>
+        </MudHidden>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public string TenantDisplayName { get; set; } = "this tenant";
+
+    private string? _reason;
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void Confirm()
+    {
+        if (!string.IsNullOrWhiteSpace(_reason))
+            MudDialog.Close(DialogResult.Ok(_reason.Trim()));
+    }
+}

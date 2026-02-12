@@ -1,0 +1,401 @@
+@page "/admin/subscriptions"
+@using BookingScheduleSystem.Contracts.Common
+@using BookingScheduleSystem.Contracts.Subscriptions
+@using BookingScheduleSystem.Web.Components.Admin
+@using BookingScheduleSystem.Web.Services
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "GlobalAdmin")]
+@inject IAdminSubscriptionService AdminSubscriptionService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>Manage Subscriptions</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="py-4">
+    <MudText Typo="Typo.h5" Class="mb-4">Manage Subscriptions</MudText>
+
+    @* Status Filter Chips *@
+    <MudStack Row="true" Spacing="2" Class="mb-4" AlignItems="AlignItems.Center" Style="flex-wrap: wrap;">
+        <MudChip T="string"
+                 Color="@(_selectedStatus is null ? Color.Primary : Color.Default)"
+                 Variant="@(_selectedStatus is null ? Variant.Filled : Variant.Outlined)"
+                 OnClick="@(() => FilterByStatus(null))">
+            All
+        </MudChip>
+        @foreach (var status in Enum.GetValues<SubscriptionStatusDto>())
+        {
+            <MudChip T="string"
+                     Color="@(_selectedStatus == status ? GetStatusColor(status) : Color.Default)"
+                     Variant="@(_selectedStatus == status ? Variant.Filled : Variant.Outlined)"
+                     OnClick="@(() => FilterByStatus(status))">
+                @status
+            </MudChip>
+        }
+    </MudStack>
+
+    @if (_loading)
+    {
+        <MudStack Spacing="2">
+            @for (var i = 0; i < 5; i++)
+            {
+                <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="52px" />
+            }
+        </MudStack>
+    }
+    else if (_errorMessage is not null)
+    {
+        <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Class="mb-4">
+            @_errorMessage
+        </MudAlert>
+        <MudButton Variant="Variant.Outlined" OnClick="LoadSubscriptionsAsync"
+                   StartIcon="@Icons.Material.Filled.Refresh">
+            Retry
+        </MudButton>
+    }
+    else
+    {
+        @* Desktop Table *@
+        <MudHidden Breakpoint="Breakpoint.Xs">
+            <MudTable Items="_subscriptions" Hover="true" Striped="true" Dense="true"
+                      Loading="_loading" LoadingProgressColor="Color.Primary">
+                <HeaderContent>
+                    <MudTh>Tenant</MudTh>
+                    <MudTh>Plan</MudTh>
+                    <MudTh>Status</MudTh>
+                    <MudTh>Billing</MudTh>
+                    <MudTh>Start Date</MudTh>
+                    <MudTh>End Date</MudTh>
+                    <MudTh Style="text-align: right;">Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate Context="sub">
+                    <MudTd DataLabel="Tenant">@GetTenantDisplay(sub)</MudTd>
+                    <MudTd DataLabel="Plan">@sub.PlanName</MudTd>
+                    <MudTd DataLabel="Status">
+                        <MudChip T="string" Size="Size.Small"
+                                 Color="@GetStatusColor(sub.Status)"
+                                 Variant="Variant.Filled">
+                            @sub.Status
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Billing">@sub.BillingCycle</MudTd>
+                    <MudTd DataLabel="Start">@sub.StartDate.ToString("MMM d, yyyy")</MudTd>
+                    <MudTd DataLabel="End">@(sub.EndDate?.ToString("MMM d, yyyy") ?? "—")</MudTd>
+                    <MudTd Style="text-align: right;">
+                        <MudMenu Icon="@Icons.Material.Filled.MoreVert" Dense="true"
+                                 AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                            <MudMenuItem Icon="@Icons.Material.Filled.SwapHoriz"
+                                         OnClick="@(() => OpenChangePlanDialog(sub))">
+                                Change Plan
+                            </MudMenuItem>
+                            @if (sub.Status is SubscriptionStatusDto.Active or SubscriptionStatusDto.PastDue)
+                            {
+                                <MudMenuItem Icon="@Icons.Material.Filled.Block"
+                                             IconColor="Color.Error"
+                                             OnClick="@(() => OpenSuspendDialog(sub))">
+                                    Suspend
+                                </MudMenuItem>
+                            }
+                            @if (sub.Status is SubscriptionStatusDto.Suspended)
+                            {
+                                <MudMenuItem Icon="@Icons.Material.Filled.PlayArrow"
+                                             IconColor="Color.Success"
+                                             OnClick="@(() => ReactivateSubscription(sub))">
+                                    Reactivate
+                                </MudMenuItem>
+                            }
+                        </MudMenu>
+                    </MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText Typo="Typo.body1" Align="Align.Center" Class="py-6">
+                        No subscriptions found.
+                    </MudText>
+                </NoRecordsContent>
+            </MudTable>
+        </MudHidden>
+
+        @* Mobile Card List *@
+        <MudHidden Breakpoint="Breakpoint.SmAndUp">
+            <MudStack Spacing="2">
+                @if (!_subscriptions.Any())
+                {
+                    <MudText Typo="Typo.body1" Align="Align.Center" Class="py-6">
+                        No subscriptions found.
+                    </MudText>
+                }
+                @foreach (var sub in _subscriptions)
+                {
+                    <MudCard Elevation="1">
+                        <MudCardContent>
+                            <MudStack Spacing="1">
+                                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                    <MudText Typo="Typo.subtitle1" Style="font-weight: 600;">
+                                        @GetTenantDisplay(sub)
+                                    </MudText>
+                                    <MudChip T="string" Size="Size.Small"
+                                             Color="@GetStatusColor(sub.Status)"
+                                             Variant="Variant.Filled">
+                                        @sub.Status
+                                    </MudChip>
+                                </MudStack>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                    @sub.PlanName — @sub.BillingCycle
+                                </MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                    @sub.StartDate.ToString("MMM d, yyyy") — @(sub.EndDate?.ToString("MMM d, yyyy") ?? "Ongoing")
+                                </MudText>
+                            </MudStack>
+                        </MudCardContent>
+                        <MudCardActions>
+                            <MudButton Size="Size.Small" Variant="Variant.Text"
+                                       StartIcon="@Icons.Material.Filled.SwapHoriz"
+                                       OnClick="@(() => OpenChangePlanDialog(sub))">
+                                Change Plan
+                            </MudButton>
+                            @if (sub.Status is SubscriptionStatusDto.Active or SubscriptionStatusDto.PastDue)
+                            {
+                                <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Error"
+                                           StartIcon="@Icons.Material.Filled.Block"
+                                           OnClick="@(() => OpenSuspendDialog(sub))">
+                                    Suspend
+                                </MudButton>
+                            }
+                            @if (sub.Status is SubscriptionStatusDto.Suspended)
+                            {
+                                <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Success"
+                                           StartIcon="@Icons.Material.Filled.PlayArrow"
+                                           OnClick="@(() => ReactivateSubscription(sub))">
+                                    Reactivate
+                                </MudButton>
+                            }
+                        </MudCardActions>
+                    </MudCard>
+                }
+            </MudStack>
+        </MudHidden>
+
+        @* Pagination *@
+        @if (_totalPages > 1)
+        {
+            <MudStack Row="true" Justify="Justify.Center" Class="mt-4">
+                <MudPagination Count="_totalPages"
+                               Selected="_currentPage"
+                               SelectedChanged="OnPageChanged"
+                               Color="Color.Primary"
+                               Variant="Variant.Outlined"
+                               ShowFirstButton="true"
+                               ShowLastButton="true" />
+            </MudStack>
+        }
+    }
+</MudContainer>
+
+@code {
+    private List<TenantSubscriptionResponse> _subscriptions = new();
+    private List<SubscriptionPlanResponse> _availablePlans = new();
+    private SubscriptionStatusDto? _selectedStatus;
+    private bool _loading = true;
+    private string? _errorMessage;
+    private int _currentPage = 1;
+    private int _totalPages = 1;
+    private const int PageSize = 20;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var subscriptionTask = LoadSubscriptionsAsync();
+        var plansTask = LoadPlansAsync();
+        await Task.WhenAll(subscriptionTask, plansTask);
+    }
+
+    private async Task LoadSubscriptionsAsync()
+    {
+        _loading = true;
+        _errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var result = await AdminSubscriptionService.ListAllSubscriptionsAsync(
+                _selectedStatus, null, _currentPage, PageSize);
+
+            if (result is not null)
+            {
+                _subscriptions = result.Subscriptions;
+                _totalPages = result.TotalCount > 0
+                    ? (int)Math.Ceiling((double)result.TotalCount / PageSize)
+                    : 1;
+            }
+            else
+            {
+                _subscriptions = new();
+                _totalPages = 1;
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            _errorMessage = ex.Message;
+            _subscriptions = new();
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadPlansAsync()
+    {
+        try
+        {
+            _availablePlans = await AdminSubscriptionService.ListAllPlansAsync() ?? new();
+        }
+        catch
+        {
+            _availablePlans = new();
+        }
+    }
+
+    private async Task FilterByStatus(SubscriptionStatusDto? status)
+    {
+        _selectedStatus = status;
+        _currentPage = 1;
+        await LoadSubscriptionsAsync();
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _currentPage = page;
+        await LoadSubscriptionsAsync();
+    }
+
+    private async Task OpenChangePlanDialog(TenantSubscriptionResponse sub)
+    {
+        var parameters = new DialogParameters<ChangePlanDialog>
+        {
+            { x => x.TenantDisplayName, GetTenantDisplay(sub) },
+            { x => x.CurrentPlanName, sub.PlanName },
+            { x => x.CurrentBillingCycle, sub.BillingCycle.ToString() },
+            { x => x.TenantId, sub.TenantId },
+            { x => x.AvailablePlans, _availablePlans }
+        };
+
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+            CloseOnEscapeKey = true
+        };
+
+        var dialog = await DialogService.ShowAsync<ChangePlanDialog>("Change Plan", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is not null && !result.Canceled && result.Data is AdminChangePlanRequest request)
+        {
+            await ExecuteAdminAction(
+                () => AdminSubscriptionService.AdminChangePlanAsync(request),
+                "Plan changed successfully.",
+                "Failed to change plan.");
+        }
+    }
+
+    private async Task OpenSuspendDialog(TenantSubscriptionResponse sub)
+    {
+        var parameters = new DialogParameters<SuspendSubscriptionDialog>
+        {
+            { x => x.TenantDisplayName, GetTenantDisplay(sub) }
+        };
+
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+            CloseOnEscapeKey = true
+        };
+
+        var dialog = await DialogService.ShowAsync<SuspendSubscriptionDialog>("Suspend Subscription", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is not null && !result.Canceled && result.Data is string reason)
+        {
+            var request = new AdminSuspendSubscriptionRequest
+            {
+                TenantId = sub.TenantId,
+                Reason = reason
+            };
+            await ExecuteAdminAction(
+                () => AdminSubscriptionService.AdminSuspendAsync(request),
+                "Subscription suspended.",
+                "Failed to suspend subscription.");
+        }
+    }
+
+    private async Task ReactivateSubscription(TenantSubscriptionResponse sub)
+    {
+        var parameters = new DialogParameters<DeleteConfirmDialog>
+        {
+            { x => x.ContentText, $"Reactivate subscription for {GetTenantDisplay(sub)}?" }
+        };
+
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.ExtraSmall,
+            FullWidth = true,
+            CloseOnEscapeKey = true
+        };
+
+        var dialog = await DialogService.ShowAsync<DeleteConfirmDialog>("Reactivate Subscription", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is not null && !result.Canceled)
+        {
+            var request = new AdminReactivateSubscriptionRequest
+            {
+                TenantId = sub.TenantId
+            };
+            await ExecuteAdminAction(
+                () => AdminSubscriptionService.AdminReactivateAsync(request),
+                "Subscription reactivated.",
+                "Failed to reactivate subscription.");
+        }
+    }
+
+    private async Task ExecuteAdminAction(
+        Func<Task<TenantSubscriptionResponse?>> action,
+        string successMessage,
+        string fallbackError)
+    {
+        try
+        {
+            await action();
+            Snackbar.Add(successMessage, Severity.Success);
+            await LoadSubscriptionsAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch
+        {
+            Snackbar.Add(fallbackError, Severity.Error);
+        }
+    }
+
+    private static string GetTenantDisplay(TenantSubscriptionResponse sub)
+    {
+        if (!string.IsNullOrEmpty(sub.TenantName))
+            return sub.TenantName;
+
+        var id = sub.TenantId.Value.ToString();
+        return id.Length > 8 ? id[..8] + "..." : id;
+    }
+
+    private static Color GetStatusColor(SubscriptionStatusDto status) => status switch
+    {
+        SubscriptionStatusDto.Active => Color.Success,
+        SubscriptionStatusDto.Suspended => Color.Error,
+        SubscriptionStatusDto.Cancelled => Color.Default,
+        SubscriptionStatusDto.Expired => Color.Warning,
+        SubscriptionStatusDto.PastDue => Color.Warning,
+        _ => Color.Default
+    };
+}

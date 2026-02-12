@@ -3,6 +3,11 @@ using BookingScheduleSystem.Contracts.Subscriptions;
 
 namespace BookingScheduleSystem.Web.Services;
 
+internal sealed record ListSubscriptionPlansWrapper
+{
+    public List<SubscriptionPlanResponse> Plans { get; init; } = new();
+}
+
 public class SubscriptionService : ISubscriptionService
 {
     private readonly HttpClient _httpClient;
@@ -44,7 +49,8 @@ public class SubscriptionService : ISubscriptionService
             var response = await _httpClient.GetAsync("/api/subscription-plans");
             if (response.IsSuccessStatusCode)
             {
-                return await response.Content.ReadFromJsonAsync<List<SubscriptionPlanResponse>>();
+                var wrapper = await response.Content.ReadFromJsonAsync<ListSubscriptionPlansWrapper>();
+                return wrapper?.Plans;
             }
 
             _logger.LogWarning("Failed to list plans: {StatusCode}", response.StatusCode);
