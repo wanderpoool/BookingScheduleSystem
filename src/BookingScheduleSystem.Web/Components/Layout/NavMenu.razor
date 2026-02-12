@@ -1,10 +1,11 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @inject NavigationManager Navigation
+@inject ITenantSlugService SlugService
 
 <MudNavMenu Class="px-2 pt-2">
-    <MudNavLink Href="/dashboard" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
-    <MudNavLink Href="/browse-schedules" Icon="@Icons.Material.Filled.BookOnline">Book a Schedule</MudNavLink>
-    <MudNavLink Href="/my-bookings" Icon="@Icons.Material.Filled.EventNote">My Bookings</MudNavLink>
+    <MudNavLink Href="@SlugService.BuildUrl("/dashboard")" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
+    <MudNavLink Href="@SlugService.BuildUrl("/browse-schedules")" Icon="@Icons.Material.Filled.BookOnline">Book a Schedule</MudNavLink>
+    <MudNavLink Href="@SlugService.BuildUrl("/my-bookings")" Icon="@Icons.Material.Filled.EventNote">My Bookings</MudNavLink>
 
     <AuthorizeView Roles="Provider,GlobalAdmin">
         <Authorized>
@@ -16,23 +17,23 @@
             </MudText>
 
             <MudNavGroup Title="Schedules" Icon="@Icons.Material.Filled.CalendarMonth" Expanded="false">
-                <MudNavLink Href="/schedules" Icon="@Icons.Material.Filled.ViewList">Manage Schedules</MudNavLink>
-                <MudNavLink Href="/schedules/create" Icon="@Icons.Material.Filled.AddCircle">Create Schedule</MudNavLink>
+                <MudNavLink Href="@SlugService.BuildUrl("/schedules")" Icon="@Icons.Material.Filled.ViewList">Manage Schedules</MudNavLink>
+                <MudNavLink Href="@SlugService.BuildUrl("/schedules/create")" Icon="@Icons.Material.Filled.AddCircle">Create Schedule</MudNavLink>
             </MudNavGroup>
 
             <MudNavGroup Title="Providers" Icon="@Icons.Material.Filled.Group" Expanded="false">
-                <MudNavLink Href="/providers" Icon="@Icons.Material.Filled.People">Manage Providers</MudNavLink>
+                <MudNavLink Href="@SlugService.BuildUrl("/providers")" Icon="@Icons.Material.Filled.People">Manage Providers</MudNavLink>
             </MudNavGroup>
 
             <MudNavGroup Title="Organization" Icon="@Icons.Material.Filled.Business" Expanded="false">
-                <MudNavLink Href="/organization" Icon="@Icons.Material.Filled.Settings">Organization Settings</MudNavLink>
-                <MudNavLink Href="/subscription" Icon="@Icons.Material.Filled.CreditCard">Subscription</MudNavLink>
+                <MudNavLink Href="@SlugService.BuildUrl("/organization")" Icon="@Icons.Material.Filled.Settings">Organization Settings</MudNavLink>
+                <MudNavLink Href="@SlugService.BuildUrl("/subscription")" Icon="@Icons.Material.Filled.CreditCard">Subscription</MudNavLink>
             </MudNavGroup>
 
             <MudDivider Class="my-3" />
 
-            <MudNavLink Href="/analytics" Icon="@Icons.Material.Filled.BarChart">Analytics</MudNavLink>
-            <MudNavLink Href="/settings" Icon="@Icons.Material.Filled.Tune">Settings</MudNavLink>
+            <MudNavLink Href="@SlugService.BuildUrl("/analytics")" Icon="@Icons.Material.Filled.BarChart">Analytics</MudNavLink>
+            <MudNavLink Href="@SlugService.BuildUrl("/settings")" Icon="@Icons.Material.Filled.Tune">Settings</MudNavLink>
         </Authorized>
     </AuthorizeView>
 
@@ -46,14 +47,14 @@
             </MudText>
 
             <MudNavGroup Title="Administration" Icon="@Icons.Material.Filled.AdminPanelSettings" Expanded="false">
-                <MudNavLink Href="/admin/subscriptions" Icon="@Icons.Material.Filled.CreditCard">Subscriptions</MudNavLink>
+                <MudNavLink Href="@SlugService.BuildUrl("/admin/subscriptions")" Icon="@Icons.Material.Filled.CreditCard">Subscriptions</MudNavLink>
             </MudNavGroup>
         </Authorized>
     </AuthorizeView>
 
     <MudDivider Class="my-3" />
 
-    <MudNavLink Href="/profile" Icon="@Icons.Material.Filled.Person">My Profile</MudNavLink>
+    <MudNavLink Href="@SlugService.BuildUrl("/profile")" Icon="@Icons.Material.Filled.Person">My Profile</MudNavLink>
 </MudNavMenu>
 
 @code {

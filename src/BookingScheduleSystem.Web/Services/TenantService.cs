@@ -34,6 +34,25 @@ public class TenantService : ITenantService
         }
     }
 
+    public async Task<TenantResponse?> GetTenantBySubdomainAsync(string subdomain)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"/api/tenants/by-subdomain/{subdomain}");
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<TenantResponse>();
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error looking up tenant by subdomain {Subdomain}", subdomain);
+            return null;
+        }
+    }
+
     public async Task<TenantResponse?> UpdateTenantAsync(Guid tenantId, UpdateTenantRequest request)
     {
         try

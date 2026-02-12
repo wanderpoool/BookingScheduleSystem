@@ -1,6 +1,7 @@
 @page "/not-found"
 @layout EmptyLayout
 @inject NavigationManager Navigation
+@inject ITenantSlugService SlugService
 
 <PageTitle>404 — Page Not Found | Book Me App!</PageTitle>
 
@@ -87,17 +88,17 @@
 
         @* Action Buttons *@
         <div class="actions">
-            <a href="/dashboard" class="btn-nf btn-nf-primary" @onclick:preventDefault @onclick="GoToDashboard">&#x2190; Back to Dashboard</a>
-            <a href="/browse-schedules" class="btn-nf btn-nf-secondary" @onclick:preventDefault @onclick="GoToCalendar">View Calendar</a>
+            <a href="@SlugService.BuildUrl("/dashboard")" class="btn-nf btn-nf-primary" @onclick:preventDefault @onclick="GoToDashboard">&#x2190; Back to Dashboard</a>
+            <a href="@SlugService.BuildUrl("/browse-schedules")" class="btn-nf btn-nf-secondary" @onclick:preventDefault @onclick="GoToCalendar">View Calendar</a>
         </div>
 
         @* Quick Links *@
         <div class="quick-links">
-            <a href="/browse-schedules" class="quick-link" @onclick:preventDefault @onclick="GoToCalendar">
+            <a href="@SlugService.BuildUrl("/browse-schedules")" class="quick-link" @onclick:preventDefault @onclick="GoToCalendar">
                 <span class="quick-link-icon">&#x1F4C5;</span>
                 Browse Schedules
             </a>
-            <a href="/my-bookings" class="quick-link" @onclick:preventDefault @onclick="GoToBookings">
+            <a href="@SlugService.BuildUrl("/my-bookings")" class="quick-link" @onclick:preventDefault @onclick="GoToBookings">
                 <span class="quick-link-icon">&#x1F4CB;</span>
                 My Bookings
             </a>
@@ -115,8 +116,8 @@
 </div>
 
 @code {
-    private void GoToDashboard() => Navigation.NavigateTo("/dashboard");
-    private void GoToCalendar() => Navigation.NavigateTo("/browse-schedules");
-    private void GoToBookings() => Navigation.NavigateTo("/my-bookings");
+    private void GoToDashboard() => Navigation.NavigateTo(SlugService.BuildUrl("/dashboard"));
+    private void GoToCalendar() => Navigation.NavigateTo(SlugService.BuildUrl("/browse-schedules"));
+    private void GoToBookings() => Navigation.NavigateTo(SlugService.BuildUrl("/my-bookings"));
     private void GoHome() => Navigation.NavigateTo("/");
 }

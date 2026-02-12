@@ -1,4 +1,5 @@
 @page "/admin/subscriptions"
+@page "/{Slug}/admin/subscriptions"
 @attribute [Authorize]
 @using BookingScheduleSystem.Contracts.Common
 @using BookingScheduleSystem.Contracts.Subscriptions
@@ -192,6 +193,8 @@
 </MudContainer>
 
 @code {
+    [Parameter] public string? Slug { get; set; }
+
     private List<TenantSubscriptionResponse> _subscriptions = new();
     private List<SubscriptionPlanResponse> _availablePlans = new();
     private SubscriptionStatusDto? _selectedStatus;

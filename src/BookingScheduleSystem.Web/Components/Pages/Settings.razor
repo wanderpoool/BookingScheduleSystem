@@ -1,9 +1,11 @@
 @page "/settings"
+@page "/{Slug}/settings"
 @rendermode InteractiveServer
 @attribute [Authorize]
 @using Microsoft.AspNetCore.Components.Authorization
 @inject ISnackbar Snackbar
 @inject NavigationManager Navigation
+@inject ITenantSlugService SlugService
 
 <AuthorizeView Roles="Provider,GlobalAdmin">
     <Authorized>
@@ -16,7 +18,7 @@
             <div class="pa-5">
                 <MudStack Spacing="3">
                     @* Quick links to other settings pages *@
-                    <MudPaper Elevation="0" Class="pa-4 cursor-pointer" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px;" @onclick="@(() => Navigation.NavigateTo("/organization"))">
+                    <MudPaper Elevation="0" Class="pa-4 cursor-pointer" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px;" @onclick="@(() => Navigation.NavigateTo(SlugService.BuildUrl("/organization")))">
                         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
                             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                                 <MudIcon Icon="@Icons.Material.Filled.Business" Color="Color.Primary" />
@@ -29,7 +31,7 @@
                         </MudStack>
                     </MudPaper>
 
-                    <MudPaper Elevation="0" Class="pa-4 cursor-pointer" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px;" @onclick="@(() => Navigation.NavigateTo("/subscription"))">
+                    <MudPaper Elevation="0" Class="pa-4 cursor-pointer" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px;" @onclick="@(() => Navigation.NavigateTo(SlugService.BuildUrl("/subscription")))">
                         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
                             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                                 <MudIcon Icon="@Icons.Material.Filled.CreditCard" Color="Color.Primary" />
@@ -42,7 +44,7 @@
                         </MudStack>
                     </MudPaper>
 
-                    <MudPaper Elevation="0" Class="pa-4 cursor-pointer" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px;" @onclick="@(() => Navigation.NavigateTo("/profile"))">
+                    <MudPaper Elevation="0" Class="pa-4 cursor-pointer" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px;" @onclick="@(() => Navigation.NavigateTo(SlugService.BuildUrl("/profile")))">
                         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
                             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                                 <MudIcon Icon="@Icons.Material.Filled.Person" Color="Color.Primary" />
@@ -55,7 +57,7 @@
                         </MudStack>
                     </MudPaper>
 
-                    <MudPaper Elevation="0" Class="pa-4 cursor-pointer" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px;" @onclick="@(() => Navigation.NavigateTo("/providers"))">
+                    <MudPaper Elevation="0" Class="pa-4 cursor-pointer" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px;" @onclick="@(() => Navigation.NavigateTo(SlugService.BuildUrl("/providers")))">
                         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
                             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                                 <MudIcon Icon="@Icons.Material.Filled.Group" Color="Color.Primary" />
@@ -75,3 +77,7 @@
         <MudAlert Severity="Severity.Warning">You need Provider or Admin access to view settings.</MudAlert>
     </NotAuthorized>
 </AuthorizeView>
+
+@code {
+    [Parameter] public string? Slug { get; set; }
+}

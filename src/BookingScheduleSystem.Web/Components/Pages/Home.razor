@@ -4,6 +4,7 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
+@inject ITenantSlugService SlugService
 @inject IJSRuntime JS
 
 <PageTitle>Book Me App! — Scheduling Made Effortless</PageTitle>
@@ -519,7 +520,7 @@
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             if (authState.User.Identity?.IsAuthenticated == true)
             {
-                Navigation.NavigateTo("/dashboard");
+                Navigation.NavigateTo(SlugService.BuildUrl("/dashboard"));
             }
         }
         catch

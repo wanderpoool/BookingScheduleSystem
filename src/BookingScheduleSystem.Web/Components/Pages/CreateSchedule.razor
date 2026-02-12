@@ -1,4 +1,5 @@
 @page "/schedules/create"
+@page "/{Slug}/schedules/create"
 @rendermode InteractiveServer
 @attribute [Authorize]
 @using Microsoft.AspNetCore.Components.Authorization
@@ -6,6 +7,7 @@
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 @inject NavigationManager Navigation
+@inject ITenantSlugService SlugService
 
 <AuthorizeView Roles="Provider,GlobalAdmin">
     <Authorized>
@@ -38,6 +40,8 @@
 </AuthorizeView>
 
 @code {
+    [Parameter] public string? Slug { get; set; }
+
     private bool _isCreating = true;
     private bool _dialogOpened;
 
@@ -84,7 +88,7 @@
                 if (created != null)
                 {
                     Snackbar.Add("Schedule created successfully!", Severity.Success);
-                    Navigation.NavigateTo("/schedules");
+                    Navigation.NavigateTo(SlugService.BuildUrl("/schedules"));
                     return;
                 }
             }
@@ -95,6 +99,6 @@
         }
 
         _isCreating = false;
-        Navigation.NavigateTo("/schedules");
+        Navigation.NavigateTo(SlugService.BuildUrl("/schedules"));
     }
 }

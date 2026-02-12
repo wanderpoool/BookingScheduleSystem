@@ -1,4 +1,5 @@
 @page "/onboarding"
+@page "/{Slug}/onboarding"
 @rendermode InteractiveServer
 @attribute [Authorize]
 @using System.Security.Claims
@@ -9,6 +10,7 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject ITenantSlugService SlugService
 
 <PageTitle>Get Started - Book Me App</PageTitle>
 
@@ -343,6 +345,8 @@
 </AuthorizeView>
 
 @code {
+    [Parameter] public string? Slug { get; set; }
+
     private int _activeStepIndex;
     private DateTime? _selectedDate;
     private DateTime? _selectedTimeSlot;
@@ -368,7 +372,7 @@
         var tenantIdClaim = user.FindFirst("TenantId")?.Value;
         if (string.IsNullOrEmpty(tenantIdClaim) || !Guid.TryParse(tenantIdClaim, out var tenantGuid))
         {
-            Navigation.NavigateTo("/dashboard");
+            Navigation.NavigateTo(SlugService.BuildUrl("/dashboard"));
             return;
         }
 
@@ -586,7 +590,7 @@
                     ? "Your booking has been confirmed!"
                     : "Your booking is pending provider approval.";
                 Snackbar.Add($"Booking created! {statusMessage}", Severity.Success);
-                Navigation.NavigateTo("/dashboard");
+                Navigation.NavigateTo(SlugService.BuildUrl("/dashboard"));
             }
         }
         catch (Exception ex)

@@ -1,4 +1,5 @@
 @page "/browse-schedules"
+@page "/{Slug}/browse-schedules"
 @rendermode InteractiveServer
 @attribute [Authorize]
 @using System.Security.Claims
@@ -174,6 +175,8 @@
 </AuthorizeView>
 
 @code {
+    [Parameter] public string? Slug { get; set; }
+
     private List<ScheduleCalendarItem> _calendarItems = new();
     private Dictionary<Guid, BookingResponse> _pendingBookingsBySchedule = new();
     private string? _tenantId;

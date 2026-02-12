@@ -1,4 +1,5 @@
 @page "/schedules"
+@page "/{Slug}/schedules"
 @rendermode InteractiveServer
 @attribute [Authorize]
 @using System.Security.Claims
@@ -9,6 +10,7 @@
 @inject IDialogService DialogService
 @inject NavigationManager Navigation
 @inject IQrCodeService QrCodeService
+@inject ITenantSlugService SlugService
 
 <AuthorizeView Roles="Provider,GlobalAdmin">
     <Authorized>
@@ -216,6 +218,8 @@
 </AuthorizeView>
 
 @code {
+    [Parameter] public string? Slug { get; set; }
+
     private enum ViewMode { List, Calendar }
 
     private List<ScheduleResponse>? _schedules;
@@ -507,7 +511,7 @@
     {
         var parameters = new DialogParameters<ShareScheduleDialog>
         {
-            { x => x.TenantId, _tenantId }
+            { x => x.TenantSlug, SlugService.CurrentSlug }
         };
 
         var options = new DialogOptions

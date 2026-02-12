@@ -524,7 +524,10 @@
 
                 Snackbar.Add($"Welcome to {orgResult.Name}! Your 7-day trial has started.", Severity.Success);
                 await Task.Delay(1500);
-                Navigation.NavigateTo("/dashboard");
+                var dashboardUrl = !string.IsNullOrEmpty(orgResult.Subdomain)
+                    ? $"/{orgResult.Subdomain}/dashboard"
+                    : "/dashboard";
+                Navigation.NavigateTo(dashboardUrl);
             }
         }
         catch (Exception ex)

@@ -1,0 +1,25 @@
+@page "/{*path}"
+@rendermode InteractiveServer
+@inject NavigationManager Navigation
+@inject ITenantService TenantService
+
+@code {
+    [Parameter]
+    public string? Path { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Path != null && !Path.Contains('/'))
+        {
+            // Single segment — might be a bare slug like /smileclinic
+            var tenant = await TenantService.GetTenantBySubdomainAsync(Path);
+            if (tenant != null)
+            {
+                Navigation.NavigateTo($"/{Path}/login", replace: true);
+                return;
+            }
+        }
+
+        Navigation.NavigateTo("/not-found", replace: true);
+    }
+}

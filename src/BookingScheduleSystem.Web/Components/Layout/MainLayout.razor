@@ -6,6 +6,7 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject HttpClient HttpClient
 @inject ITenantService TenantService
+@inject ITenantSlugService SlugService
 
 <MudThemeProvider @ref="@_mudThemeProvider" IsDarkMode="@_isDarkMode" Theme="@_customTheme" />
 
@@ -205,6 +206,10 @@
     protected override void OnInitialized()
     {
         AuthStateProvider.AuthenticationStateChanged += OnAuthenticationStateChanged;
+        Navigation.LocationChanged += OnLocationChanged;
+
+        // Set initial slug from current URL
+        ExtractAndSetSlugFromPath(new Uri(Navigation.Uri).AbsolutePath);
     }
 
     protected override async Task OnInitializedAsync()
@@ -259,6 +264,7 @@
                     if (tenant != null)
                     {
                         _organizationName = tenant.Name;
+                        SlugService.SetSlug(tenant.Subdomain);
                     }
                 }
 
@@ -279,6 +285,36 @@
     public void Dispose()
     {
         AuthStateProvider.AuthenticationStateChanged -= OnAuthenticationStateChanged;
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        var relativePath = new Uri(e.Location).AbsolutePath;
+        ExtractAndSetSlugFromPath(relativePath);
+    }
+
+    private void ExtractAndSetSlugFromPath(string path)
+    {
+        // Extract the first segment if the URL follows /{slug}/page pattern
+        var segments = path.Trim('/').Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Length >= 2)
+        {
+            // The first segment could be a slug if it's not a known top-level route
+            var firstSegment = segments[0].ToLowerInvariant();
+            var knownRoutes = new HashSet<string>
+            {
+                "login", "register", "dashboard", "browse-schedules", "my-bookings",
+                "schedules", "providers", "organization", "subscription", "analytics",
+                "settings", "profile", "onboarding", "admin", "not-found", "error",
+                "register-organization", "forgot-password", "terms", "counter", "weather"
+            };
+
+            if (!knownRoutes.Contains(firstSegment))
+            {
+                SlugService.SetSlug(firstSegment);
+            }
+        }
     }
 
     private void ToggleDrawer()
@@ -293,17 +329,19 @@
 
     private void NavigateToProfile()
     {
-        Navigation.NavigateTo("/profile");
+        Navigation.NavigateTo(SlugService.BuildUrl("/profile"));
     }
 
     private void NavigateToSettings()
     {
-        Navigation.NavigateTo("/settings");
+        Navigation.NavigateTo(SlugService.BuildUrl("/settings"));
     }
 
     private async Task Logout()
     {
         await AuthService.LogoutAsync();
-        Navigation.NavigateTo("/login", forceLoad: true);
+        var loginUrl = SlugService.BuildUrl("/login");
+        SlugService.SetSlug(null);
+        Navigation.NavigateTo(loginUrl, forceLoad: true);
     }
 }

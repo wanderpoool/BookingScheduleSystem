@@ -1,4 +1,5 @@
 @page "/register"
+@page "/{Slug}/register"
 @rendermode InteractiveServer
 @using BookingScheduleSystem.Contracts.Auth
 @using BookingScheduleSystem.Contracts.Tenants
@@ -304,7 +305,7 @@
 
                     <MudStack Row="true" Justify="Justify.Center" Spacing="1" Class="flex-wrap">
                         <MudText Typo="Typo.body2">Already have an account?</MudText>
-                        <MudLink Href="@($"/login{(_companyInfo != null ? $"?company={Company}" : "")}")" Typo="Typo.body2">Sign in</MudLink>
+                        <MudLink Href="@GetLoginUrl()" Typo="Typo.body2">Sign in</MudLink>
                     </MudStack>
 
                     <MudStack Row="true" Justify="Justify.Center" Spacing="1" Class="flex-wrap">
@@ -318,6 +319,8 @@
 </MudContainer>
 
 @code {
+    [Parameter] public string? Slug { get; set; }
+
     [Parameter]
     [SupplyParameterFromQuery]
     public string? Company { get; set; }
@@ -353,8 +356,13 @@
         });
         _timer.Start();
 
-        // Load company info if company GUID is provided
-        if (!string.IsNullOrWhiteSpace(Company) && Guid.TryParse(Company, out var companyGuid))
+        // Priority 1: Slug from URL route parameter
+        if (!string.IsNullOrWhiteSpace(Slug))
+        {
+            _companyInfo = await TenantService.GetTenantBySubdomainAsync(Slug);
+        }
+        // Priority 2: Legacy ?company={guid} query parameter (backward compat)
+        else if (!string.IsNullOrWhiteSpace(Company) && Guid.TryParse(Company, out var companyGuid))
         {
             _companyInfo = await TenantService.GetTenantAsync(companyGuid);
         }
@@ -546,7 +554,15 @@
             if (result != null)
             {
                 Snackbar.Add($"Welcome, {result.FirstName}! Account created successfully.", Severity.Success);
-                Navigation.NavigateTo(_companyInfo != null ? "/browse-schedules" : "/dashboard");
+                var slug = Slug ?? _companyInfo?.Subdomain;
+                if (_companyInfo != null)
+                {
+                    Navigation.NavigateTo(slug != null ? $"/{slug}/browse-schedules" : "/browse-schedules");
+                }
+                else
+                {
+                    Navigation.NavigateTo(slug != null ? $"/{slug}/dashboard" : "/dashboard");
+                }
             }
         }
         catch (Exception ex)
@@ -570,5 +586,15 @@
         _currentStep = RegistrationStep.PersonalInfo;
         _registerModel.OtpCode = string.Empty;
         _otpExpiresAt = null;
+    }
+
+    private string GetLoginUrl()
+    {
+        var slug = Slug ?? _companyInfo?.Subdomain;
+        if (!string.IsNullOrEmpty(slug))
+            return $"/{slug}/login";
+        if (_companyInfo != null && !string.IsNullOrEmpty(Company))
+            return $"/login?company={Company}";
+        return "/login";
     }
 }

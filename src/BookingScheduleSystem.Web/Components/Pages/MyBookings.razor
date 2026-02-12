@@ -1,4 +1,5 @@
 @page "/my-bookings"
+@page "/{Slug}/my-bookings"
 @rendermode InteractiveServer
 @attribute [Authorize]
 @using System.Security.Claims
@@ -174,6 +175,8 @@
 </AuthorizeView>
 
 @code {
+    [Parameter] public string? Slug { get; set; }
+
     private List<BookingResponse>? _bookings;
     private bool _isLoading = true;
     private bool _isCancelling;
