@@ -39,8 +39,8 @@ Parameters:
 
   DomainName:
     Type: String
-    Default: ''
-    Description: Optional custom domain for the ALB (leave empty for ALB DNS)
+    Default: 'bookmeapp.ph'
+    Description: Custom domain for the application
 
   GlobalAdminEmail:
     Type: String
@@ -67,6 +67,7 @@ Parameters:
 # =============================================================================
 Conditions:
   HasGlobalAdmin: !Not [!Equals [!Ref GlobalAdminEmail, '']]
+  HasDomain: !Not [!Equals [!Ref DomainName, '']]
 
 # =============================================================================
 # NETWORKING - VPC, Subnets, Security Groups
@@ -510,7 +511,7 @@ Resources:
       Matcher:
         HttpCode: '200,301,302'
 
-  # HTTP Listener (redirects to HTTPS if certificate exists, otherwise serves HTTP)
+  # HTTP Listener — forwards when no domain, redirects to HTTPS when domain exists
   HttpListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
@@ -518,8 +519,15 @@ Resources:
       Port: 80
       Protocol: HTTP
       DefaultActions:
-        - Type: forward
-          TargetGroupArn: !Ref WebTargetGroup
+        - !If
+          - HasDomain
+          - Type: redirect
+            RedirectConfig:
+              Protocol: HTTPS
+              Port: '443'
+              StatusCode: HTTP_301
+          - Type: forward
+            TargetGroupArn: !Ref WebTargetGroup
 
   # API path-based routing rule
   ApiListenerRule:
@@ -569,7 +577,10 @@ Resources:
             - Name: Jwt__SecretKey
               Value: !Sub '{{resolve:secretsmanager:${JwtSecretKey}:SecretString}}'
             - Name: Cors__AllowedOrigins
-              Value: !Sub 'http://${ApplicationLoadBalancer.DNSName}'
+              Value: !If
+                - HasDomain
+                - !Sub 'https://${DomainName},https://www.${DomainName},http://${ApplicationLoadBalancer.DNSName}'
+                - !Sub 'http://${ApplicationLoadBalancer.DNSName}'
             - Name: AwsNotification__SenderEmail
               Value: !Ref SenderEmail
             - Name: AwsNotification__SmsSenderId
@@ -615,7 +626,10 @@ Resources:
             - Name: ASPNETCORE_URLS
               Value: 'http://+:8080'
             - Name: ApiSettings__BaseUrl
-              Value: !Sub 'http://${ApplicationLoadBalancer.DNSName}/api'
+              Value: !If
+                - HasDomain
+                - !Sub 'https://${DomainName}/api'
+                - !Sub 'http://${ApplicationLoadBalancer.DNSName}/api'
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -679,6 +693,77 @@ Resources:
       EmailIdentity: !Ref SenderEmail
 
   # =============================================================================
+  # DNS & SSL - Route53 + ACM Certificate
+  # =============================================================================
+  HostedZone:
+    Type: AWS::Route53::HostedZone
+    Condition: HasDomain
+    Properties:
+      Name: !Ref DomainName
+
+  Certificate:
+    Type: AWS::CertificateManager::Certificate
+    Condition: HasDomain
+    Properties:
+      DomainName: !Ref DomainName
+      SubjectAlternativeNames:
+        - !Sub '*.${DomainName}'
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: !Ref DomainName
+          HostedZoneId: !Ref HostedZone
+
+  DnsRecord:
+    Type: AWS::Route53::RecordSet
+    Condition: HasDomain
+    Properties:
+      HostedZoneId: !Ref HostedZone
+      Name: !Ref DomainName
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt ApplicationLoadBalancer.DNSName
+        HostedZoneId: !GetAtt ApplicationLoadBalancer.CanonicalHostedZoneID
+
+  WwwDnsRecord:
+    Type: AWS::Route53::RecordSet
+    Condition: HasDomain
+    Properties:
+      HostedZoneId: !Ref HostedZone
+      Name: !Sub 'www.${DomainName}'
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt ApplicationLoadBalancer.DNSName
+        HostedZoneId: !GetAtt ApplicationLoadBalancer.CanonicalHostedZoneID
+
+  # HTTPS Listener (only created when certificate exists)
+  HttpsListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Condition: HasDomain
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 443
+      Protocol: HTTPS
+      Certificates:
+        - CertificateArn: !Ref Certificate
+      SslPolicy: ELBSecurityPolicy-TLS13-1-2-2021-06
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref WebTargetGroup
+
+  HttpsApiListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Condition: HasDomain
+    Properties:
+      ListenerArn: !Ref HttpsListener
+      Priority: 10
+      Conditions:
+        - Field: path-pattern
+          Values: ['/api/*']
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref ApiTargetGroup
+
+  # =============================================================================
   # HEALTH CHECK ENDPOINT (API needs one for ALB)
   # =============================================================================
   # Note: You need to add a /api/health endpoint to your FastEndpoints API.
@@ -717,3 +802,14 @@ Outputs:
   VpcId:
     Description: VPC ID
     Value: !Ref Vpc
+
+  HostedZoneNameServers:
+    Condition: HasDomain
+    Description: >
+      Route53 nameservers — update these at your domain registrar (domains.ph)
+    Value: !Join [', ', !GetAtt HostedZone.NameServers]
+
+  CustomDomainUrl:
+    Condition: HasDomain
+    Description: Application URL (custom domain)
+    Value: !Sub 'https://${DomainName}'
