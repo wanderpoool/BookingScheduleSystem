@@ -122,6 +122,12 @@
 .landing-page .lp-btn-outline-white:hover {
     color: white !important;
 }
+.landing-page .lp-btn-ghost {
+    color: var(--clr-text) !important;
+}
+.landing-page .lp-btn-ghost:hover {
+    color: var(--clr-primary) !important;
+}
 
 /* ===== ANIMATIONS ===== */
 @keyframes lp-fadeUp {
@@ -252,6 +258,7 @@
 }
 .lp-nav-links a:hover { color: var(--clr-text); }
 .lp-nav-links a:hover::after { width: 100%; }
+.lp-nav-links a.lp-btn::after { display: none; }
 
 /* ===== BUTTONS ===== */
 .lp-btn {
@@ -309,6 +316,16 @@
     border-color: rgba(255, 255, 255, 0.6);
     transform: translateY(-2px);
     color: white;
+}
+.lp-btn-ghost {
+    background: transparent;
+    color: var(--clr-text);
+    border: 2px solid var(--clr-border);
+}
+.lp-btn-ghost:hover {
+    border-color: var(--clr-primary);
+    color: var(--clr-primary);
+    transform: translateY(-2px);
 }
 .lp-btn-large {
     padding: 16px 36px;

@@ -32,7 +32,8 @@
             <li><a @onclick='() => ScrollToSection("features")' @onclick:preventDefault>Features</a></li>
             <li><a @onclick='() => ScrollToSection("how-it-works")' @onclick:preventDefault>How It Works</a></li>
             <li><a @onclick='() => ScrollToSection("testimonials")' @onclick:preventDefault>Testimonials</a></li>
-            <li><a href="/login" class="lp-btn lp-btn-primary">Get Started Free</a></li>
+            <li><a href="/login" class="lp-btn lp-btn-ghost">Login</a></li>
+            <li><a href="/register-organization" class="lp-btn lp-btn-primary">Get Started Free</a></li>
         </ul>
         <button class="lp-nav-mobile-btn" @onclick="() => _drawerOpen = !_drawerOpen">
             <MudIcon Icon="@Icons.Material.Filled.Menu" />
