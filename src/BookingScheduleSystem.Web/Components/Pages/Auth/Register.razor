@@ -29,12 +29,6 @@
                     Registering with <strong>@_companyInfo.Name</strong>
                 </MudAlert>
             }
-            else if (_currentStep == RegistrationStep.PersonalInfo)
-            {
-                <MudAlert Severity="Severity.Warning" Icon="@Icons.Material.Filled.Warning" Dense="true">
-                    All customers must belong to a company. Enter an invitation code below or ask your organization for an invitation link.
-                </MudAlert>
-            }
 
             <MudText Typo="Typo.h5" Align="Align.Center">Create Account</MudText>
             <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
@@ -62,15 +56,6 @@
                     @if (_currentStep == RegistrationStep.PersonalInfo)
                     {
                         @* Step 1: Personal Information *@
-                        <MudTextField @bind-Value="_registerModel.CreationCode"
-                                      Label="@(_companyInfo != null ? "Invitation Code (Optional)" : "Invitation Code (Required)")"
-                                      Variant="Variant.Outlined"
-                                      Required="@(_companyInfo == null)"
-                                      HelperText="@(_companyInfo != null ? "Enter if you have an invitation code from an organization" : "Required — enter the code provided by your organization")"
-                                      Adornment="Adornment.Start"
-                                      AdornmentIcon="@Icons.Material.Filled.QrCode"
-                                      Immediate="true" />
-
                         <MudGrid Spacing="2">
                             <MudItem xs="12" sm="6">
                                 <MudTextField @bind-Value="_registerModel.FirstName"
@@ -159,7 +144,7 @@
                                    FullWidth="true"
                                    Size="Size.Large"
                                    ButtonType="ButtonType.Submit"
-                                   Disabled="@(_isLoading || !HasTenantContext)">
+                                   Disabled="@_isLoading">
                             @if (_isLoading)
                             {
                                 <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
@@ -335,8 +320,6 @@
     private int _resendCooldown;
     private System.Timers.Timer? _timer;
     private TenantResponse? _companyInfo;
-
-    private bool HasTenantContext => _companyInfo != null || !string.IsNullOrWhiteSpace(_registerModel.CreationCode);
 
     private enum RegistrationStep
     {
