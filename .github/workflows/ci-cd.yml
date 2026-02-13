@@ -112,6 +112,7 @@ jobs:
               "WebImageUri=${ECR_REGISTRY}/${APP_NAME}-web:latest" \
               "GlobalAdminEmail=${{ secrets.GLOBAL_ADMIN_EMAIL }}" \
               "GlobalAdminPassword=${{ secrets.GLOBAL_ADMIN_PASSWORD }}" \
+              "HostedZoneId=${{ secrets.HOSTED_ZONE_ID }}" \
             --capabilities CAPABILITY_IAM \
             --region "$AWS_REGION" \
             --no-fail-on-empty-changeset

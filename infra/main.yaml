@@ -42,6 +42,11 @@ Parameters:
     Default: 'bookmeapp.ph'
     Description: Custom domain for the application
 
+  HostedZoneId:
+    Type: String
+    Default: ''
+    Description: Route53 Hosted Zone ID for the domain (created outside CloudFormation for NS stability)
+
   GlobalAdminEmail:
     Type: String
     Default: ''
@@ -67,7 +72,9 @@ Parameters:
 # =============================================================================
 Conditions:
   HasGlobalAdmin: !Not [!Equals [!Ref GlobalAdminEmail, '']]
-  HasDomain: !Not [!Equals [!Ref DomainName, '']]
+  HasDomain: !And
+    - !Not [!Equals [!Ref DomainName, '']]
+    - !Not [!Equals [!Ref HostedZoneId, '']]
 
 # =============================================================================
 # NETWORKING - VPC, Subnets, Security Groups
@@ -695,11 +702,8 @@ Resources:
   # =============================================================================
   # DNS & SSL - Route53 + ACM Certificate
   # =============================================================================
-  HostedZone:
-    Type: AWS::Route53::HostedZone
-    Condition: HasDomain
-    Properties:
-      Name: !Ref DomainName
+  # HostedZone is managed OUTSIDE CloudFormation to keep nameservers stable.
+  # Pass HostedZoneId parameter instead.
 
   Certificate:
     Type: AWS::CertificateManager::Certificate
@@ -711,13 +715,13 @@ Resources:
       ValidationMethod: DNS
       DomainValidationOptions:
         - DomainName: !Ref DomainName
-          HostedZoneId: !Ref HostedZone
+          HostedZoneId: !Ref HostedZoneId
 
   DnsRecord:
     Type: AWS::Route53::RecordSet
     Condition: HasDomain
     Properties:
-      HostedZoneId: !Ref HostedZone
+      HostedZoneId: !Ref HostedZoneId
       Name: !Ref DomainName
       Type: A
       AliasTarget:
@@ -728,7 +732,7 @@ Resources:
     Type: AWS::Route53::RecordSet
     Condition: HasDomain
     Properties:
-      HostedZoneId: !Ref HostedZone
+      HostedZoneId: !Ref HostedZoneId
       Name: !Sub 'www.${DomainName}'
       Type: A
       AliasTarget:
@@ -802,12 +806,6 @@ Outputs:
   VpcId:
     Description: VPC ID
     Value: !Ref Vpc
-
-  HostedZoneNameServers:
-    Condition: HasDomain
-    Description: >
-      Route53 nameservers — update these at your domain registrar (domains.ph)
-    Value: !Join [', ', !GetAtt HostedZone.NameServers]
 
   CustomDomainUrl:
     Condition: HasDomain
