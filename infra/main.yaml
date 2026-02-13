@@ -448,9 +448,6 @@ Resources:
                 Action:
                   - sns:Publish
                 Resource: '*'
-                Condition:
-                  StringEquals:
-                    'sns:Protocol': sms
               - Effect: Allow
                 Action:
                   - ses:SendEmail
