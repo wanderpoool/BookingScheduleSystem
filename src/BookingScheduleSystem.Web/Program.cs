@@ -11,7 +11,10 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 // Add authentication and authorization services
-builder.Services.AddAuthentication();
+// Cookie scheme is registered as the default to satisfy the authorization middleware.
+// Actual auth state is managed by CustomAuthenticationStateProvider via JWT/local storage.
+builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthorization();
 
