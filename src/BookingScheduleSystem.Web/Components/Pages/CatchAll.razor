@@ -3,20 +3,36 @@
 @inject NavigationManager Navigation
 @inject ITenantService TenantService
 
+<PageTitle>Redirecting...</PageTitle>
+
 @code {
     [Parameter]
     public string? Path { get; set; }
 
-    protected override async Task OnInitializedAsync()
+    private bool _checked;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (!firstRender || _checked)
+            return;
+
+        _checked = true;
+
         if (Path != null && !Path.Contains('/'))
         {
             // Single segment — might be a bare slug like /smileclinic
-            var tenant = await TenantService.GetTenantBySubdomainAsync(Path);
-            if (tenant != null)
+            try
             {
-                Navigation.NavigateTo($"/{Path}/login", replace: true);
-                return;
+                var tenant = await TenantService.GetTenantBySubdomainAsync(Path);
+                if (tenant != null)
+                {
+                    Navigation.NavigateTo($"/{Path}/login", replace: true);
+                    return;
+                }
+            }
+            catch
+            {
+                // API unreachable — fall through to not-found
             }
         }
 
