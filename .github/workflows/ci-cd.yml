@@ -91,11 +91,57 @@ jobs:
             --output text \
             --region "$AWS_REGION" 2>/dev/null || echo "DOES_NOT_EXIST")
           echo "Current stack status: $STACK_STATUS"
-          if [ "$STACK_STATUS" = "ROLLBACK_COMPLETE" ] || [ "$STACK_STATUS" = "ROLLBACK_FAILED" ] || [ "$STACK_STATUS" = "CREATE_FAILED" ] || [ "$STACK_STATUS" = "DELETE_FAILED" ]; then
+          if [ "$STACK_STATUS" = "ROLLBACK_COMPLETE" ] || [ "$STACK_STATUS" = "ROLLBACK_FAILED" ] || [ "$STACK_STATUS" = "CREATE_FAILED" ] || [ "$STACK_STATUS" = "DELETE_FAILED" ] || [ "$STACK_STATUS" = "UPDATE_ROLLBACK_FAILED" ]; then
             echo "Stack is in $STACK_STATUS state — deleting before re-creating..."
             aws cloudformation delete-stack --stack-name "${APP_NAME}-production" --region "$AWS_REGION"
             aws cloudformation wait stack-delete-complete --stack-name "${APP_NAME}-production" --region "$AWS_REGION"
             echo "Stack deleted successfully."
+          fi
+
+      - name: Clean up orphaned ALB listeners from failed rollbacks
+        run: |
+          # Get the ALB ARN from the existing stack
+          ALB_ARN=$(aws cloudformation describe-stack-resources \
+            --stack-name "${APP_NAME}-production" \
+            --logical-resource-id ApplicationLoadBalancer \
+            --query 'StackResources[0].PhysicalResourceId' \
+            --output text \
+            --region "$AWS_REGION" 2>/dev/null || echo "")
+
+          if [ -z "$ALB_ARN" ] || [ "$ALB_ARN" = "None" ]; then
+            echo "No ALB found in stack, skipping listener cleanup."
+            exit 0
+          fi
+
+          # Check if an HTTPS:443 listener physically exists on the ALB
+          HTTPS_LISTENER_ARN=$(aws elbv2 describe-listeners \
+            --load-balancer-arn "$ALB_ARN" \
+            --query 'Listeners[?Port==`443`].ListenerArn' \
+            --output text \
+            --region "$AWS_REGION" 2>/dev/null || echo "")
+
+          if [ -z "$HTTPS_LISTENER_ARN" ] || [ "$HTTPS_LISTENER_ARN" = "None" ]; then
+            echo "No HTTPS listener on ALB, nothing to clean up."
+            exit 0
+          fi
+
+          # Check if CloudFormation actually manages the HttpsListener
+          CF_LISTENER=$(aws cloudformation describe-stack-resource \
+            --stack-name "${APP_NAME}-production" \
+            --logical-resource-id HttpsListener \
+            --query 'StackResourceDetail.PhysicalResourceId' \
+            --output text \
+            --region "$AWS_REGION" 2>/dev/null || echo "")
+
+          if [ -z "$CF_LISTENER" ] || [ "$CF_LISTENER" = "None" ]; then
+            echo "Found orphaned HTTPS listener not managed by CloudFormation: $HTTPS_LISTENER_ARN"
+            echo "Deleting orphaned listener so CloudFormation can recreate it..."
+            aws elbv2 delete-listener \
+              --listener-arn "$HTTPS_LISTENER_ARN" \
+              --region "$AWS_REGION"
+            echo "Orphaned HTTPS listener deleted."
+          else
+            echo "HTTPS listener is managed by CloudFormation ($CF_LISTENER), no cleanup needed."
           fi
 
       - name: Deploy CloudFormation stack (creates ECR repos, RDS, ALB, ECS)
