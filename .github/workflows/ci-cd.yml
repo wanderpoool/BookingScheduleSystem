@@ -142,17 +142,7 @@ jobs:
             STACK_STATUS="DOES_NOT_EXIST"
           fi
 
-          # If stack was deleted, clean up orphaned ECR repos so new stack can create them
-          if [ "$STACK_STATUS" = "DOES_NOT_EXIST" ]; then
-            echo "Cleaning up orphaned ECR repos that would block stack creation..."
-            for repo in "${APP_NAME}-api" "${APP_NAME}-web"; do
-              if aws ecr describe-repositories --repository-names "$repo" --region "$AWS_REGION" >/dev/null 2>&1; then
-                echo "Deleting orphaned ECR repo: $repo"
-                aws ecr delete-repository --repository-name "$repo" --region "$AWS_REGION" --force
-              fi
-            done
-            echo "Cleanup complete."
-          fi
+          echo "Stack recovery complete. Current status: $STACK_STATUS"
 
       - name: Clean up orphaned ALB listeners from failed rollbacks
         run: |
@@ -200,7 +190,55 @@ jobs:
             echo "HTTPS listener is managed by CloudFormation ($CF_LISTENER), no cleanup needed."
           fi
 
-      - name: Deploy CloudFormation stack (creates ECR repos, RDS, ALB, ECS)
+      - name: Ensure ECR repos exist and push images
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Create ECR repos if they don't exist (managed outside CloudFormation)
+          for repo in "${APP_NAME}-api" "${APP_NAME}-web"; do
+            if ! aws ecr describe-repositories --repository-names "$repo" --region "$AWS_REGION" >/dev/null 2>&1; then
+              echo "Creating ECR repository: $repo"
+              aws ecr create-repository \
+                --repository-name "$repo" \
+                --image-scanning-configuration scanOnPush=true \
+                --region "$AWS_REGION"
+              # Add lifecycle policy
+              aws ecr put-lifecycle-policy \
+                --repository-name "$repo" \
+                --region "$AWS_REGION" \
+                --lifecycle-policy-text '{
+                  "rules": [
+                    {"rulePriority":1,"description":"Expire untagged after 1 day","selection":{"tagStatus":"untagged","countType":"sinceImagePushed","countUnit":"days","countNumber":1},"action":{"type":"expire"}},
+                    {"rulePriority":2,"description":"Keep last 5 tagged","selection":{"tagStatus":"tagged","tagPrefixList":["latest","main","production"],"countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}
+                  ]
+                }'
+            else
+              echo "ECR repository $repo already exists."
+            fi
+          done
+
+          # Build and push API image
+          echo "Building API image..."
+          docker build \
+            -t "$ECR_REGISTRY/${APP_NAME}-api:latest" \
+            -t "$ECR_REGISTRY/${APP_NAME}-api:${IMAGE_TAG}" \
+            -f src/BookingScheduleSystem.Api/Dockerfile \
+            src/
+          docker push "$ECR_REGISTRY/${APP_NAME}-api:latest"
+          docker push "$ECR_REGISTRY/${APP_NAME}-api:${IMAGE_TAG}"
+
+          # Build and push Web image
+          echo "Building Web image..."
+          docker build \
+            -t "$ECR_REGISTRY/${APP_NAME}-web:latest" \
+            -t "$ECR_REGISTRY/${APP_NAME}-web:${IMAGE_TAG}" \
+            -f src/BookingScheduleSystem.Web/Dockerfile \
+            src/
+          docker push "$ECR_REGISTRY/${APP_NAME}-web:latest"
+          docker push "$ECR_REGISTRY/${APP_NAME}-web:${IMAGE_TAG}"
+
+      - name: Deploy CloudFormation stack (RDS, ALB, ECS)
         env:
           ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
         run: |
@@ -236,34 +274,6 @@ jobs:
             --region "$AWS_REGION" \
             --query 'StackEvents[:20].[Timestamp,LogicalResourceId,ResourceStatus,ResourceStatusReason]' \
             --output table 2>/dev/null || true
-
-      - name: Build, tag, and push API image
-        env:
-          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
-        run: |
-          docker build \
-            -t "$ECR_REGISTRY/${APP_NAME}-api:latest" \
-            -t "$ECR_REGISTRY/${APP_NAME}-api:${IMAGE_TAG}" \
-            -f src/BookingScheduleSystem.Api/Dockerfile \
-            src/
-
-          docker push "$ECR_REGISTRY/${APP_NAME}-api:latest"
-          docker push "$ECR_REGISTRY/${APP_NAME}-api:${IMAGE_TAG}"
-
-      - name: Build, tag, and push Web image
-        env:
-          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
-        run: |
-          docker build \
-            -t "$ECR_REGISTRY/${APP_NAME}-web:latest" \
-            -t "$ECR_REGISTRY/${APP_NAME}-web:${IMAGE_TAG}" \
-            -f src/BookingScheduleSystem.Web/Dockerfile \
-            src/
-
-          docker push "$ECR_REGISTRY/${APP_NAME}-web:latest"
-          docker push "$ECR_REGISTRY/${APP_NAME}-web:${IMAGE_TAG}"
 
       - name: Force ECS redeployment
         run: |
