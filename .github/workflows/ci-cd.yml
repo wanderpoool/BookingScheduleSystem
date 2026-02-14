@@ -92,6 +92,27 @@ jobs:
             --region "$AWS_REGION" 2>/dev/null || echo "DOES_NOT_EXIST")
           echo "Current stack status: $STACK_STATUS"
 
+          # Wait for any in-progress operations to finish before proceeding
+          if echo "$STACK_STATUS" | grep -q "IN_PROGRESS"; then
+            echo "Stack has an operation in progress — waiting for it to complete..."
+            aws cloudformation wait stack-create-complete \
+              --stack-name "${APP_NAME}-production" \
+              --region "$AWS_REGION" 2>/dev/null || true
+            aws cloudformation wait stack-update-complete \
+              --stack-name "${APP_NAME}-production" \
+              --region "$AWS_REGION" 2>/dev/null || true
+            aws cloudformation wait stack-rollback-complete \
+              --stack-name "${APP_NAME}-production" \
+              --region "$AWS_REGION" 2>/dev/null || true
+            # Re-read the status after waiting
+            STACK_STATUS=$(aws cloudformation describe-stacks \
+              --stack-name "${APP_NAME}-production" \
+              --query 'Stacks[0].StackStatus' \
+              --output text \
+              --region "$AWS_REGION" 2>/dev/null || echo "DOES_NOT_EXIST")
+            echo "Stack status after waiting: $STACK_STATUS"
+          fi
+
           # UPDATE_ROLLBACK_FAILED: complete the rollback, skipping resources that can't be cleaned up
           if [ "$STACK_STATUS" = "UPDATE_ROLLBACK_FAILED" ]; then
             echo "Stack is in UPDATE_ROLLBACK_FAILED — finding resources that failed to roll back..."
