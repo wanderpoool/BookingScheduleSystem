@@ -83,7 +83,7 @@ jobs:
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Delete failed stack if in ROLLBACK_COMPLETE
+      - name: Recover stack from failed state
         run: |
           STACK_STATUS=$(aws cloudformation describe-stacks \
             --stack-name "${APP_NAME}-production" \
@@ -91,7 +91,57 @@ jobs:
             --output text \
             --region "$AWS_REGION" 2>/dev/null || echo "DOES_NOT_EXIST")
           echo "Current stack status: $STACK_STATUS"
-          if [ "$STACK_STATUS" = "ROLLBACK_COMPLETE" ] || [ "$STACK_STATUS" = "ROLLBACK_FAILED" ] || [ "$STACK_STATUS" = "CREATE_FAILED" ] || [ "$STACK_STATUS" = "DELETE_FAILED" ] || [ "$STACK_STATUS" = "UPDATE_ROLLBACK_FAILED" ]; then
+
+          # UPDATE_ROLLBACK_FAILED: complete the rollback, skipping resources that can't be cleaned up
+          if [ "$STACK_STATUS" = "UPDATE_ROLLBACK_FAILED" ]; then
+            echo "Stack is in UPDATE_ROLLBACK_FAILED — finding resources that failed to roll back..."
+            FAILED_RESOURCES=$(aws cloudformation describe-stack-events \
+              --stack-name "${APP_NAME}-production" \
+              --region "$AWS_REGION" \
+              --query 'StackEvents[?ResourceStatus==`DELETE_FAILED`].LogicalResourceId' \
+              --output text 2>/dev/null || echo "")
+            echo "Failed resources: $FAILED_RESOURCES"
+
+            echo "Continuing rollback, skipping failed resources..."
+            aws cloudformation continue-update-rollback \
+              --stack-name "${APP_NAME}-production" \
+              --resources-to-skip $FAILED_RESOURCES \
+              --region "$AWS_REGION"
+            echo "Waiting for rollback to complete..."
+            aws cloudformation wait stack-rollback-complete \
+              --stack-name "${APP_NAME}-production" \
+              --region "$AWS_REGION"
+            echo "Rollback completed. Stack is now in UPDATE_ROLLBACK_COMPLETE."
+          fi
+
+          # DELETE_FAILED: retry delete, retaining resources that can't be deleted
+          if [ "$STACK_STATUS" = "DELETE_FAILED" ]; then
+            echo "Stack is in DELETE_FAILED — finding resources that failed to delete..."
+            FAILED_RESOURCES=$(aws cloudformation describe-stack-events \
+              --stack-name "${APP_NAME}-production" \
+              --region "$AWS_REGION" \
+              --query 'StackEvents[?ResourceStatus==`DELETE_FAILED`].LogicalResourceId' \
+              --output text 2>/dev/null || echo "")
+            echo "Failed resources: $FAILED_RESOURCES"
+
+            RETAIN_ARGS=""
+            for res in $FAILED_RESOURCES; do
+              RETAIN_ARGS="$RETAIN_ARGS --retain-resources $res"
+            done
+
+            echo "Retrying delete, retaining problematic resources..."
+            aws cloudformation delete-stack \
+              --stack-name "${APP_NAME}-production" \
+              --region "$AWS_REGION" \
+              $RETAIN_ARGS
+            aws cloudformation wait stack-delete-complete \
+              --stack-name "${APP_NAME}-production" \
+              --region "$AWS_REGION"
+            echo "Stack deleted successfully (some resources retained)."
+          fi
+
+          # Terminal create failures: delete and start fresh
+          if [ "$STACK_STATUS" = "ROLLBACK_COMPLETE" ] || [ "$STACK_STATUS" = "ROLLBACK_FAILED" ] || [ "$STACK_STATUS" = "CREATE_FAILED" ]; then
             echo "Stack is in $STACK_STATUS state — deleting before re-creating..."
             aws cloudformation delete-stack --stack-name "${APP_NAME}-production" --region "$AWS_REGION"
             aws cloudformation wait stack-delete-complete --stack-name "${APP_NAME}-production" --region "$AWS_REGION"
