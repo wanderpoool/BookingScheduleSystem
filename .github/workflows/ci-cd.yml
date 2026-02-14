@@ -114,30 +114,36 @@ jobs:
             echo "Rollback completed. Stack is now in UPDATE_ROLLBACK_COMPLETE."
           fi
 
-          # DELETE_FAILED: retry delete, retaining resources that can't be deleted
+          # DELETE_FAILED: retry delete, retaining resources currently stuck in DELETE_FAILED
           if [ "$STACK_STATUS" = "DELETE_FAILED" ]; then
-            echo "Stack is in DELETE_FAILED — finding resources that failed to delete..."
-            FAILED_RESOURCES=$(aws cloudformation describe-stack-events \
+            echo "Stack is in DELETE_FAILED — finding resources currently stuck..."
+            FAILED_RESOURCES=$(aws cloudformation list-stack-resources \
               --stack-name "${APP_NAME}-production" \
               --region "$AWS_REGION" \
-              --query 'StackEvents[?ResourceStatus==`DELETE_FAILED`].LogicalResourceId' \
+              --query 'StackResourceSummaries[?ResourceStatus==`DELETE_FAILED`].LogicalResourceId' \
               --output text 2>/dev/null || echo "")
-            echo "Failed resources: $FAILED_RESOURCES"
+            echo "Resources in DELETE_FAILED: $FAILED_RESOURCES"
 
-            RETAIN_ARGS=""
-            for res in $FAILED_RESOURCES; do
-              RETAIN_ARGS="$RETAIN_ARGS --retain-resources $res"
-            done
-
-            echo "Retrying delete, retaining problematic resources..."
-            aws cloudformation delete-stack \
-              --stack-name "${APP_NAME}-production" \
-              --region "$AWS_REGION" \
-              $RETAIN_ARGS
-            aws cloudformation wait stack-delete-complete \
-              --stack-name "${APP_NAME}-production" \
-              --region "$AWS_REGION"
-            echo "Stack deleted successfully (some resources retained)."
+            if [ -n "$FAILED_RESOURCES" ]; then
+              echo "Retrying delete, retaining problematic resources..."
+              aws cloudformation delete-stack \
+                --stack-name "${APP_NAME}-production" \
+                --region "$AWS_REGION" \
+                --retain-resources $FAILED_RESOURCES
+              aws cloudformation wait stack-delete-complete \
+                --stack-name "${APP_NAME}-production" \
+                --region "$AWS_REGION"
+              echo "Stack deleted successfully (some resources retained)."
+            else
+              echo "No stuck resources found, retrying plain delete..."
+              aws cloudformation delete-stack \
+                --stack-name "${APP_NAME}-production" \
+                --region "$AWS_REGION"
+              aws cloudformation wait stack-delete-complete \
+                --stack-name "${APP_NAME}-production" \
+                --region "$AWS_REGION"
+              echo "Stack deleted successfully."
+            fi
           fi
 
           # Terminal create failures: delete and start fresh
