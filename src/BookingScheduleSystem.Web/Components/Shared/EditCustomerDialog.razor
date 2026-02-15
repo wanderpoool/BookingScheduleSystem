@@ -1,0 +1,83 @@
+@using BookingScheduleSystem.Contracts.Users
+@inject IUserService UserService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudTextField @bind-Value="_firstName" Label="First Name" Variant="Variant.Outlined" Required="true" />
+            <MudTextField @bind-Value="_lastName" Label="Last Name" Variant="Variant.Outlined" Required="true" />
+            <MudTextField @bind-Value="_phoneNumber" Label="Phone Number" Variant="Variant.Outlined"
+                          Placeholder="+639XXXXXXXXX" />
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Disabled="@_isSaving">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Save" Disabled="@_isSaving">
+            @if (_isSaving)
+            {
+                <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
+                <MudText>Saving...</MudText>
+            }
+            else
+            {
+                <MudText>Save Changes</MudText>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public UserResponse Customer { get; set; } = default!;
+
+    private string _firstName = string.Empty;
+    private string _lastName = string.Empty;
+    private string? _phoneNumber;
+    private bool _isSaving;
+
+    protected override void OnInitialized()
+    {
+        _firstName = Customer.FirstName;
+        _lastName = Customer.LastName;
+        _phoneNumber = Customer.PhoneNumber;
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task Save()
+    {
+        if (string.IsNullOrWhiteSpace(_firstName) || string.IsNullOrWhiteSpace(_lastName))
+        {
+            Snackbar.Add("First and last name are required", Severity.Warning);
+            return;
+        }
+
+        _isSaving = true;
+
+        try
+        {
+            var request = new UpdateUserRequest
+            {
+                FirstName = _firstName,
+                LastName = _lastName,
+                PhoneNumber = _phoneNumber
+            };
+
+            await UserService.UpdateUserAsync(Customer.Id.Value, request);
+            Snackbar.Add("Customer updated successfully", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

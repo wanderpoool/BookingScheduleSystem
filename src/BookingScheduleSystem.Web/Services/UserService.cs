@@ -88,4 +88,64 @@ public class UserService : IUserService
             throw new HttpRequestException("Unable to update the profile. Please try again.", ex);
         }
     }
+
+    public async Task DeactivateUserAsync(Guid userId)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsync($"/api/users/{userId}/deactivate", null);
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                var message = ApiErrorHelper.ExtractMessage(body) ?? "We couldn't deactivate this user.";
+                throw new HttpRequestException(message, null, response.StatusCode);
+            }
+        }
+        catch (HttpRequestException) { throw; }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deactivating user {UserId}", userId);
+            throw new HttpRequestException("Unable to deactivate the user. Please try again.", ex);
+        }
+    }
+
+    public async Task DeleteUserAsync(Guid userId)
+    {
+        try
+        {
+            var response = await _httpClient.DeleteAsync($"/api/users/{userId}");
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                var message = ApiErrorHelper.ExtractMessage(body) ?? "We couldn't delete this user.";
+                throw new HttpRequestException(message, null, response.StatusCode);
+            }
+        }
+        catch (HttpRequestException) { throw; }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting user {UserId}", userId);
+            throw new HttpRequestException("Unable to delete the user. Please try again.", ex);
+        }
+    }
+
+    public async Task ResetPasswordAsync(Guid userId, string newPassword)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync($"/api/users/{userId}/reset-password", new { NewPassword = newPassword });
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                var message = ApiErrorHelper.ExtractMessage(body) ?? "We couldn't reset the password.";
+                throw new HttpRequestException(message, null, response.StatusCode);
+            }
+        }
+        catch (HttpRequestException) { throw; }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error resetting password for user {UserId}", userId);
+            throw new HttpRequestException("Unable to reset the password. Please try again.", ex);
+        }
+    }
 }

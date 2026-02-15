@@ -1,0 +1,281 @@
+@page "/customers"
+@page "/{Slug}/customers"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Components.Authorization
+@using BookingScheduleSystem.Contracts.Users
+@using BookingScheduleSystem.Contracts.Common
+@inject IUserService UserService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<AuthorizeView Roles="Provider,GlobalAdmin">
+    <Authorized>
+        <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden;">
+            <div class="d-flex align-center pa-4 px-5" style="border-bottom: 1px solid var(--mud-palette-divider);">
+                <div class="mr-auto">
+                    <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">Manage Customers</MudText>
+                    <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">View and manage your organization's customers</MudText>
+                </div>
+            </div>
+
+            <div class="pa-5">
+                <MudStack Spacing="3">
+                    <MudStack Row="true" Spacing="2" Class="flex-wrap">
+                        <MudChip T="string" Color="@(_activeFilter == null ? Color.Primary : Color.Default)"
+                                 Variant="@(_activeFilter == null ? Variant.Filled : Variant.Outlined)"
+                                 OnClick="@(() => FilterByActive(null))">All</MudChip>
+                        <MudChip T="string" Color="@(_activeFilter == true ? Color.Success : Color.Default)"
+                                 Variant="@(_activeFilter == true ? Variant.Filled : Variant.Outlined)"
+                                 OnClick="@(() => FilterByActive(true))">Active</MudChip>
+                        <MudChip T="string" Color="@(_activeFilter == false ? Color.Error : Color.Default)"
+                                 Variant="@(_activeFilter == false ? Variant.Filled : Variant.Outlined)"
+                                 OnClick="@(() => FilterByActive(false))">Inactive</MudChip>
+                    </MudStack>
+
+                    @if (_isLoading)
+                    {
+                        <MudStack Spacing="2">
+                            @for (var i = 0; i < 3; i++)
+                            {
+                                <MudPaper Elevation="0" Class="pa-4" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px;">
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+                                        <MudSkeleton SkeletonType="SkeletonType.Circle" Width="40px" Height="40px" />
+                                        <MudStack Spacing="1" Style="flex: 1;">
+                                            <MudSkeleton Width="50%" Height="18px" />
+                                            <MudSkeleton Width="70%" Height="14px" />
+                                        </MudStack>
+                                    </MudStack>
+                                </MudPaper>
+                            }
+                        </MudStack>
+                    }
+                    else if (_customers == null || _customers.Count == 0)
+                    {
+                        <MudStack AlignItems="AlignItems.Center" Spacing="2" Class="pa-8">
+                            <MudIcon Icon="@Icons.Material.Filled.PeopleOutline" Size="Size.Large" Color="Color.Secondary" />
+                            <MudText Typo="Typo.body1" Color="Color.Secondary">No customers found</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">Customers will appear here once they register with your organization.</MudText>
+                        </MudStack>
+                    }
+                    else
+                    {
+                        <MudStack Spacing="2">
+                            @foreach (var customer in _customers)
+                            {
+                                <MudPaper Elevation="0" Class="pa-4" Style="@($"border-top: 3px solid {(customer.IsActive ? "var(--mud-palette-primary)" : "var(--mud-palette-text-disabled)")}; border: 1px solid var(--mud-palette-divider); border-radius: 14px;")">
+                                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Start">
+                                        <MudStack Spacing="1" Style="flex: 1;">
+                                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                                <MudAvatar Color="Color.Primary" Size="Size.Small">
+                                                    @(customer.FirstName.Length > 0 ? customer.FirstName[0].ToString().ToUpper() : "?")
+                                                </MudAvatar>
+                                                <MudText Typo="Typo.body1" Style="font-weight: 700;">
+                                                    @customer.FirstName @customer.LastName
+                                                </MudText>
+                                                <MudChip T="string" Size="Size.Small"
+                                                         Color="@(customer.IsActive ? Color.Success : Color.Default)"
+                                                         Variant="Variant.Filled">
+                                                    @(customer.IsActive ? "Active" : "Inactive")
+                                                </MudChip>
+                                            </MudStack>
+                                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                                <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" Color="Color.Secondary" />
+                                                <MudText Typo="Typo.body2" Color="Color.Secondary">@customer.Email</MudText>
+                                            </MudStack>
+                                            @if (!string.IsNullOrWhiteSpace(customer.PhoneNumber))
+                                            {
+                                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                                    <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Small" Color="Color.Secondary" />
+                                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@customer.PhoneNumber</MudText>
+                                                </MudStack>
+                                            }
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                Joined @customer.CreatedAt.ToString("MMM dd, yyyy")
+                                            </MudText>
+                                        </MudStack>
+
+                                        <MudMenu Icon="@Icons.Material.Filled.MoreVert" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                                            <MudMenuItem Icon="@Icons.Material.Filled.Edit"
+                                                         OnClick="@(() => OpenEditDialog(customer))">
+                                                Edit
+                                            </MudMenuItem>
+                                            <MudMenuItem Icon="@Icons.Material.Filled.LockReset"
+                                                         OnClick="@(() => OpenResetPasswordDialog(customer))">
+                                                Reset Password
+                                            </MudMenuItem>
+                                            @if (customer.IsActive)
+                                            {
+                                                <MudMenuItem Icon="@Icons.Material.Filled.Block"
+                                                             IconColor="Color.Warning"
+                                                             OnClick="@(() => HandleDeactivate(customer))">
+                                                    Deactivate
+                                                </MudMenuItem>
+                                            }
+                                            <MudMenuItem Icon="@Icons.Material.Filled.DeleteForever"
+                                                         IconColor="Color.Error"
+                                                         OnClick="@(() => HandleDelete(customer))">
+                                                Delete
+                                            </MudMenuItem>
+                                        </MudMenu>
+                                    </MudStack>
+                                </MudPaper>
+                            }
+                        </MudStack>
+
+                        @if (_totalCount > _pageSize)
+                        {
+                            <MudStack AlignItems="AlignItems.Center" Class="mt-4">
+                                <MudPagination Count="@((int)Math.Ceiling((double)_totalCount / _pageSize))"
+                                               Selected="@_currentPage"
+                                               SelectedChanged="OnPageChanged"
+                                               Color="Color.Primary" />
+                            </MudStack>
+                        }
+                    }
+                </MudStack>
+            </div>
+        </MudPaper>
+    </Authorized>
+    <NotAuthorized>
+        <MudAlert Severity="Severity.Warning">You need Provider or Admin access to manage customers.</MudAlert>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    [Parameter] public string? Slug { get; set; }
+
+    private List<UserResponse>? _customers;
+    private bool _isLoading = true;
+    private bool? _activeFilter;
+    private int _currentPage = 1;
+    private int _pageSize = 20;
+    private int _totalCount;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCustomers();
+    }
+
+    private async Task LoadCustomers()
+    {
+        _isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var result = await UserService.ListUsersAsync(isProvider: false, isActive: _activeFilter, page: _currentPage, pageSize: _pageSize);
+            if (result != null)
+            {
+                _customers = result.Users;
+                _totalCount = result.TotalCount;
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task FilterByActive(bool? active)
+    {
+        _activeFilter = active;
+        _currentPage = 1;
+        await LoadCustomers();
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _currentPage = page;
+        await LoadCustomers();
+    }
+
+    private async Task OpenEditDialog(UserResponse customer)
+    {
+        var parameters = new DialogParameters<EditCustomerDialog>
+        {
+            { x => x.Customer, customer }
+        };
+
+        var dialog = await DialogService.ShowAsync<EditCustomerDialog>(
+            $"Edit {customer.FirstName} {customer.LastName}",
+            parameters,
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true });
+
+        var result = await dialog.Result;
+        if (result is not null && !result.Canceled)
+        {
+            await LoadCustomers();
+        }
+    }
+
+    private async Task OpenResetPasswordDialog(UserResponse customer)
+    {
+        var parameters = new DialogParameters<ResetPasswordDialog>
+        {
+            { x => x.CustomerName, $"{customer.FirstName} {customer.LastName}" },
+            { x => x.UserId, customer.Id.Value }
+        };
+
+        var dialog = await DialogService.ShowAsync<ResetPasswordDialog>(
+            "Reset Password",
+            parameters,
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true });
+
+        await dialog.Result;
+    }
+
+    private async Task HandleDeactivate(UserResponse customer)
+    {
+        var parameters = new DialogParameters<DeleteConfirmDialog>
+        {
+            { x => x.ContentText, $"Are you sure you want to deactivate {customer.FirstName} {customer.LastName}? They will no longer be able to sign in." }
+        };
+
+        var dialog = await DialogService.ShowAsync<DeleteConfirmDialog>("Deactivate Customer", parameters,
+            new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true });
+        var result = await dialog.Result;
+
+        if (result is null || result.Canceled) return;
+
+        try
+        {
+            await UserService.DeactivateUserAsync(customer.Id.Value);
+            Snackbar.Add($"{customer.FirstName} {customer.LastName} has been deactivated", Severity.Success);
+            await LoadCustomers();
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task HandleDelete(UserResponse customer)
+    {
+        var parameters = new DialogParameters<DeleteConfirmDialog>
+        {
+            { x => x.ContentText, $"Are you sure you want to permanently delete {customer.FirstName} {customer.LastName}? This action cannot be undone." }
+        };
+
+        var dialog = await DialogService.ShowAsync<DeleteConfirmDialog>("Delete Customer", parameters,
+            new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true });
+        var result = await dialog.Result;
+
+        if (result is null || result.Canceled) return;
+
+        try
+        {
+            await UserService.DeleteUserAsync(customer.Id.Value);
+            Snackbar.Add($"{customer.FirstName} {customer.LastName} has been deleted", Severity.Success);
+            await LoadCustomers();
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+}
