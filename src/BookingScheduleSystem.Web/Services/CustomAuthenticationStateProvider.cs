@@ -20,8 +20,6 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
         // During prerender, JS interop is not available.
-        // Return cached state if we have one, otherwise return a "pending" anonymous state
-        // that won't trigger redirects (pages should handle prerender gracefully).
         if (_jsRuntime is not IJSInProcessRuntime && !IsInteractiveRendering())
         {
             return _cachedState ?? new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
@@ -41,10 +39,9 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
 
             if (user == null)
             {
-                await _localStorage.RemoveItemAsync("authToken");
-                await _localStorage.RemoveItemAsync("currentUser");
-                _cachedState = new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
-                return _cachedState;
+                // Token exists but user data is missing — don't clear tokens on first attempt,
+                // this may be a transient JS interop issue during circuit startup.
+                return _cachedState ?? new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
             }
 
             var claims = new List<Claim>
@@ -82,7 +79,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
         }
         catch (InvalidOperationException)
         {
-            // JS interop called during prerender — return cached or anonymous
+            // JS interop not ready yet — return cached or anonymous
             return _cachedState ?? new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
         }
         catch (JSDisconnectedException)
@@ -91,7 +88,8 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
         }
         catch
         {
-            return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+            // Don't discard cached state on transient errors
+            return _cachedState ?? new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
         }
     }
 

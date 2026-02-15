@@ -1,25 +1,21 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @inject NavigationManager Navigation
 @inject ITenantSlugService SlugService
+@inject AuthenticationStateProvider AuthStateProvider
 
 @code {
-    [CascadingParameter]
-    private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
-
     private bool _hasChecked;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // Only check auth after the interactive circuit is established (not during prerender).
-        // OnAfterRenderAsync is never called during prerender, so JS interop is safe here.
         if (firstRender && !_hasChecked)
         {
             _hasChecked = true;
 
-            if (AuthenticationStateTask == null)
-                return;
-
-            var authState = await AuthenticationStateTask;
+            // Re-check auth state directly from the provider to get the latest state
+            // from localStorage, rather than relying on the cascading parameter which
+            // may carry stale state from the prerender/initial render cycle.
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             var user = authState.User;
 
             if (!user.Identity?.IsAuthenticated ?? true)
