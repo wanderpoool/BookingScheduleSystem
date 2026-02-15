@@ -24,7 +24,27 @@
 
 <body>
     <Routes />
-    <script src="_framework/blazor.web.js"></script>
+    <div id="components-reconnect-modal" style="display:none;"></div>
+    <script src="_framework/blazor.web.js" autostart="false"></script>
+    <script>
+        Blazor.start({
+            circuit: {
+                reconnectionOptions: {
+                    maxRetries: 3,
+                    retryIntervalMilliseconds: 2000
+                }
+            }
+        });
+
+        // Hide reconnect UI and auto-reload when circuit is lost
+        new MutationObserver(() => {
+            const modal = document.getElementById('components-reconnect-modal');
+            if (modal && (modal.classList.contains('components-reconnect-rejected') ||
+                          modal.classList.contains('components-reconnect-failed'))) {
+                location.reload();
+            }
+        }).observe(document.documentElement, { attributes: true, subtree: true, attributeFilter: ['class'] });
+    </script>
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
     <script src="js/phone-input.js"></script>
     <script src="js/bookme-calendar.js"></script>
