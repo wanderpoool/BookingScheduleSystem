@@ -396,6 +396,7 @@
     private static Color GetStatusColor(SubscriptionStatusDto status) => status switch
     {
         SubscriptionStatusDto.Active => Color.Success,
+        SubscriptionStatusDto.Trial => Color.Info,
         SubscriptionStatusDto.Suspended => Color.Error,
         SubscriptionStatusDto.Cancelled => Color.Default,
         SubscriptionStatusDto.Expired => Color.Warning,

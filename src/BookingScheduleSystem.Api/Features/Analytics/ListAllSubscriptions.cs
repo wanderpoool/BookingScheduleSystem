@@ -44,135 +44,125 @@ public sealed class ListAllSubscriptions : Endpoint<ListAllSubscriptionsRequest,
         var pageNumber = Math.Max(1, req.PageNumber);
         var pageSize = Math.Clamp(req.PageSize, 1, 100);
 
-        // Build query based on filters
-        IReadOnlyList<TenantSubscription> subscriptions;
-        long totalCount;
+        // Load all subscriptions
+        var allSubscriptions = await session.Query<TenantSubscription>()
+            .ToListAsync(ct);
 
-        if (req.Status.HasValue && req.PlanId.HasValue)
-        {
-            var status = MapStatus(req.Status.Value);
-            totalCount = await session.Query<TenantSubscription>()
-                .Where(s => s.Status == status && s.PlanId == req.PlanId.Value)
-                .CountAsync(ct);
-
-            subscriptions = await session.Query<TenantSubscription>()
-                .Where(s => s.Status == status && s.PlanId == req.PlanId.Value)
-                .OrderByDescending(s => s.CreatedAt)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync(ct);
-        }
-        else if (req.Status.HasValue)
-        {
-            var status = MapStatus(req.Status.Value);
-            totalCount = await session.Query<TenantSubscription>()
-                .Where(s => s.Status == status)
-                .CountAsync(ct);
-
-            subscriptions = await session.Query<TenantSubscription>()
-                .Where(s => s.Status == status)
-                .OrderByDescending(s => s.CreatedAt)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync(ct);
-        }
-        else if (req.PlanId.HasValue)
-        {
-            totalCount = await session.Query<TenantSubscription>()
-                .Where(s => s.PlanId == req.PlanId.Value)
-                .CountAsync(ct);
-
-            subscriptions = await session.Query<TenantSubscription>()
-                .Where(s => s.PlanId == req.PlanId.Value)
-                .OrderByDescending(s => s.CreatedAt)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync(ct);
-        }
-        else
-        {
-            totalCount = await session.Query<TenantSubscription>()
-                .CountAsync(ct);
-
-            subscriptions = await session.Query<TenantSubscription>()
-                .OrderByDescending(s => s.CreatedAt)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync(ct);
-        }
-
-        // Load plan details — filter in-memory because Marten LINQ can't handle strongly-typed ID .Value in Contains()
-        var planIds = subscriptions.Select(s => s.PlanId).Distinct().ToHashSet();
-        var allPlans = await session.Query<SubscriptionPlan>().ToListAsync(ct);
-        var planDict = allPlans.Where(p => planIds.Contains(p.Id)).ToDictionary(p => p.Id, p => p);
-
-        // Load tenant names — filter in-memory for the same strongly-typed ID reason
-        var tenantIds = subscriptions.Select(s => s.TenantId).Distinct().ToHashSet();
+        // Load all tenants and plans
         var allTenants = await session.Query<Tenant>().ToListAsync(ct);
-        var tenantDict = allTenants.Where(t => tenantIds.Contains(t.Id)).ToDictionary(t => t.Id, t => t.Name);
+        var allPlans = await session.Query<SubscriptionPlan>().ToListAsync(ct);
+        var planDict = allPlans.ToDictionary(p => p.Id, p => p);
+
+        // Build unified list: subscriptions + trial tenants without subscriptions
+        var subscribedTenantIds = allSubscriptions.Select(s => s.TenantId).ToHashSet();
+        var results = new List<TenantSubscriptionResponse>();
+
+        // Add subscription-backed entries
+        foreach (var s in allSubscriptions)
+        {
+            var plan = planDict.GetValueOrDefault(s.PlanId);
+            var tenant = allTenants.FirstOrDefault(t => t.Id == s.TenantId);
+            results.Add(new TenantSubscriptionResponse
+            {
+                Id = s.Id,
+                TenantId = s.TenantId,
+                TenantName = tenant?.Name,
+                PlanId = s.PlanId,
+                PlanName = plan?.Name ?? "Unknown",
+                Status = s.Status switch
+                {
+                    SubscriptionStatus.Active => SubscriptionStatusDto.Active,
+                    SubscriptionStatus.Expired => SubscriptionStatusDto.Expired,
+                    SubscriptionStatus.Cancelled => SubscriptionStatusDto.Cancelled,
+                    SubscriptionStatus.PastDue => SubscriptionStatusDto.PastDue,
+                    SubscriptionStatus.Suspended => SubscriptionStatusDto.Suspended,
+                    _ => SubscriptionStatusDto.Expired
+                },
+                BillingCycle = s.BillingCycle == BillingCycle.Monthly
+                    ? BillingCycleDto.Monthly
+                    : BillingCycleDto.Yearly,
+                StartDate = s.StartDate,
+                EndDate = s.EndDate,
+                CancelledAt = s.CancelledAt,
+                CancellationReason = s.CancellationReason,
+                TrialEndDate = s.TrialEndDate,
+                IsTrialConverted = s.IsTrialConverted,
+                CreatedAt = s.CreatedAt,
+                UpdatedAt = s.UpdatedAt,
+                CurrentUsage = new UsageStatsDto
+                {
+                    BookingsThisMonth = s.CurrentUsage.BookingsThisMonth,
+                    BookingsToday = s.CurrentUsage.BookingsToday,
+                    SchedulesThisMonth = s.CurrentUsage.SchedulesThisMonth,
+                    SchedulesToday = s.CurrentUsage.SchedulesToday,
+                    ActiveUsers = s.CurrentUsage.ActiveUsers,
+                    ActiveProviders = s.CurrentUsage.ActiveProviders,
+                    ActiveBranches = s.CurrentUsage.ActiveBranches,
+                    LastUpdated = s.CurrentUsage.LastUpdated
+                },
+                PlanLimits = plan is not null ? new PlanLimitsDto
+                {
+                    MaxBookingsPerDay = plan.Limits.MaxBookingsPerDay,
+                    MaxBookingsPerMonth = plan.Limits.MaxBookingsPerMonth,
+                    MaxConcurrentBookings = plan.Limits.MaxConcurrentBookings,
+                    MaxSchedulesPerDay = plan.Limits.MaxSchedulesPerDay,
+                    MaxSchedulesPerMonth = plan.Limits.MaxSchedulesPerMonth,
+                    MaxUsers = plan.Limits.MaxUsers,
+                    MaxProviders = plan.Limits.MaxProviders,
+                    MaxBranches = plan.Limits.MaxBranches,
+                    AllowMultipleBranches = plan.Limits.AllowMultipleBranches,
+                    AllowCustomBranding = plan.Limits.AllowCustomBranding,
+                    AllowApiAccess = plan.Limits.AllowApiAccess,
+                    AllowAdvancedReporting = plan.Limits.AllowAdvancedReporting,
+                    AllowPrioritySupport = plan.Limits.AllowPrioritySupport
+                } : new PlanLimitsDto()
+            });
+        }
+
+        // Add trial tenants that don't have a subscription yet
+        foreach (var tenant in allTenants.Where(t => t.IsInTrial && !subscribedTenantIds.Contains(t.Id)))
+        {
+            results.Add(new TenantSubscriptionResponse
+            {
+                Id = new TenantSubscriptionId(Guid.Empty),
+                TenantId = tenant.Id,
+                TenantName = tenant.Name,
+                PlanId = new SubscriptionPlanId(Guid.Empty),
+                PlanName = "Free Trial",
+                Status = SubscriptionStatusDto.Trial,
+                BillingCycle = BillingCycleDto.Monthly,
+                StartDate = tenant.TrialStartDate ?? tenant.CreatedAt,
+                EndDate = tenant.TrialEndDate,
+                TrialEndDate = tenant.TrialEndDate,
+                CreatedAt = tenant.CreatedAt,
+                CurrentUsage = new UsageStatsDto(),
+                PlanLimits = new PlanLimitsDto()
+            });
+        }
+
+        // Apply status filter
+        if (req.Status.HasValue)
+        {
+            results = results.Where(r => r.Status == req.Status.Value).ToList();
+        }
+
+        // Apply plan filter
+        if (req.PlanId.HasValue)
+        {
+            results = results.Where(r => r.PlanId == req.PlanId.Value).ToList();
+        }
+
+        // Sort by creation date descending and paginate
+        var sorted = results.OrderByDescending(r => r.CreatedAt).ToList();
+        var totalCount = sorted.Count;
 
         Response = new ListAllSubscriptionsResponse
         {
-            Subscriptions = subscriptions.Select(s =>
-            {
-                var plan = planDict.GetValueOrDefault(s.PlanId);
-                return new TenantSubscriptionResponse
-                {
-                    Id = s.Id,
-                    TenantId = s.TenantId,
-                    TenantName = tenantDict.GetValueOrDefault(s.TenantId),
-                    PlanId = s.PlanId,
-                    PlanName = plan?.Name ?? "Unknown",
-                    Status = s.Status switch
-                    {
-                        SubscriptionStatus.Active => SubscriptionStatusDto.Active,
-                        SubscriptionStatus.Expired => SubscriptionStatusDto.Expired,
-                        SubscriptionStatus.Cancelled => SubscriptionStatusDto.Cancelled,
-                        SubscriptionStatus.PastDue => SubscriptionStatusDto.PastDue,
-                        SubscriptionStatus.Suspended => SubscriptionStatusDto.Suspended,
-                        _ => SubscriptionStatusDto.Expired
-                    },
-                    BillingCycle = s.BillingCycle == BillingCycle.Monthly
-                        ? BillingCycleDto.Monthly
-                        : BillingCycleDto.Yearly,
-                    StartDate = s.StartDate,
-                    EndDate = s.EndDate,
-                    CancelledAt = s.CancelledAt,
-                    CancellationReason = s.CancellationReason,
-                    TrialEndDate = s.TrialEndDate,
-                    IsTrialConverted = s.IsTrialConverted,
-                    CreatedAt = s.CreatedAt,
-                    UpdatedAt = s.UpdatedAt,
-                    CurrentUsage = new UsageStatsDto
-                    {
-                        BookingsThisMonth = s.CurrentUsage.BookingsThisMonth,
-                        BookingsToday = s.CurrentUsage.BookingsToday,
-                        SchedulesThisMonth = s.CurrentUsage.SchedulesThisMonth,
-                        SchedulesToday = s.CurrentUsage.SchedulesToday,
-                        ActiveUsers = s.CurrentUsage.ActiveUsers,
-                        ActiveProviders = s.CurrentUsage.ActiveProviders,
-                        ActiveBranches = s.CurrentUsage.ActiveBranches,
-                        LastUpdated = s.CurrentUsage.LastUpdated
-                    },
-                    PlanLimits = plan is not null ? new PlanLimitsDto
-                    {
-                        MaxBookingsPerDay = plan.Limits.MaxBookingsPerDay,
-                        MaxBookingsPerMonth = plan.Limits.MaxBookingsPerMonth,
-                        MaxConcurrentBookings = plan.Limits.MaxConcurrentBookings,
-                        MaxSchedulesPerDay = plan.Limits.MaxSchedulesPerDay,
-                        MaxSchedulesPerMonth = plan.Limits.MaxSchedulesPerMonth,
-                        MaxUsers = plan.Limits.MaxUsers,
-                        MaxProviders = plan.Limits.MaxProviders,
-                        MaxBranches = plan.Limits.MaxBranches,
-                        AllowMultipleBranches = plan.Limits.AllowMultipleBranches,
-                        AllowCustomBranding = plan.Limits.AllowCustomBranding,
-                        AllowApiAccess = plan.Limits.AllowApiAccess,
-                        AllowAdvancedReporting = plan.Limits.AllowAdvancedReporting,
-                        AllowPrioritySupport = plan.Limits.AllowPrioritySupport
-                    } : new PlanLimitsDto()
-                };
-            }).ToList(),
-            TotalCount = (int)totalCount,
+            Subscriptions = sorted
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList(),
+            TotalCount = totalCount,
             PageNumber = pageNumber,
             PageSize = pageSize
         };

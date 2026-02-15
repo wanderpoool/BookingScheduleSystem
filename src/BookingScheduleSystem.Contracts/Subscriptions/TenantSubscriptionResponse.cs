@@ -29,7 +29,8 @@ public enum SubscriptionStatusDto
     Expired,
     Cancelled,
     PastDue,
-    Suspended
+    Suspended,
+    Trial
 }
 
 public sealed record UsageStatsDto
