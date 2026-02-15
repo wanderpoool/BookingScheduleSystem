@@ -25,12 +25,27 @@ public sealed class Login : Endpoint<LoginRequest, AuthenticationResponse>
     {
         await using var session = DocumentStore.LightweightSession();
 
-        var user = await session.Query<User>()
-            .FirstOrDefaultAsync(u => u.Email == req.Email.ToLowerInvariant(), token: ct);
+        if (string.IsNullOrWhiteSpace(req.Email) && string.IsNullOrWhiteSpace(req.PhoneNumber))
+        {
+            ThrowError("Email or phone number is required", 400);
+            return;
+        }
+
+        User? user;
+        if (!string.IsNullOrWhiteSpace(req.PhoneNumber))
+        {
+            user = await session.Query<User>()
+                .FirstOrDefaultAsync(u => u.PhoneNumber == req.PhoneNumber, token: ct);
+        }
+        else
+        {
+            user = await session.Query<User>()
+                .FirstOrDefaultAsync(u => u.Email == req.Email!.ToLowerInvariant(), token: ct);
+        }
 
         if (user is null || !PasswordHasher.VerifyPassword(req.Password, user.PasswordHash))
         {
-            ThrowError("Invalid email or password", 401);
+            ThrowError("Invalid credentials", 401);
             return;
         }
 

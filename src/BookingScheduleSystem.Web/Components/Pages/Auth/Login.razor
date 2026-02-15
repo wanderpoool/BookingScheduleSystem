@@ -61,14 +61,50 @@
                     <DataAnnotationsValidator />
 
                     <MudStack Spacing="3">
-                        <MudTextField @bind-Value="_loginModel.Email"
-                                      Label="Email"
-                                      Variant="Variant.Outlined"
-                                      InputType="InputType.Email"
-                                      Required="true"
-                                      RequiredError="Email is required"
-                                      Adornment="Adornment.Start"
-                                      AdornmentIcon="@Icons.Material.Filled.Email" />
+                        <MudRadioGroup @bind-Value="_loginModel.ContactMethod" T="string">
+                            <MudRadio Value="@("email")" Color="Color.Primary">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" />
+                                    <MudText>Email</MudText>
+                                </MudStack>
+                            </MudRadio>
+                            <MudRadio Value="@("phone")" Color="Color.Primary">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Small" />
+                                    <MudText>Phone Number</MudText>
+                                </MudStack>
+                            </MudRadio>
+                        </MudRadioGroup>
+
+                        @if (_loginModel.ContactMethod == "email")
+                        {
+                            <MudTextField @bind-Value="_loginModel.Email"
+                                          Label="Email"
+                                          Variant="Variant.Outlined"
+                                          InputType="InputType.Email"
+                                          Required="true"
+                                          RequiredError="Email is required"
+                                          Adornment="Adornment.Start"
+                                          AdornmentIcon="@Icons.Material.Filled.Email" />
+                        }
+                        else
+                        {
+                            <div id="login-password-phone-input">
+                                <MudTextField T="string"
+                                              Value="@_loginModel.PhoneNumber"
+                                              ValueChanged="@OnPasswordPhoneInput"
+                                              Immediate="true"
+                                              Label="Phone Number"
+                                              Variant="Variant.Outlined"
+                                              InputType="InputType.Telephone"
+                                              Required="true"
+                                              Placeholder="9XX-XXX-XXXX"
+                                              MaxLength="12"
+                                              Adornment="Adornment.Start"
+                                              AdornmentText="+63"
+                                              OnBlur="FormatPasswordPhoneNumber" />
+                            </div>
+                        }
 
                         <MudTextField @bind-Value="_loginModel.Password"
                                       Label="Password"
@@ -292,6 +328,11 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (_activeTab == 0 && _loginModel.ContactMethod == "phone")
+        {
+            await Task.Delay(50);
+            await JS.InvokeVoidAsync("phoneInput.restrict", null, "login-password-phone-input");
+        }
         if (_activeTab == 1 && _otpContactMethod == "phone")
         {
             await Task.Delay(50);
@@ -299,9 +340,33 @@
         }
     }
 
+    private string CleanPasswordPhone => "+63" + new string((_loginModel.PhoneNumber ?? "").Where(char.IsDigit).ToArray());
+
     private void TogglePasswordVisibility()
     {
         _showPassword = !_showPassword;
+    }
+
+    private void OnPasswordPhoneInput(string value)
+    {
+        var digits = new string((value ?? "").Where(char.IsDigit).ToArray());
+        if (digits.Length > 10)
+            digits = digits[..10];
+        _loginModel.PhoneNumber = digits;
+    }
+
+    private void FormatPasswordPhoneNumber()
+    {
+        var digits = new string((_loginModel.PhoneNumber ?? "").Where(char.IsDigit).ToArray());
+        if (digits.Length > 10)
+            digits = digits[..10];
+
+        _loginModel.PhoneNumber = digits.Length switch
+        {
+            > 6 => $"{digits[..3]}-{digits[3..6]}-{digits[6..]}",
+            > 3 => $"{digits[..3]}-{digits[3..]}",
+            _ => digits
+        };
     }
 
     private void OnPhoneInput(string value)
@@ -329,13 +394,25 @@
 
     private async Task HandlePasswordLogin()
     {
+        if (_loginModel.ContactMethod == "phone" && string.IsNullOrWhiteSpace(_loginModel.PhoneNumber))
+        {
+            Snackbar.Add("Please enter your phone number", Severity.Warning);
+            return;
+        }
+        if (_loginModel.ContactMethod == "email" && string.IsNullOrWhiteSpace(_loginModel.Email))
+        {
+            Snackbar.Add("Please enter your email", Severity.Warning);
+            return;
+        }
+
         _isLoading = true;
 
         try
         {
             var loginRequest = new LoginRequest
             {
-                Email = _loginModel.Email,
+                Email = _loginModel.ContactMethod == "email" ? _loginModel.Email : null,
+                PhoneNumber = _loginModel.ContactMethod == "phone" ? CleanPasswordPhone : null,
                 Password = _loginModel.Password
             };
 
