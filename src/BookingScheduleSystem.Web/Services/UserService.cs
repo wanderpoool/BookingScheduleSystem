@@ -148,4 +148,28 @@ public class UserService : IUserService
             throw new HttpRequestException("Unable to reset the password. Please try again.", ex);
         }
     }
+
+    public async Task<UserResponse?> AddProviderAsync(string? email, string? phoneNumber, string firstName, string lastName, string password)
+    {
+        try
+        {
+            var payload = new { Email = email, PhoneNumber = phoneNumber, FirstName = firstName, LastName = lastName, Password = password };
+            var response = await _httpClient.PostAsJsonAsync("/api/users/add-provider", payload);
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<UserResponse>();
+            }
+
+            var body = await response.Content.ReadAsStringAsync();
+            _logger.LogWarning("Failed to add provider: {StatusCode} {Body}", response.StatusCode, body);
+            var message = ApiErrorHelper.ExtractMessage(body) ?? "We couldn't add the provider.";
+            throw new HttpRequestException(message, null, response.StatusCode);
+        }
+        catch (HttpRequestException) { throw; }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error adding provider");
+            throw new HttpRequestException("Unable to add the provider. Please try again.", ex);
+        }
+    }
 }

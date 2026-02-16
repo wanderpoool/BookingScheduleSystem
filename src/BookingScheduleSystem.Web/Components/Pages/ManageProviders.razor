@@ -5,6 +5,7 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using BookingScheduleSystem.Contracts.Users
 @inject IUserService UserService
+@inject IDialogService DialogService
 @inject ISnackbar Snackbar
 
 <AuthorizeView Roles="Provider,GlobalAdmin">
@@ -15,6 +16,10 @@
                     <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">Manage Providers</MudText>
                     <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">View and manage service providers</MudText>
                 </div>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.PersonAdd" OnClick="OpenAddProviderDialog">
+                    Add Provider
+                </MudButton>
             </div>
 
             <div class="pa-5">
@@ -166,5 +171,18 @@
     {
         _currentPage = page;
         await LoadProviders();
+    }
+
+    private async Task OpenAddProviderDialog()
+    {
+        var dialog = await DialogService.ShowAsync<AddProviderDialog>(
+            "Add New Provider",
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true });
+
+        var result = await dialog.Result;
+        if (result is not null && !result.Canceled)
+        {
+            await LoadProviders();
+        }
     }
 }

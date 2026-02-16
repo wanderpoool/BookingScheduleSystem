@@ -1,0 +1,331 @@
+@using BookingScheduleSystem.Contracts.Auth
+@inject IUserService UserService
+@inject IOtpService OtpService
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+@implements IDisposable
+
+<MudDialog>
+    <DialogContent>
+        @if (_step == Step.Details)
+        {
+            <MudStack Spacing="3">
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    Enter the new provider's details. An OTP will be sent to verify their contact.
+                </MudText>
+
+                <MudTextField @bind-Value="_firstName" Label="First Name" Variant="Variant.Outlined" Required="true" />
+                <MudTextField @bind-Value="_lastName" Label="Last Name" Variant="Variant.Outlined" Required="true" />
+
+                <MudStack Row="true" Justify="Justify.Center">
+                    <MudRadioGroup @bind-Value="_contactMethod" T="string">
+                        <MudRadio Value="@("email")" Color="Color.Primary">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" />
+                                <MudText>Email</MudText>
+                            </MudStack>
+                        </MudRadio>
+                        <MudRadio Value="@("phone")" Color="Color.Primary">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Small" />
+                                <MudText>Phone Number</MudText>
+                            </MudStack>
+                        </MudRadio>
+                    </MudRadioGroup>
+                </MudStack>
+
+                @if (_contactMethod == "email")
+                {
+                    <MudTextField @bind-Value="_email" Label="Email" Variant="Variant.Outlined"
+                                  InputType="InputType.Email" Required="true"
+                                  Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Email" />
+                }
+                else
+                {
+                    <div id="add-provider-phone-input">
+                        <MudTextField T="string" Value="@_phone" ValueChanged="@OnPhoneInput" Immediate="true"
+                                      Label="Phone Number" Variant="Variant.Outlined"
+                                      InputType="InputType.Telephone" Required="true"
+                                      Placeholder="9XX-XXX-XXXX" MaxLength="12"
+                                      Adornment="Adornment.Start" AdornmentText="+63"
+                                      OnBlur="FormatPhone" />
+                    </div>
+                }
+
+                <MudTextField @bind-Value="_password" Label="Password" Variant="Variant.Outlined"
+                              InputType="@(_showPassword ? InputType.Text : InputType.Password)"
+                              Required="true" HelperText="Minimum 6 characters"
+                              Adornment="Adornment.End"
+                              AdornmentIcon="@(_showPassword ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
+                              OnAdornmentClick="@(() => _showPassword = !_showPassword)" />
+            </MudStack>
+        }
+        else if (_step == Step.Otp)
+        {
+            <MudStack Spacing="3">
+                <MudAlert Severity="Severity.Info" Dense="true">
+                    Code sent to @(_contactMethod == "email" ? _email : $"+63 {_phone}")
+                </MudAlert>
+
+                @if (_otpExpiresAt.HasValue)
+                {
+                    var remaining = _otpExpiresAt.Value - DateTime.UtcNow;
+                    @if (remaining.TotalSeconds > 0)
+                    {
+                        <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+                            Code expires in @($"{(int)remaining.TotalMinutes}:{remaining.Seconds:D2}")
+                        </MudText>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Error">
+                            Code expired. Please request a new one.
+                        </MudText>
+                    }
+                }
+
+                <MudTextField @bind-Value="_otpCode" Label="Enter 6-digit code" Variant="Variant.Outlined"
+                              MaxLength="6" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Pin"
+                              Style="letter-spacing: 8px; font-size: 1.5rem; text-align: center;" />
+
+                <MudStack Row="true" Justify="Justify.SpaceBetween">
+                    <MudButton Variant="Variant.Text" Color="Color.Default" OnClick="GoBackToDetails"
+                               StartIcon="@Icons.Material.Filled.ArrowBack" Size="Size.Small">
+                        Back
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="SendOtp"
+                               StartIcon="@Icons.Material.Filled.Refresh" Size="Size.Small"
+                               Disabled="@(_isLoading || _resendCooldown > 0)">
+                        @(_resendCooldown > 0 ? $"Resend in {_resendCooldown}s" : "Resend Code")
+                    </MudButton>
+                </MudStack>
+            </MudStack>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Disabled="@_isLoading">Cancel</MudButton>
+
+        @if (_step == Step.Details)
+        {
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SendOtp" Disabled="@_isLoading">
+                @if (_isLoading)
+                {
+                    <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
+                    <MudText>Sending code...</MudText>
+                }
+                else
+                {
+                    <MudText>Send OTP</MudText>
+                }
+            </MudButton>
+        }
+        else if (_step == Step.Otp)
+        {
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="VerifyAndCreate"
+                       Disabled="@(_isLoading || string.IsNullOrWhiteSpace(_otpCode) || _otpCode.Length < 6)">
+                @if (_isLoading)
+                {
+                    <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
+                    <MudText>Creating...</MudText>
+                }
+                else
+                {
+                    <MudText>Verify & Add Provider</MudText>
+                }
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private enum Step { Details, Otp }
+    private Step _step = Step.Details;
+
+    // Details
+    private string _firstName = string.Empty;
+    private string _lastName = string.Empty;
+    private string _contactMethod = "email";
+    private string _email = string.Empty;
+    private string _phone = string.Empty;
+    private string _password = string.Empty;
+    private bool _showPassword;
+
+    // OTP
+    private string _otpCode = string.Empty;
+    private DateTime? _otpExpiresAt;
+    private int _resendCooldown;
+    private System.Timers.Timer? _timer;
+
+    private bool _isLoading;
+
+    private string CleanPhone => "+63" + new string(_phone.Where(char.IsDigit).ToArray());
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_step == Step.Details && _contactMethod == "phone")
+        {
+            await Task.Delay(50);
+            await JS.InvokeVoidAsync("phoneInput.restrict", null, "add-provider-phone-input");
+        }
+    }
+
+    private void OnPhoneInput(string value)
+    {
+        var digits = new string((value ?? "").Where(char.IsDigit).ToArray());
+        if (digits.Length > 10) digits = digits[..10];
+        _phone = digits;
+    }
+
+    private void FormatPhone()
+    {
+        var digits = new string((_phone ?? "").Where(char.IsDigit).ToArray());
+        if (digits.Length > 10) digits = digits[..10];
+        _phone = digits.Length switch
+        {
+            > 6 => $"{digits[..3]}-{digits[3..6]}-{digits[6..]}",
+            > 3 => $"{digits[..3]}-{digits[3..]}",
+            _ => digits
+        };
+    }
+
+    private bool ValidateDetails()
+    {
+        if (string.IsNullOrWhiteSpace(_firstName) || string.IsNullOrWhiteSpace(_lastName))
+        {
+            Snackbar.Add("First and last name are required", Severity.Warning);
+            return false;
+        }
+        if (_contactMethod == "email" && string.IsNullOrWhiteSpace(_email))
+        {
+            Snackbar.Add("Email is required", Severity.Warning);
+            return false;
+        }
+        if (_contactMethod == "phone" && string.IsNullOrWhiteSpace(_phone))
+        {
+            Snackbar.Add("Phone number is required", Severity.Warning);
+            return false;
+        }
+        if (string.IsNullOrWhiteSpace(_password) || _password.Length < 6)
+        {
+            Snackbar.Add("Password must be at least 6 characters", Severity.Warning);
+            return false;
+        }
+        return true;
+    }
+
+    private async Task SendOtp()
+    {
+        if (!ValidateDetails()) return;
+
+        _isLoading = true;
+        try
+        {
+            var request = new SendOtpRequest
+            {
+                ContactMethod = _contactMethod,
+                Email = _contactMethod == "email" ? _email : null,
+                PhoneNumber = _contactMethod == "phone" ? CleanPhone : null,
+                Purpose = "registration"
+            };
+
+            var result = await OtpService.SendOtpAsync(request);
+            if (result.Success)
+            {
+                _otpExpiresAt = result.ExpiresAt;
+                _otpCode = string.Empty;
+                _step = Step.Otp;
+                _resendCooldown = 30;
+                StartCountdownTimer();
+                Snackbar.Add("Verification code sent!", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add(result.Message ?? "Couldn't send the verification code.", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task VerifyAndCreate()
+    {
+        _isLoading = true;
+        try
+        {
+            // Step 1: Verify OTP
+            var verifyRequest = new VerifyOtpRequest
+            {
+                ContactMethod = _contactMethod,
+                Email = _contactMethod == "email" ? _email : null,
+                PhoneNumber = _contactMethod == "phone" ? CleanPhone : null,
+                OtpCode = _otpCode,
+                Purpose = "registration"
+            };
+
+            var verifyResult = await OtpService.VerifyOtpAsync(verifyRequest);
+            if (!verifyResult.Success || !verifyResult.IsVerified)
+            {
+                Snackbar.Add(verifyResult.Message ?? "The code is incorrect. Please try again.", Severity.Error);
+                return;
+            }
+
+            // Step 2: Create provider
+            var result = await UserService.AddProviderAsync(
+                email: _contactMethod == "email" ? _email : null,
+                phoneNumber: _contactMethod == "phone" ? CleanPhone : null,
+                firstName: _firstName,
+                lastName: _lastName,
+                password: _password);
+
+            if (result != null)
+            {
+                Snackbar.Add($"{_firstName} {_lastName} has been added as a provider", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void GoBackToDetails()
+    {
+        _step = Step.Details;
+        _otpCode = string.Empty;
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void StartCountdownTimer()
+    {
+        _timer?.Stop();
+        _timer?.Dispose();
+        _timer = new System.Timers.Timer(1000);
+        _timer.Elapsed += (_, _) => InvokeAsync(() =>
+        {
+            if (_resendCooldown > 0) _resendCooldown--;
+            StateHasChanged();
+        });
+        _timer.Start();
+    }
+
+    public void Dispose()
+    {
+        _timer?.Stop();
+        _timer?.Dispose();
+    }
+}

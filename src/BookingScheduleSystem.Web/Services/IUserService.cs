@@ -10,4 +10,5 @@ public interface IUserService
     Task DeactivateUserAsync(Guid userId);
     Task DeleteUserAsync(Guid userId);
     Task ResetPasswordAsync(Guid userId, string newPassword);
+    Task<UserResponse?> AddProviderAsync(string? email, string? phoneNumber, string firstName, string lastName, string password);
 }
