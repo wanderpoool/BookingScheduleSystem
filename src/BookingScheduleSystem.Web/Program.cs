@@ -3,6 +3,7 @@ using BookingScheduleSystem.Web.Services;
 using MudBlazor.Services;
 using MudBlazor;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -71,8 +72,22 @@ builder.Services.AddRazorComponents()
 // Add authentication and authorization services
 // Cookie scheme is registered as the default to satisfy the authorization middleware.
 // Actual auth state is managed by CustomAuthenticationStateProvider via JWT/local storage.
+// IMPORTANT: Disable cookie redirects — we never use server-side cookie auth for login;
+// Blazor's AuthorizeRouteView + RedirectToLogin handle the flow via SignalR.
 builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie();
+    .AddCookie(options =>
+    {
+        options.Events.OnRedirectToLogin = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return Task.CompletedTask;
+        };
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return Task.CompletedTask;
+        };
+    });
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthorization();
 
@@ -89,13 +104,14 @@ builder.Services.AddMudServices(config =>
     config.SnackbarConfiguration.SnackbarVariant = Variant.Filled;
 });
 
-// Configure HttpClient for API communication
+// Configure HttpClient for API communication with transient retry
+builder.Services.AddTransient<TransientRetryHandler>();
 builder.Services.AddHttpClient("BookingScheduleAPI", client =>
 {
     var apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"] ?? "https://localhost:5001";
     client.BaseAddress = new Uri(apiBaseUrl);
     client.DefaultRequestHeaders.Add("Accept", "application/json");
-});
+}).AddHttpMessageHandler<TransientRetryHandler>();
 
 // Register typed HttpClient for API calls
 builder.Services.AddScoped(sp =>
@@ -119,7 +135,20 @@ builder.Services.AddScoped<IAdminSubscriptionService, AdminSubscriptionService>(
 builder.Services.AddScoped<IQrCodeService, QrCodeService>();
 builder.Services.AddScoped<ITenantSlugService, TenantSlugService>();
 
+// Trust ALB forwarded headers (X-Forwarded-For, X-Forwarded-Proto) so the app
+// knows the original scheme was HTTPS and generates correct redirect URLs.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // ALB sits in the VPC — clear default restrictions to trust its headers
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 var app = builder.Build();
+
+// Must be first middleware so all downstream sees the correct scheme/host
+app.UseForwardedHeaders();
 
 // Configure the HTTP request pipeline
 if (!app.Environment.IsDevelopment())

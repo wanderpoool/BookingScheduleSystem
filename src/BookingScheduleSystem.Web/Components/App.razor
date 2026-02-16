@@ -37,14 +37,26 @@
             }
         });
 
-        // Hide reconnect UI and auto-reload when circuit is lost
-        new MutationObserver(() => {
-            const modal = document.getElementById('components-reconnect-modal');
-            if (modal && (modal.classList.contains('components-reconnect-rejected') ||
-                          modal.classList.contains('components-reconnect-failed'))) {
-                location.reload();
-            }
-        }).observe(document.documentElement, { attributes: true, subtree: true, attributeFilter: ['class'] });
+        // Hide reconnect UI and auto-reload when circuit is lost (max 3 attempts to prevent infinite loop)
+        (function() {
+            const key = '__blazor_reload_count';
+            const max = 3;
+            const count = parseInt(sessionStorage.getItem(key) || '0', 10);
+
+            // Reset counter after successful circuit (page stayed alive > 5s)
+            setTimeout(() => sessionStorage.setItem(key, '0'), 5000);
+
+            new MutationObserver(() => {
+                const modal = document.getElementById('components-reconnect-modal');
+                if (modal && (modal.classList.contains('components-reconnect-rejected') ||
+                              modal.classList.contains('components-reconnect-failed'))) {
+                    if (count < max) {
+                        sessionStorage.setItem(key, String(count + 1));
+                        location.reload();
+                    }
+                }
+            }).observe(document.documentElement, { attributes: true, subtree: true, attributeFilter: ['class'] });
+        })();
     </script>
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
     <script src="js/phone-input.js"></script>

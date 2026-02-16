@@ -14,9 +14,7 @@
 @inject ITenantService TenantService
 @inject ILogger<BrowseSchedules> _logger
 
-<AuthorizeView>
-    <Authorized>
-        @if (string.IsNullOrEmpty(_tenantId))
+@if (string.IsNullOrEmpty(_tenantId))
         {
             <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden;">
                 <div class="pa-4 px-5" style="border-bottom: 1px solid var(--mud-palette-divider);">
@@ -166,13 +164,6 @@
                 </BookMeCalendar>
             </MudPaper>
         }
-    </Authorized>
-    <NotAuthorized>
-        <MudAlert Severity="Severity.Warning">
-            Please <MudLink Href="/login">sign in</MudLink> to browse and book schedules.
-        </MudAlert>
-    </NotAuthorized>
-</AuthorizeView>
 
 @code {
     [Parameter] public string? Slug { get; set; }

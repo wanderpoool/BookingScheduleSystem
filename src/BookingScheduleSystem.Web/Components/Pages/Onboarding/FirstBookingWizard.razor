@@ -14,9 +14,7 @@
 
 <PageTitle>Get Started - Book Me App</PageTitle>
 
-<AuthorizeView>
-    <Authorized>
-        <MudContainer MaxWidth="MaxWidth.Small" Class="py-6">
+<MudContainer MaxWidth="MaxWidth.Small" Class="py-6">
             <MudStack Spacing="4">
                 @* Header *@
                 <MudStack AlignItems="AlignItems.Center" Spacing="1">
@@ -338,11 +336,6 @@
                 </MudButton>
             </MudStack>
         </MudContainer>
-    </Authorized>
-    <NotAuthorized>
-        <RedirectToLogin />
-    </NotAuthorized>
-</AuthorizeView>
 
 @code {
     [Parameter] public string? Slug { get; set; }

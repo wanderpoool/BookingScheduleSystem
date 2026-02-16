@@ -8,9 +8,7 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject ISnackbar Snackbar
 
-<AuthorizeView>
-    <Authorized>
-        <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden;">
+<MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden;">
             @* Header bar *@
             <div class="d-flex align-center pa-4 px-5" style="border-bottom: 1px solid var(--mud-palette-divider);">
                 <div class="mr-auto">
@@ -166,13 +164,6 @@
                 </MudStack>
             </div>
         </MudPaper>
-    </Authorized>
-    <NotAuthorized>
-        <MudAlert Severity="Severity.Warning">
-            Please <MudLink Href="/login">sign in</MudLink> to view your bookings.
-        </MudAlert>
-    </NotAuthorized>
-</AuthorizeView>
 
 @code {
     [Parameter] public string? Slug { get; set; }

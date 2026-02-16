@@ -15,9 +15,7 @@
 
 <PageTitle>Dashboard - Booking Schedule System</PageTitle>
 
-<AuthorizeView>
-    <Authorized>
-        @if (_isLoading)
+@if (_isLoading)
         {
             <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
                 <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden;">
@@ -409,11 +407,6 @@
                 </MudContainer>
             }
         }
-    </Authorized>
-    <NotAuthorized>
-        <RedirectToLogin />
-    </NotAuthorized>
-</AuthorizeView>
 
 @code {
     [Parameter] public string? Slug { get; set; }
