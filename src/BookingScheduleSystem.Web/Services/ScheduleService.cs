@@ -18,35 +18,54 @@ public class ScheduleService : IScheduleService
     public async Task<ListPublicSchedulesResponse?> ListPublicSchedulesAsync(
         Guid tenantId, DateTime? startDate = null, DateTime? endDate = null, int page = 1, int pageSize = 20)
     {
-        try
-        {
-            var url = $"/api/tenants/{tenantId}/schedules?pageNumber={page}&pageSize={pageSize}";
-            if (startDate.HasValue)
-                url += $"&startDate={startDate.Value:O}";
-            if (endDate.HasValue)
-                url += $"&endDate={endDate.Value:O}";
+        var url = $"/api/tenants/{tenantId}/schedules?pageNumber={page}&pageSize={pageSize}";
+        if (startDate.HasValue)
+            url += $"&startDate={startDate.Value:O}";
+        if (endDate.HasValue)
+            url += $"&endDate={endDate.Value:O}";
 
-            var response = await _httpClient.GetAsync(url);
-            if (response.IsSuccessStatusCode)
+        const int maxRetries = 2;
+        for (var attempt = 0; attempt <= maxRetries; attempt++)
+        {
+            try
             {
-                return await response.Content.ReadFromJsonAsync<ListPublicSchedulesResponse>();
-            }
+                var response = await _httpClient.GetAsync(url);
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<ListPublicSchedulesResponse>();
+                }
 
-            var body = await response.Content.ReadAsStringAsync();
-            _logger.LogWarning("Failed to list public schedules for tenant {TenantId}: {StatusCode} {Body}", tenantId, response.StatusCode, body);
-            var message = ApiErrorHelper.ExtractMessage(body) ?? GetScheduleListError(response.StatusCode);
-            throw new HttpRequestException($"{message} (HTTP {(int)response.StatusCode})", null, response.StatusCode);
+                // Retry on transient server errors (502/503/504)
+                if (attempt < maxRetries && IsTransientError(response.StatusCode))
+                {
+                    _logger.LogWarning("Transient error {StatusCode} listing public schedules for tenant {TenantId}, retrying (attempt {Attempt}/{MaxRetries})",
+                        (int)response.StatusCode, tenantId, attempt + 1, maxRetries);
+                    await Task.Delay(500 * (attempt + 1));
+                    continue;
+                }
+
+                var body = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning("Failed to list public schedules for tenant {TenantId}: {StatusCode} {Body}", tenantId, response.StatusCode, body);
+                var message = ApiErrorHelper.ExtractMessage(body) ?? GetScheduleListError(response.StatusCode);
+                throw new HttpRequestException($"{message} (HTTP {(int)response.StatusCode})", null, response.StatusCode);
+            }
+            catch (HttpRequestException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error listing schedules for tenant {TenantId}", tenantId);
+                throw new HttpRequestException("Unable to connect to the server. Please check your connection and try again.", ex);
+            }
         }
-        catch (HttpRequestException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error listing schedules for tenant {TenantId}", tenantId);
-            throw new HttpRequestException("Unable to connect to the server. Please check your connection and try again.", ex);
-        }
+
+        // Should not reach here, but just in case
+        throw new HttpRequestException("Unable to load schedules after multiple attempts. Please try again.");
     }
+
+    private static bool IsTransientError(HttpStatusCode statusCode) =>
+        statusCode is HttpStatusCode.BadGateway or HttpStatusCode.ServiceUnavailable or HttpStatusCode.GatewayTimeout;
 
     public async Task<ListSchedulesResponse?> ListSchedulesAsync(
         Guid? providerId = null, DateTime? startDate = null, DateTime? endDate = null,
