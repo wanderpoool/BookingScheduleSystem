@@ -531,6 +531,22 @@ Resources:
                 - HasDomain
                 - !Sub 'https://${DomainName},https://www.${DomainName},http://${ApplicationLoadBalancer.DNSName}'
                 - !Sub 'http://${ApplicationLoadBalancer.DNSName}'
+            - Name: EmailProvider
+              Value: Smtp
+            - Name: SmtpEmail__Host
+              Value: smtp.gmail.com
+            - Name: SmtpEmail__Port
+              Value: '587'
+            - Name: SmtpEmail__UseSsl
+              Value: 'true'
+            - Name: SmtpEmail__SenderEmail
+              Value: !Ref SenderEmail
+            - Name: SmtpEmail__SenderName
+              Value: BookMeApp
+            - Name: SmtpEmail__Username
+              Value: !Sub '{{resolve:secretsmanager:${AppName}/${Environment}/smtp-credentials:SecretString:SmtpEmail__Username}}'
+            - Name: SmtpEmail__Password
+              Value: !Sub '{{resolve:secretsmanager:${AppName}/${Environment}/smtp-credentials:SecretString:SmtpEmail__Password}}'
             - Name: AwsNotification__SenderEmail
               Value: !Ref SenderEmail
             - Name: AwsNotification__SmsSenderId

@@ -2,19 +2,24 @@ using Amazon.SimpleEmail;
 using Amazon.SimpleEmail.Model;
 using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
+using MailKit.Net.Smtp;
+using MimeKit;
 
 namespace BookingScheduleSystem.Api.Infrastructure.Auth;
 
 /// <summary>
-/// Service for sending OTP notifications via AWS SES (email) and AWS SNS (SMS).
-/// Falls back to console logging in Development environment.
+/// Service for sending OTP notifications via email (SMTP or AWS SES) and SMS (AWS SNS).
+/// Email provider is selected by the "EmailProvider" config setting: "Smtp" (default) or "Ses".
+/// Falls back to console logging in Development when no provider is configured.
 /// </summary>
 public class OtpNotificationService
 {
     private readonly ILogger<OtpNotificationService> _logger;
     private readonly IAmazonSimpleEmailService? _sesClient;
     private readonly IAmazonSimpleNotificationService? _snsClient;
-    private readonly AwsNotificationOptions _options;
+    private readonly AwsNotificationOptions _awsOptions;
+    private readonly SmtpEmailOptions _smtpOptions;
+    private readonly string _emailProvider;
     private readonly bool _isDevelopment;
 
     public OtpNotificationService(
@@ -28,17 +33,72 @@ public class OtpNotificationService
         _sesClient = sesClient;
         _snsClient = snsClient;
         _isDevelopment = environment.IsDevelopment();
-        _options = configuration.GetSection(AwsNotificationOptions.SectionName).Get<AwsNotificationOptions>()
-                   ?? new AwsNotificationOptions();
+        _emailProvider = configuration["EmailProvider"] ?? "Smtp";
+        _awsOptions = configuration.GetSection(AwsNotificationOptions.SectionName).Get<AwsNotificationOptions>()
+                      ?? new AwsNotificationOptions();
+        _smtpOptions = configuration.GetSection(SmtpEmailOptions.SectionName).Get<SmtpEmailOptions>()
+                       ?? new SmtpEmailOptions();
     }
 
     public async Task<bool> SendEmailOtpAsync(string email, string otpCode, string purpose)
+    {
+        if (string.Equals(_emailProvider, "Ses", StringComparison.OrdinalIgnoreCase))
+            return await SendEmailViaSesAsync(email, otpCode, purpose);
+
+        return await SendEmailViaSmtpAsync(email, otpCode, purpose);
+    }
+
+    private async Task<bool> SendEmailViaSmtpAsync(string email, string otpCode, string purpose)
+    {
+        try
+        {
+            if (_isDevelopment && string.IsNullOrEmpty(_smtpOptions.Username))
+            {
+                LogOtpToConsole("EMAIL-SMTP", email, otpCode, purpose);
+                return true;
+            }
+
+            var htmlBody = GetEmailTemplate(otpCode, purpose);
+            var subject = $"Your verification code: {otpCode}";
+
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(_smtpOptions.SenderName, _smtpOptions.SenderEmail));
+            message.To.Add(MailboxAddress.Parse(email));
+            message.Subject = subject;
+
+            var bodyBuilder = new BodyBuilder
+            {
+                HtmlBody = htmlBody,
+                TextBody = $"Your verification code is: {otpCode}. This code will expire in 10 minutes."
+            };
+            message.Body = bodyBuilder.ToMessageBody();
+
+            using var smtpClient = new MailKit.Net.Smtp.SmtpClient();
+            await smtpClient.ConnectAsync(_smtpOptions.Host, _smtpOptions.Port, _smtpOptions.UseSsl);
+            await smtpClient.AuthenticateAsync(_smtpOptions.Username, _smtpOptions.Password);
+            await smtpClient.SendAsync(message);
+            await smtpClient.DisconnectAsync(true);
+
+            _logger.LogInformation("Email OTP sent via SMTP to {Email}", MaskEmail(email));
+            LogOtpFallback("EMAIL-SMTP", email, otpCode, purpose);
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send email OTP via SMTP to {Email}", MaskEmail(email));
+            LogOtpFallback("EMAIL-SMTP", email, otpCode, purpose);
+            return false;
+        }
+    }
+
+    private async Task<bool> SendEmailViaSesAsync(string email, string otpCode, string purpose)
     {
         try
         {
             if (_isDevelopment && _sesClient is null)
             {
-                LogOtpToConsole("EMAIL", email, otpCode, purpose);
+                LogOtpToConsole("EMAIL-SES", email, otpCode, purpose);
                 return true;
             }
 
@@ -49,7 +109,7 @@ public class OtpNotificationService
 
             var sendRequest = new SendEmailRequest
             {
-                Source = _options.SenderEmail,
+                Source = _awsOptions.SenderEmail,
                 Destination = new Destination { ToAddresses = [email] },
                 Message = new Message
                 {
@@ -63,16 +123,16 @@ public class OtpNotificationService
             };
 
             var response = await _sesClient.SendEmailAsync(sendRequest);
-            _logger.LogInformation("Email OTP sent to {Email}, SES MessageId: {MessageId}",
+            _logger.LogInformation("Email OTP sent via SES to {Email}, MessageId: {MessageId}",
                 MaskEmail(email), response.MessageId);
-            LogOtpFallback("EMAIL", email, otpCode, purpose);
+            LogOtpFallback("EMAIL-SES", email, otpCode, purpose);
 
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send email OTP to {Email}", MaskEmail(email));
-            LogOtpFallback("EMAIL", email, otpCode, purpose);
+            _logger.LogError(ex, "Failed to send email OTP via SES to {Email}", MaskEmail(email));
+            LogOtpFallback("EMAIL-SES", email, otpCode, purpose);
             return false;
         }
     }
@@ -99,7 +159,7 @@ public class OtpNotificationService
                 {
                     ["AWS.SNS.SMS.SenderID"] = new()
                     {
-                        StringValue = _options.SmsSenderId,
+                        StringValue = _awsOptions.SmsSenderId,
                         DataType = "String"
                     },
                     ["AWS.SNS.SMS.SMSType"] = new()
@@ -127,7 +187,7 @@ public class OtpNotificationService
 
     private void LogOtpToConsole(string channel, string recipient, string otpCode, string purpose)
     {
-        _logger.LogWarning("=== {Channel} OTP (DEV MODE - No AWS) ===", channel);
+        _logger.LogWarning("=== {Channel} OTP (DEV MODE) ===", channel);
         _logger.LogWarning("To: {Recipient}", recipient);
         _logger.LogWarning("Purpose: {Purpose}", purpose);
         _logger.LogWarning("OTP Code: {OtpCode}", otpCode);
@@ -203,4 +263,17 @@ public sealed class AwsNotificationOptions
     public string SenderEmail { get; set; } = "noreply@bookmeapp.com";
     public string SmsSenderId { get; set; } = "BookMeApp";
     public string AwsRegion { get; set; } = "ap-southeast-1";
+}
+
+public sealed class SmtpEmailOptions
+{
+    public const string SectionName = "SmtpEmail";
+
+    public string Host { get; set; } = "smtp.gmail.com";
+    public int Port { get; set; } = 587;
+    public bool UseSsl { get; set; } = true;
+    public string Username { get; set; } = "";
+    public string Password { get; set; } = "";
+    public string SenderEmail { get; set; } = "noreply@bookmeapp.com";
+    public string SenderName { get; set; } = "BookMeApp";
 }
