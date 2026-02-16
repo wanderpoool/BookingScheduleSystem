@@ -10,6 +10,8 @@
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
+@inject ITenantSlugService SlugService
+@inject AuthenticationStateProvider AuthStateProvider
 @layout EmptyLayout
 @implements IDisposable
 
@@ -427,7 +429,7 @@
             if (result != null)
             {
                 Snackbar.Add($"Welcome back, {result.FirstName}!", Severity.Success);
-                NavigateAfterLogin();
+                await NavigateAfterLoginAsync();
             }
         }
         catch (Exception ex)
@@ -523,7 +525,7 @@
             if (result != null)
             {
                 Snackbar.Add($"Welcome back, {result.FirstName}!", Severity.Success);
-                NavigateAfterLogin();
+                await NavigateAfterLoginAsync();
             }
         }
         catch (Exception ex)
@@ -536,9 +538,36 @@
         }
     }
 
-    private void NavigateAfterLogin()
+    private async Task NavigateAfterLoginAsync()
     {
         var slug = Slug ?? _companyInfo?.Subdomain;
+
+        // If no slug yet, resolve it from the logged-in user's TenantId
+        if (slug is null)
+        {
+            try
+            {
+                var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+                var tenantIdClaim = authState.User.FindFirst("TenantId")?.Value;
+                if (!string.IsNullOrEmpty(tenantIdClaim) && Guid.TryParse(tenantIdClaim, out var tenantGuid))
+                {
+                    var tenant = await TenantService.GetTenantAsync(tenantGuid);
+                    if (tenant != null)
+                    {
+                        slug = tenant.Subdomain;
+                        SlugService.SetSlug(slug);
+                    }
+                }
+            }
+            catch
+            {
+                // Non-critical — proceed without slug
+            }
+        }
+        else
+        {
+            SlugService.SetSlug(slug);
+        }
 
         if (_companyInfo != null)
         {

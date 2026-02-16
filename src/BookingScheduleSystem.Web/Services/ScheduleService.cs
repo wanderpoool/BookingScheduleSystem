@@ -33,9 +33,9 @@ public class ScheduleService : IScheduleService
             }
 
             var body = await response.Content.ReadAsStringAsync();
-            _logger.LogWarning("Failed to list schedules for tenant {TenantId}: {StatusCode} {Body}", tenantId, response.StatusCode, body);
+            _logger.LogWarning("Failed to list public schedules for tenant {TenantId}: {StatusCode} {Body}", tenantId, response.StatusCode, body);
             var message = ApiErrorHelper.ExtractMessage(body) ?? GetScheduleListError(response.StatusCode);
-            throw new HttpRequestException(message, null, response.StatusCode);
+            throw new HttpRequestException($"{message} (HTTP {(int)response.StatusCode})", null, response.StatusCode);
         }
         catch (HttpRequestException)
         {
