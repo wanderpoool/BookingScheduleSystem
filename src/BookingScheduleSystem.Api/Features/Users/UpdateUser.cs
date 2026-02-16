@@ -15,6 +15,7 @@ public sealed class UpdateUserEndpointRequest
     public string? LastName { get; set; }
     public string? PhoneNumber { get; set; }
     public string? WorkingHours { get; set; }
+    public Guid? TenantId { get; set; }
 }
 
 public sealed class UpdateUser : Endpoint<UpdateUserEndpointRequest, UserResponse>
@@ -102,6 +103,24 @@ public sealed class UpdateUser : Endpoint<UpdateUserEndpointRequest, UserRespons
 
         if (req.WorkingHours is not null)
             targetUser.WorkingHours = req.WorkingHours;
+
+        // TenantId can only be changed by GlobalAdmin
+        if (req.TenantId.HasValue)
+        {
+            if (!isGlobalAdmin)
+            {
+                ThrowError("Only a GlobalAdmin can change a user's tenant", 403);
+            }
+
+            var newTenantId = new TenantId(req.TenantId.Value);
+            var newTenant = await session.LoadAsync<Tenant>(newTenantId, ct);
+            if (newTenant is null)
+            {
+                ThrowError("Target tenant does not exist", 404);
+            }
+
+            targetUser.TenantId = newTenantId;
+        }
 
         session.Update(targetUser);
         await session.SaveChangesAsync(ct);

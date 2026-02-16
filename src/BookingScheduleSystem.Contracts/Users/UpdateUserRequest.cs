@@ -6,4 +6,5 @@ public sealed record UpdateUserRequest
     public string? LastName { get; init; }
     public string? PhoneNumber { get; init; }
     public string? WorkingHours { get; init; }
+    public Guid? TenantId { get; init; }
 }
