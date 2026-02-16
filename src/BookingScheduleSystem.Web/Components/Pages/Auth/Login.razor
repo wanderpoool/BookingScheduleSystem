@@ -61,20 +61,22 @@
                     <DataAnnotationsValidator />
 
                     <MudStack Spacing="3">
-                        <MudRadioGroup @bind-Value="_loginModel.ContactMethod" T="string">
-                            <MudRadio Value="@("email")" Color="Color.Primary">
-                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                    <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" />
-                                    <MudText>Email</MudText>
-                                </MudStack>
-                            </MudRadio>
-                            <MudRadio Value="@("phone")" Color="Color.Primary">
-                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                    <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Small" />
-                                    <MudText>Phone Number</MudText>
-                                </MudStack>
-                            </MudRadio>
-                        </MudRadioGroup>
+                        <MudStack Row="true" Justify="Justify.Center">
+                            <MudRadioGroup @bind-Value="_loginModel.ContactMethod" T="string">
+                                <MudRadio Value="@("email")" Color="Color.Primary">
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                        <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" />
+                                        <MudText>Email</MudText>
+                                    </MudStack>
+                                </MudRadio>
+                                <MudRadio Value="@("phone")" Color="Color.Primary">
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                        <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Small" />
+                                        <MudText>Phone Number</MudText>
+                                    </MudStack>
+                                </MudRadio>
+                            </MudRadioGroup>
+                        </MudStack>
 
                         @if (_loginModel.ContactMethod == "email")
                         {
