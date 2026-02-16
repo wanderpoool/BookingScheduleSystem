@@ -12,18 +12,30 @@
         {
             _hasChecked = true;
 
-            // Re-check auth state directly from the provider to get the latest state
-            // from localStorage, rather than relying on the cascading parameter which
-            // may carry stale state from the prerender/initial render cycle.
-            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-            var user = authState.User;
-
-            if (!user.Identity?.IsAuthenticated ?? true)
+            // After a page refresh, JS interop may not be fully ready on the first
+            // OnAfterRenderAsync call, causing GetAuthenticationStateAsync to return
+            // anonymous state even though valid tokens exist in localStorage.
+            // Retry a few times with a short delay to allow the circuit to stabilize.
+            for (var attempt = 0; attempt < 3; attempt++)
             {
-                var returnUrl = Uri.EscapeDataString(Navigation.Uri);
-                var loginPath = SlugService.BuildUrl("/login");
-                Navigation.NavigateTo($"{loginPath}?returnUrl={returnUrl}", forceLoad: true);
+                if (attempt > 0)
+                    await Task.Delay(250);
+
+                var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+                var user = authState.User;
+
+                if (user.Identity?.IsAuthenticated == true)
+                {
+                    // Auth state recovered — notify so AuthorizeRouteView re-evaluates
+                    if (AuthStateProvider is CustomAuthenticationStateProvider custom)
+                        custom.NotifyAuthenticationStateChanged();
+                    return;
+                }
             }
+
+            var returnUrl = Uri.EscapeDataString(Navigation.Uri);
+            var loginPath = SlugService.BuildUrl("/login");
+            Navigation.NavigateTo($"{loginPath}?returnUrl={returnUrl}", forceLoad: true);
         }
     }
 }

@@ -224,6 +224,12 @@
             await LoadUserContextAsync();
             if (_contextLoaded)
             {
+                // Notify auth state changed so AuthorizeRouteView re-evaluates
+                // (the initial render may have returned anonymous due to JS interop not being ready)
+                if (AuthStateProvider is CustomAuthenticationStateProvider customProvider)
+                {
+                    customProvider.NotifyAuthenticationStateChanged();
+                }
                 StateHasChanged();
             }
         }
