@@ -65,12 +65,14 @@ public class OtpNotificationService
             var response = await _sesClient.SendEmailAsync(sendRequest);
             _logger.LogInformation("Email OTP sent to {Email}, SES MessageId: {MessageId}",
                 MaskEmail(email), response.MessageId);
+            LogOtpFallback("EMAIL", email, otpCode, purpose);
 
             return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to send email OTP to {Email}", MaskEmail(email));
+            LogOtpFallback("EMAIL", email, otpCode, purpose);
             return false;
         }
     }
@@ -111,12 +113,14 @@ public class OtpNotificationService
             var response = await _snsClient.PublishAsync(publishRequest);
             _logger.LogInformation("SMS OTP sent to {PhoneNumber}, SNS MessageId: {MessageId}",
                 MaskPhone(phoneNumber), response.MessageId);
+            LogOtpFallback("SMS", phoneNumber, otpCode, purpose);
 
             return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to send SMS OTP to {PhoneNumber}", MaskPhone(phoneNumber));
+            LogOtpFallback("SMS", phoneNumber, otpCode, purpose);
             return false;
         }
     }
@@ -129,6 +133,12 @@ public class OtpNotificationService
         _logger.LogWarning("OTP Code: {OtpCode}", otpCode);
         _logger.LogWarning("Expires in 10 minutes.");
         _logger.LogWarning("==========================================");
+    }
+
+    private void LogOtpFallback(string channel, string recipient, string otpCode, string purpose)
+    {
+        _logger.LogWarning("OTP Fallback [{Channel}] To: {Recipient}, Purpose: {Purpose}, Code: {OtpCode}",
+            channel, recipient, purpose, otpCode);
     }
 
     private static string MaskEmail(string email)
