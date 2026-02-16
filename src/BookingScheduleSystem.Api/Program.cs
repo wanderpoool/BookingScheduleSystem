@@ -105,7 +105,9 @@ builder.Services.AddAuthorization(options =>
         policy.RequireRole("GlobalAdmin"));
 
     options.AddPolicy("TenantUser", policy =>
-        policy.RequireClaim("TenantId"));
+        policy.RequireAssertion(context =>
+            context.User.HasClaim(c => c.Type == "TenantId") ||
+            context.User.IsInRole("GlobalAdmin")));
 });
 
 // Add FastEndpoints
