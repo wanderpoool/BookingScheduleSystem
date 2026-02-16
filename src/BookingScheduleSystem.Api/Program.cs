@@ -46,7 +46,7 @@ builder.Services.AddOpenTelemetry()
                 opts.RecordException = true;
             })
             .AddHttpClientInstrumentation()
-            .AddNpgsql();
+            .AddSource("Npgsql");
 
         if (!string.IsNullOrEmpty(otelExporterEndpoint))
         {
