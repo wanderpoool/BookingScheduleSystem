@@ -494,4 +494,13 @@ input[type="number"]::-webkit-outer-spin-button {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+
+  /* Exempt functional loading indicators — they communicate status, not decoration */
+  .mud-progress-circular,
+  .mud-progress-circular *,
+  .mud-progress-linear,
+  .mud-progress-linear * {
+    animation-duration: revert !important;
+    animation-iteration-count: revert !important;
+  }
 }

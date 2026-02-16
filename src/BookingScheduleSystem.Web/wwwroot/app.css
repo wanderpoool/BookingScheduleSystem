@@ -109,15 +109,6 @@ h1:focus {
    MUDBLAZOR OVERRIDES
    ======================================== */
 
-/* GPU-accelerate spinner animations on mobile */
-.mud-progress-circular {
-    will-change: transform;
-}
-
-.mud-progress-circular svg {
-    transform: translateZ(0);
-}
-
 /* Skeleton shimmer uses CSS animation — GPU-friendly */
 .mud-skeleton {
     will-change: background-position;
