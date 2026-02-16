@@ -3,6 +3,7 @@ using Amazon.SimpleEmail.Model;
 using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
 using MailKit.Net.Smtp;
+using MailKit.Security;
 using MimeKit;
 
 namespace BookingScheduleSystem.Api.Infrastructure.Auth;
@@ -74,7 +75,10 @@ public class OtpNotificationService
             message.Body = bodyBuilder.ToMessageBody();
 
             using var smtpClient = new MailKit.Net.Smtp.SmtpClient();
-            await smtpClient.ConnectAsync(_smtpOptions.Host, _smtpOptions.Port, _smtpOptions.UseSsl);
+            var socketOptions = _smtpOptions.Port == 465
+                ? SecureSocketOptions.SslOnConnect
+                : SecureSocketOptions.StartTls;
+            await smtpClient.ConnectAsync(_smtpOptions.Host, _smtpOptions.Port, socketOptions);
             await smtpClient.AuthenticateAsync(_smtpOptions.Username, _smtpOptions.Password);
             await smtpClient.SendAsync(message);
             await smtpClient.DisconnectAsync(true);
