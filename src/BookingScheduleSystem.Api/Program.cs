@@ -14,13 +14,67 @@ using FastEndpoints;
 using Marten;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Serilog
+// Configure Serilog (reads from appsettings, including the OpenTelemetry sink)
 builder.Host.UseSerilog((context, configuration) =>
     configuration.ReadFrom.Configuration(context.Configuration));
+
+// Configure OpenTelemetry
+var otelServiceName = builder.Configuration["OpenTelemetry:ServiceName"] ?? "BookingScheduleSystem.Api";
+var otelExporterEndpoint = builder.Configuration["OpenTelemetry:ExporterEndpoint"];
+
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(resource => resource
+        .AddService(
+            serviceName: otelServiceName,
+            serviceVersion: typeof(Program).Assembly.GetName().Version?.ToString() ?? "1.0.0")
+        .AddAttributes(new Dictionary<string, object>
+        {
+            ["deployment.environment"] = builder.Environment.EnvironmentName
+        }))
+    .WithTracing(tracing =>
+    {
+        tracing
+            .AddAspNetCoreInstrumentation(opts =>
+            {
+                opts.RecordException = true;
+            })
+            .AddHttpClientInstrumentation()
+            .AddNpgsql();
+
+        if (!string.IsNullOrEmpty(otelExporterEndpoint))
+        {
+            tracing.AddOtlpExporter(opts => opts.Endpoint = new Uri(otelExporterEndpoint));
+        }
+
+        if (builder.Environment.IsDevelopment())
+        {
+            tracing.AddConsoleExporter();
+        }
+    })
+    .WithMetrics(metrics =>
+    {
+        metrics
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddRuntimeInstrumentation();
+
+        if (!string.IsNullOrEmpty(otelExporterEndpoint))
+        {
+            metrics.AddOtlpExporter(opts => opts.Endpoint = new Uri(otelExporterEndpoint));
+        }
+
+        if (builder.Environment.IsDevelopment())
+        {
+            metrics.AddConsoleExporter();
+        }
+    });
 
 // Configure Marten for document storage with multi-tenancy support
 builder.Services.AddMarten(options =>
