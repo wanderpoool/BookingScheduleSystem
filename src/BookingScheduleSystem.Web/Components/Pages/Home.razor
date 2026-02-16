@@ -20,26 +20,7 @@
     <link rel="stylesheet" href="css/landing.css" />
 </HeadContent>
 
-<div class="landing-page">
-
-    @* ===== NAV ===== *@
-    <nav class="lp-nav" id="lp-nav">
-        <a href="/" class="lp-nav-logo">
-            <div class="lp-nav-logo-icon">B</div>
-            <span class="lp-nav-logo-text">Book Me App!</span>
-        </a>
-        <ul class="lp-nav-links">
-            <li><a @onclick='() => ScrollToSection("features")' @onclick:preventDefault>Features</a></li>
-            <li><a @onclick='() => ScrollToSection("how-it-works")' @onclick:preventDefault>How It Works</a></li>
-            <li><a @onclick='() => ScrollToSection("testimonials")' @onclick:preventDefault>Testimonials</a></li>
-            <li><a href="/login" class="lp-btn lp-btn-primary">Get Started Free</a></li>
-        </ul>
-        <button class="lp-nav-mobile-btn" @onclick="() => _drawerOpen = !_drawerOpen">
-            <MudIcon Icon="@Icons.Material.Filled.Menu" />
-        </button>
-    </nav>
-
-    @* Mobile Menu Drawer *@
+<MudLayout Style="min-height:auto;">
     <MudDrawer @bind-Open="_drawerOpen" Anchor="Anchor.End" Elevation="2" Variant="@DrawerVariant.Temporary">
         <MudDrawerHeader>
             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
@@ -58,6 +39,25 @@
             </MudNavLink>
         </MudNavMenu>
     </MudDrawer>
+    <MudMainContent Style="padding:0; margin:0;">
+<div class="landing-page">
+
+    @* ===== NAV ===== *@
+    <nav class="lp-nav" id="lp-nav">
+        <a href="/" class="lp-nav-logo">
+            <div class="lp-nav-logo-icon">B</div>
+            <span class="lp-nav-logo-text">Book Me App!</span>
+        </a>
+        <ul class="lp-nav-links">
+            <li><a @onclick='() => ScrollToSection("features")' @onclick:preventDefault>Features</a></li>
+            <li><a @onclick='() => ScrollToSection("how-it-works")' @onclick:preventDefault>How It Works</a></li>
+            <li><a @onclick='() => ScrollToSection("testimonials")' @onclick:preventDefault>Testimonials</a></li>
+            <li><a href="/login" class="lp-btn lp-btn-primary">Get Started Free</a></li>
+        </ul>
+        <button class="lp-nav-mobile-btn" @onclick="() => _drawerOpen = !_drawerOpen">
+            <MudIcon Icon="@Icons.Material.Filled.Menu" />
+        </button>
+    </nav>
 
     @* ===== HERO ===== *@
     <section class="lp-hero">
@@ -481,6 +481,8 @@
     </footer>
 
 </div>
+    </MudMainContent>
+</MudLayout>
 
 <script suppress-error="BL9992">
     // Intersection Observer for scroll animations

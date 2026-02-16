@@ -57,8 +57,7 @@
             @if (_activeTab == 0)
             {
                 @* Password Login Form *@
-                <EditForm Model="@_loginModel" OnValidSubmit="HandlePasswordLogin">
-                    <DataAnnotationsValidator />
+                <EditForm Model="@_loginModel" OnSubmit="HandlePasswordLogin">
 
                     <MudStack Spacing="3">
                         <MudStack Row="true" Justify="Justify.Center">
@@ -404,6 +403,11 @@
         if (_loginModel.ContactMethod == "email" && string.IsNullOrWhiteSpace(_loginModel.Email))
         {
             Snackbar.Add("Please enter your email", Severity.Warning);
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(_loginModel.Password) || _loginModel.Password.Length < 6)
+        {
+            Snackbar.Add("Password must be at least 6 characters", Severity.Warning);
             return;
         }
 
