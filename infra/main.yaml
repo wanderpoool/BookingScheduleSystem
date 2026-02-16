@@ -420,6 +420,9 @@ Resources:
         - !Ref PublicSubnetB
       SecurityGroups:
         - !Ref AlbSecurityGroup
+      LoadBalancerAttributes:
+        - Key: idle_timeout.timeout_seconds
+          Value: '300'
 
   # API Target Group
   ApiTargetGroup:
@@ -435,7 +438,7 @@ Resources:
       HealthyThresholdCount: 2
       UnhealthyThresholdCount: 3
 
-  # Web Target Group
+  # Web Target Group — sticky sessions required for Blazor Server (SignalR WebSocket)
   WebTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
@@ -450,6 +453,13 @@ Resources:
       UnhealthyThresholdCount: 3
       Matcher:
         HttpCode: '200,301,302'
+      TargetGroupAttributes:
+        - Key: stickiness.enabled
+          Value: 'true'
+        - Key: stickiness.type
+          Value: lb_cookie
+        - Key: stickiness.lb_cookie.duration_seconds
+          Value: '86400'
 
   # HTTP Listener — forwards when no domain, redirects to HTTPS when domain exists
   HttpListener:
