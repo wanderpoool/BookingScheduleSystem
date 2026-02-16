@@ -16,6 +16,13 @@ RUN dotnet publish BookingScheduleSystem.Web/BookingScheduleSystem.Web.csproj -c
 
 FROM base AS final
 WORKDIR /app
+
+# Tune .NET GC for 512MB Fargate container
+ENV DOTNET_gcServer=0 \
+    DOTNET_GCConserveMemory=9 \
+    DOTNET_GCHeapHardLimitPercent=75 \
+    DOTNET_EnableDiagnostics=0
+
 RUN addgroup --system --gid 1000 appgroup && adduser --system --uid 1000 --ingroup appgroup appuser
 COPY --from=build --chown=appuser:appgroup /app/publish .
 USER appuser
