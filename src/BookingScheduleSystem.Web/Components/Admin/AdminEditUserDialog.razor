@@ -1,0 +1,127 @@
+@using BookingScheduleSystem.Contracts.Users
+@using BookingScheduleSystem.Contracts.Tenants
+@using BookingScheduleSystem.Contracts.Common
+@inject IUserService UserService
+@inject ITenantService TenantService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        @if (_isLoadingTenants)
+        {
+            <MudStack AlignItems="AlignItems.Center" Class="pa-4">
+                <MudProgressCircular Indeterminate="true" />
+            </MudStack>
+        }
+        else
+        {
+            <MudStack Spacing="3">
+                <MudTextField @bind-Value="_firstName" Label="First Name" Variant="Variant.Outlined" Required="true" />
+                <MudTextField @bind-Value="_lastName" Label="Last Name" Variant="Variant.Outlined" Required="true" />
+                <MudTextField @bind-Value="_phoneNumber" Label="Phone Number" Variant="Variant.Outlined" Placeholder="+639XXXXXXXXX" />
+
+                <MudSelect T="Guid?" @bind-Value="_selectedTenantId" Label="Assigned Tenant" Variant="Variant.Outlined"
+                           Clearable="true" AnchorOrigin="Origin.BottomCenter">
+                    <MudSelectItem T="Guid?" Value="@((Guid?)null)">
+                        <MudText Color="Color.Secondary">-- No Tenant --</MudText>
+                    </MudSelectItem>
+                    @if (_tenants != null)
+                    {
+                        @foreach (var tenant in _tenants)
+                        {
+                            <MudSelectItem T="Guid?" Value="@((Guid?)tenant.Id.Value)">
+                                @tenant.Name (@tenant.Subdomain)
+                            </MudSelectItem>
+                        }
+                    }
+                </MudSelect>
+
+                @if (_selectedTenantId != _originalTenantId)
+                {
+                    <MudAlert Severity="Severity.Warning" Dense="true">
+                        Changing the tenant will move this user to a different organization.
+                    </MudAlert>
+                }
+            </MudStack>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Disabled="@_isSaving">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Save" Disabled="@(_isSaving || _isLoadingTenants)">
+            @if (_isSaving)
+            {
+                <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
+                <MudText>Saving...</MudText>
+            }
+            else
+            {
+                <MudText>Save Changes</MudText>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public UserResponse User { get; set; } = default!;
+
+    private string _firstName = string.Empty;
+    private string _lastName = string.Empty;
+    private string? _phoneNumber;
+    private Guid? _selectedTenantId;
+    private Guid? _originalTenantId;
+    private List<TenantResponse>? _tenants;
+    private bool _isLoadingTenants = true;
+    private bool _isSaving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _firstName = User.FirstName;
+        _lastName = User.LastName;
+        _phoneNumber = User.PhoneNumber;
+        _selectedTenantId = User.TenantId?.Value;
+        _originalTenantId = User.TenantId?.Value;
+
+        _tenants = await TenantService.ListTenantsAsync();
+        _isLoadingTenants = false;
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task Save()
+    {
+        if (string.IsNullOrWhiteSpace(_firstName) || string.IsNullOrWhiteSpace(_lastName))
+        {
+            Snackbar.Add("First and last name are required", Severity.Warning);
+            return;
+        }
+
+        _isSaving = true;
+
+        try
+        {
+            var request = new UpdateUserRequest
+            {
+                FirstName = _firstName,
+                LastName = _lastName,
+                PhoneNumber = _phoneNumber,
+                TenantId = _selectedTenantId != _originalTenantId ? _selectedTenantId : null
+            };
+
+            await UserService.UpdateUserAsync(User.Id.Value, request);
+            Snackbar.Add("User updated successfully", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

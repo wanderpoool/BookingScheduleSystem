@@ -7,4 +7,5 @@ public interface ITenantService
     Task<TenantResponse?> GetTenantAsync(Guid tenantId);
     Task<TenantResponse?> GetTenantBySubdomainAsync(string subdomain);
     Task<TenantResponse?> UpdateTenantAsync(Guid tenantId, UpdateTenantRequest request);
+    Task<List<TenantResponse>?> ListTenantsAsync(int pageSize = 100);
 }

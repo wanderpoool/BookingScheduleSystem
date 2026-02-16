@@ -53,6 +53,31 @@ public class TenantService : ITenantService
         }
     }
 
+    public async Task<List<TenantResponse>?> ListTenantsAsync(int pageSize = 100)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"/api/tenants?pageSize={pageSize}");
+            if (response.IsSuccessStatusCode)
+            {
+                var wrapper = await response.Content.ReadFromJsonAsync<ListTenantsWrapper>();
+                return wrapper?.Tenants;
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error listing tenants");
+            return null;
+        }
+    }
+
+    private sealed class ListTenantsWrapper
+    {
+        public List<TenantResponse>? Tenants { get; set; }
+    }
+
     public async Task<TenantResponse?> UpdateTenantAsync(Guid tenantId, UpdateTenantRequest request)
     {
         try
