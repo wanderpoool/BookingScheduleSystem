@@ -569,19 +569,13 @@
             SlugService.SetSlug(slug);
         }
 
-        if (_companyInfo != null)
-        {
-            var target = slug != null ? $"/{slug}/browse-schedules" : "/browse-schedules";
-            Navigation.NavigateTo(target);
-            return;
-        }
-
         if (!string.IsNullOrWhiteSpace(ReturnUrl))
         {
             Navigation.NavigateTo(Uri.UnescapeDataString(ReturnUrl));
             return;
         }
 
+        // Always go to dashboard — it handles onboarding redirect for new customers
         Navigation.NavigateTo(slug != null ? $"/{slug}/dashboard" : "/dashboard");
     }
 
