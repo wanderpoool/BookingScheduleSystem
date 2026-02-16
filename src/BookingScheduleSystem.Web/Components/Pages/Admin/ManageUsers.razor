@@ -299,7 +299,7 @@
     private string GetTenantName(TenantId? tenantId)
     {
         if (tenantId is null) return "— No Tenant —";
-        var id = tenantId.Value;
+        var id = tenantId.Value.Value;
         return _tenantNames.TryGetValue(id, out var name) ? name : id.ToString()[..8] + "...";
     }
 
