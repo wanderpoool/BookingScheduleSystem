@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="@Assets["design-tokens.css"]" />
     <link rel="stylesheet" href="@Assets["global-styles.css"]" />
     <link rel="stylesheet" href="@Assets["app.css"]" />
+    <link rel="stylesheet" href="@Assets["css/landing.css"]" />
     <link rel="stylesheet" href="@Assets["BookingScheduleSystem.Web.styles.css"]" />
 
     @* Fonts *@
@@ -19,7 +20,7 @@
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
     <ImportMap />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-    <HeadOutlet />
+    <HeadOutlet @rendermode="InteractiveServer" />
 </head>
 
 <body>
