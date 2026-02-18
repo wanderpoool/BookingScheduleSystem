@@ -64,9 +64,9 @@ public sealed class GetUsageStatistics : EndpointWithoutRequest<UsageStatisticsR
         var totalProviders = allUsers.Count(u => u.IsProvider);
 
         // Booking statistics
-        var today = DateTime.UtcNow.Date;
+        var today = DateTime.SpecifyKind(DateTime.UtcNow.Date, DateTimeKind.Unspecified);
         var tomorrow = today.AddDays(1);
-        var firstDayOfMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+        var firstDayOfMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Unspecified);
         var firstDayOfNextMonth = firstDayOfMonth.AddMonths(1);
 
         var allBookings = await session.Query<Booking>()

@@ -27,7 +27,7 @@ public sealed class SubscriptionExpiryJob : PeriodicBackgroundService
     protected override async Task ExecuteJobAsync(IServiceScope scope, CancellationToken ct)
     {
         var session = scope.ServiceProvider.GetRequiredService<IDocumentSession>();
-        var now = DateTime.UtcNow;
+        var now = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
 
         var expiredSubscriptions = await session
             .Query<TenantSubscription>()
