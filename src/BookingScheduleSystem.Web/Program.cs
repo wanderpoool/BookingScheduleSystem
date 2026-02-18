@@ -2,6 +2,7 @@ using BookingScheduleSystem.Web.Components;
 using BookingScheduleSystem.Web.Services;
 using MudBlazor.Services;
 using MudBlazor;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
 using OpenTelemetry.Metrics;
@@ -90,6 +91,10 @@ builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.C
     });
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthorization();
+
+// Bypass HTTP-level auth for Blazor pages — AuthorizeRouteView handles auth
+// within the SignalR circuit after the HTML shell is served.
+builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, BlazorAuthorizationMiddlewareResultHandler>();
 
 // Add MudBlazor services with theme configuration
 builder.Services.AddMudServices(config =>

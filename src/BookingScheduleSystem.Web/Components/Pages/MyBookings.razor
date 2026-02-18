@@ -12,8 +12,8 @@
             @* Header bar *@
             <div class="d-flex align-center pa-4 px-5" style="border-bottom: 1px solid var(--mud-palette-divider);">
                 <div class="mr-auto">
-                    <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">My Bookings</MudText>
-                    <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Manage your appointments</MudText>
+                    <MudText Typo="Typo.h6" Style="font-weight: 700;">My Bookings</MudText>
+                    <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);">Manage your appointments</MudText>
                 </div>
             </div>
 
@@ -139,7 +139,7 @@
 
                                         @if (booking.Status != BookingStatus.Cancelled)
                                         {
-                                            <MudButton Variant="Variant.Outlined" Color="Color.Error" FullWidth="true"
+                                            <MudButton Variant="Variant.Text" Color="Color.Error" Size="Size.Small"
                                                        OnClick="@(() => CancelBooking(booking))"
                                                        Disabled="@_isCancelling"
                                                        StartIcon="@Icons.Material.Filled.Cancel">

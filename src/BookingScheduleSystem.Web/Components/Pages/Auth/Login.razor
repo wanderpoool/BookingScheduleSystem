@@ -16,7 +16,7 @@
 @implements IDisposable
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="d-flex align-center justify-center" Style="min-height: 100vh;">
-    <MudPaper Elevation="0" Class="pa-10" Style="width: 100%; max-width: 450px; border: 1px solid var(--mud-palette-divider); border-radius: 20px;">
+    <MudPaper Elevation="0" Class="pa-6 pa-sm-10" Style="width: 100%; max-width: 450px; border: 1px solid var(--mud-palette-divider); border-radius: 20px;">
         <MudStack Spacing="4">
             @* Logo/Branding *@
             <MudStack Row="true" Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="2">
@@ -31,7 +31,7 @@
                 </MudAlert>
             }
 
-            <MudText Typo="Typo.h4" Align="Align.Center" Style="font-weight: 800; letter-spacing: -0.03em;">Welcome Back</MudText>
+            <MudText Typo="Typo.h5" Align="Align.Center" Style="font-weight: 800; letter-spacing: -0.03em;">Welcome Back</MudText>
             <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
                 Sign in to continue to your account
             </MudText>
@@ -40,15 +40,15 @@
 
             @* Login Method Toggle *@
             <MudStack Row="true" Justify="Justify.Center">
-                <MudButton Variant="@(_activeTab == 0 ? Variant.Filled : Variant.Outlined)"
-                           Color="Color.Primary"
+                <MudButton Variant="@(_activeTab == 0 ? Variant.Filled : Variant.Text)"
+                           Color="@(_activeTab == 0 ? Color.Primary : Color.Default)"
                            StartIcon="@Icons.Material.Filled.Lock"
                            OnClick="@(() => _activeTab = 0)"
                            Style="flex: 1;">
                     Password
                 </MudButton>
-                <MudButton Variant="@(_activeTab == 1 ? Variant.Filled : Variant.Outlined)"
-                           Color="Color.Primary"
+                <MudButton Variant="@(_activeTab == 1 ? Variant.Filled : Variant.Text)"
+                           Color="@(_activeTab == 1 ? Color.Primary : Color.Default)"
                            StartIcon="@Icons.Material.Filled.Sms"
                            OnClick="@(() => _activeTab = 1)"
                            Style="flex: 1;">

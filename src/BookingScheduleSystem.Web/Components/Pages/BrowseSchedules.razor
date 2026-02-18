@@ -18,7 +18,7 @@
         {
             <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden;">
                 <div class="pa-4 px-5" style="border-bottom: 1px solid var(--mud-palette-divider);">
-                    <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">Available Schedules</MudText>
+                    <MudText Typo="Typo.h6" Style="font-weight: 700;">Available Schedules</MudText>
                 </div>
                 <div class="pa-4">
                     <MudAlert Severity="Severity.Warning">
@@ -34,8 +34,8 @@
                 @* Header bar *@
                 <div class="d-flex align-center pa-4 px-5" style="border-bottom: 1px solid var(--mud-palette-divider);">
                     <div class="mr-auto">
-                        <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">Select a Schedule</MudText>
-                        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Tap a time slot to book</MudText>
+                        <MudText Typo="Typo.h6" Style="font-weight: 700;">Select a Schedule</MudText>
+                        <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);">Tap a time slot to book</MudText>
                     </div>
                     <span class="d-flex align-center gap-1 mr-3">
                         <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--mud-palette-success); display: inline-block;"></span>
@@ -68,21 +68,21 @@
                             @* Current user's booking — show details *@
                             <div style="width: 100%; height: 100%; border: 2px solid @(GetBookingStatusColor(calItem.TimeBlock.BookingStatus)); background: @(GetBookingStatusBg(calItem.TimeBlock.BookingStatus)); display: flex; flex-direction: column; border-radius: 6px;">
                                 <div style="background: @(GetBookingStatusColor(calItem.TimeBlock.BookingStatus)); padding: 2px 8px; display: flex; align-items: center; justify-content: space-between; border-radius: 4px 4px 0 0;">
-                                    <span style="color: #fff; font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">YOUR BOOKING</span>
-                                    <span style="color: #fff; font-size: 10px; font-weight: 700; background: rgba(0,0,0,0.15); border-radius: 4px; padding: 1px 6px;">@(GetBookingStatusLabel(calItem.TimeBlock.BookingStatus))</span>
+                                    <span style="color: #fff; font-size: 12px; font-weight: 700; letter-spacing: 0.5px;">YOUR BOOKING</span>
+                                    <span style="color: #fff; font-size: 12px; font-weight: 700; background: rgba(0,0,0,0.15); border-radius: 4px; padding: 1px 6px;">@(GetBookingStatusLabel(calItem.TimeBlock.BookingStatus))</span>
                                 </div>
                                 <div style="padding: 4px 8px; flex: 1; display: flex; flex-direction: column; gap: 2px;">
                                     @if (!string.IsNullOrWhiteSpace(calItem.TimeBlock.ScheduleTitle))
                                     {
                                         <span style="font-size: 12px; font-weight: 700; color: #1B2D45; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@calItem.TimeBlock.ScheduleTitle</span>
                                     }
-                                    <span style="font-size: 11px; color: #5A6B80; display: flex; align-items: center; gap: 4px;">
+                                    <span style="font-size: 12px; color: #5A6B80; display: flex; align-items: center; gap: 4px;">
                                         <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Style="font-size: 14px; color: #5A6B80;" />
                                         @calItem.ProviderName
                                     </span>
                                     @if (!string.IsNullOrWhiteSpace(calItem.TimeBlock.BookingNotes))
                                     {
-                                        <span style="font-size: 10px; color: #5A6B80; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                        <span style="font-size: 12px; color: #5A6B80; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                             @calItem.TimeBlock.BookingNotes
                                         </span>
                                     }
@@ -112,7 +112,7 @@
             <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden; position: relative;">
                 @* Minimal header *@
                 <div class="d-flex align-center pa-4 px-5" style="border-bottom: 1px solid var(--mud-palette-divider);">
-                    <MudText Typo="Typo.subtitle1" Style="font-weight: 700;" Class="mr-auto">@(_isProvider ? "My Schedule" : "All Schedules")</MudText>
+                    <MudText Typo="Typo.h6" Style="font-weight: 700;" Class="mr-auto">@(_isProvider ? "My Schedule" : "All Schedules")</MudText>
                     <MudStack Row="true" Spacing="3" AlignItems="AlignItems.Center" Class="d-none d-sm-flex">
                         <span class="d-flex align-center gap-1">
                             <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--mud-palette-warning); display: inline-block;"></span>
@@ -148,13 +148,13 @@
                                 </span>
                                 @if (!string.IsNullOrWhiteSpace(item.TimeBlock.CustomerName))
                                 {
-                                    <span style="font-size: 11px; color: #5A6B80; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    <span style="font-size: 12px; color: #5A6B80; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                         @item.TimeBlock.CustomerName
                                     </span>
                                 }
                                 @if (!string.IsNullOrWhiteSpace(item.TimeBlock.BookingNotes))
                                 {
-                                    <span style="font-size: 10px; color: #5A6B80; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    <span style="font-size: 12px; color: #5A6B80; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                         @item.TimeBlock.BookingNotes
                                     </span>
                                 }

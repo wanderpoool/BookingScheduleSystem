@@ -12,8 +12,8 @@
 <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden;">
     <div class="d-flex align-center pa-4 px-5" style="border-bottom: 1px solid var(--mud-palette-divider);">
         <div class="mr-auto">
-            <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">My Profile</MudText>
-            <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">View and edit your profile</MudText>
+            <MudText Typo="Typo.h6" Style="font-weight: 700;">My Profile</MudText>
+            <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);">View and edit your profile</MudText>
         </div>
     </div>
 
@@ -114,9 +114,10 @@
                         </MudPaper>
                     }
 
-                    <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
                                StartIcon="@Icons.Material.Filled.Edit"
-                               OnClick="StartEditing">
+                               OnClick="StartEditing"
+                               Style="min-height: 44px;">
                         Edit Profile
                     </MudButton>
                 }
@@ -143,22 +144,47 @@
                                   Variant="Variant.Outlined"
                                   Placeholder="+63..." />
 
-                    <MudStack Row="true" Spacing="2" Justify="Justify.FlexEnd">
-                        <MudButton Variant="Variant.Text" OnClick="CancelEditing">Cancel</MudButton>
-                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                   OnClick="SaveProfile"
-                                   Disabled="_isSaving">
-                            @if (_isSaving)
-                            {
-                                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-                                <text>Saving...</text>
-                            }
-                            else
-                            {
-                                <text>Save Changes</text>
-                            }
-                        </MudButton>
-                    </MudStack>
+                    @* Desktop: right-aligned row *@
+                    <MudHidden Breakpoint="Breakpoint.Xs">
+                        <MudStack Row="true" Spacing="2" Justify="Justify.FlexEnd">
+                            <MudButton Variant="Variant.Text" OnClick="CancelEditing">Cancel</MudButton>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                       OnClick="SaveProfile"
+                                       Disabled="_isSaving">
+                                @if (_isSaving)
+                                {
+                                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                                    <text>Saving...</text>
+                                }
+                                else
+                                {
+                                    <text>Save Changes</text>
+                                }
+                            </MudButton>
+                        </MudStack>
+                    </MudHidden>
+                    @* Mobile: full-width stacked *@
+                    <MudHidden Breakpoint="Breakpoint.SmAndUp">
+                        <MudStack Spacing="2">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
+                                       OnClick="SaveProfile" Disabled="_isSaving"
+                                       Size="Size.Medium" Style="min-height: 48px;">
+                                @if (_isSaving)
+                                {
+                                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                                    <text>Saving...</text>
+                                }
+                                else
+                                {
+                                    <text>Save Changes</text>
+                                }
+                            </MudButton>
+                            <MudButton Variant="Variant.Text" OnClick="CancelEditing" FullWidth="true"
+                                       Size="Size.Medium" Style="min-height: 48px;">
+                                Cancel
+                            </MudButton>
+                        </MudStack>
+                    </MudHidden>
                 }
             </MudStack>
         }
