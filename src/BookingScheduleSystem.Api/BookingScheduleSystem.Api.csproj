@@ -17,13 +17,14 @@
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageReference Include="Serilog.Sinks.OpenTelemetry" Version="4.1.1" />
-    <PackageReference Include="OpenTelemetry.Api" Version="1.11.2" />
-    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.11.2" />
+    <PackageReference Include="OpenTelemetry.Api" Version="1.15.0" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.15.0" />
+    <PackageReference Include="OpenTelemetry.Extensions.AWS" Version="1.15.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.11.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.11.1" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.11.1" />
-    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.11.2" />
-    <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.11.2" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.0" />
+    <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.15.0" />
     <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.400.67" />
     <PackageReference Include="AWSSDK.SimpleEmail" Version="3.7.401.30" />
     <PackageReference Include="MailKit" Version="4.12.1" />

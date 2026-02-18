@@ -396,6 +396,17 @@ Resources:
                   - ses:SendEmail
                   - ses:SendRawEmail
                 Resource: !Sub 'arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/*'
+        - PolicyName: XRayAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - xray:PutTraceSegments
+                  - xray:PutTelemetryRecords
+                  - xray:GetSamplingRules
+                  - xray:GetSamplingTargets
+                Resource: '*'
 
   # --- CloudWatch Log Groups ---
   ApiLogGroup:
@@ -549,6 +560,8 @@ Resources:
               Value: !Sub '{{resolve:secretsmanager:${AppName}/${Environment}/smtp-credentials:SecretString:SmtpEmail__Username}}'
             - Name: SmtpEmail__Password
               Value: !Sub '{{resolve:secretsmanager:${AppName}/${Environment}/smtp-credentials:SecretString:SmtpEmail__Password}}'
+            - Name: OpenTelemetry__ExporterEndpoint
+              Value: !Sub 'https://xray.${AWS::Region}.amazonaws.com/v1/traces'
             - Name: AwsNotification__SenderEmail
               Value: !Ref SenderEmail
             - Name: AwsNotification__SmsSenderId

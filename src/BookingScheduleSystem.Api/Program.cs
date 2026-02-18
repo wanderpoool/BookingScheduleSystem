@@ -14,6 +14,12 @@ using FastEndpoints;
 using Marten;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Amazon.Runtime;
+using BookingScheduleSystem.Api.Infrastructure.Telemetry;
+using OpenTelemetry;
+using OpenTelemetry.Context.Propagation;
+using OpenTelemetry.Exporter;
+using OpenTelemetry.Extensions.AWS.Trace;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -28,6 +34,17 @@ builder.Host.UseSerilog((context, configuration) =>
 // Configure OpenTelemetry
 var otelServiceName = builder.Configuration["OpenTelemetry:ServiceName"] ?? "BookingScheduleSystem.Api";
 var otelExporterEndpoint = builder.Configuration["OpenTelemetry:ExporterEndpoint"];
+var isProduction = !builder.Environment.IsDevelopment();
+
+// In production, propagate both W3C TraceContext and X-Ray trace headers (ALB sets X-Amzn-Trace-Id)
+if (isProduction)
+{
+    Sdk.SetDefaultTextMapPropagator(new CompositeTextMapPropagator([
+        new TraceContextPropagator(),
+        new BaggagePropagator(),
+        new AWSXRayPropagator()
+    ]));
+}
 
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(resource => resource
@@ -41,6 +58,7 @@ builder.Services.AddOpenTelemetry()
     .WithTracing(tracing =>
     {
         tracing
+            .AddXRayTraceId()
             .AddAspNetCoreInstrumentation(opts =>
             {
                 opts.RecordException = true;
@@ -48,8 +66,25 @@ builder.Services.AddOpenTelemetry()
             .AddHttpClientInstrumentation()
             .AddSource("Npgsql");
 
-        if (!string.IsNullOrEmpty(otelExporterEndpoint))
+        if (!string.IsNullOrEmpty(otelExporterEndpoint) && isProduction)
         {
+            // Production: export to X-Ray via OTLP with SigV4 signing, 10% sampling for cost control
+            tracing.SetSampler(new TraceIdRatioBasedSampler(0.1));
+            tracing.AddOtlpExporter(opts =>
+            {
+                opts.Endpoint = new Uri(otelExporterEndpoint);
+                opts.Protocol = OtlpExportProtocol.HttpProtobuf;
+                opts.HttpClientFactory = () =>
+                {
+                    var credentials = FallbackCredentialsFactory.GetCredentials();
+                    var region = Environment.GetEnvironmentVariable("AWS_REGION") ?? "ap-southeast-1";
+                    return new HttpClient(new XRaySigV4Handler(credentials, region));
+                };
+            });
+        }
+        else if (!string.IsNullOrEmpty(otelExporterEndpoint))
+        {
+            // Dev with custom endpoint (e.g., local collector)
             tracing.AddOtlpExporter(opts => opts.Endpoint = new Uri(otelExporterEndpoint));
         }
 
@@ -65,7 +100,8 @@ builder.Services.AddOpenTelemetry()
             .AddHttpClientInstrumentation()
             .AddRuntimeInstrumentation();
 
-        if (!string.IsNullOrEmpty(otelExporterEndpoint))
+        // Don't export metrics to X-Ray (traces-only endpoint)
+        if (!string.IsNullOrEmpty(otelExporterEndpoint) && !isProduction)
         {
             metrics.AddOtlpExporter(opts => opts.Endpoint = new Uri(otelExporterEndpoint));
         }
