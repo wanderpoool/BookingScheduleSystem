@@ -87,7 +87,8 @@ public sealed class ListUsers : Endpoint<ListUsersRequest, ListUsersResponse>
                 IsProvider = u.IsProvider,
                 CreatedAt = u.CreatedAt,
                 IsActive = u.IsActive,
-                WorkingHours = u.WorkingHours
+                WorkingHours = u.WorkingHours,
+                AutoAcceptBookings = u.AutoAcceptBookings
             }).ToList(),
             TotalCount = (int)totalCount,
             PageNumber = pageNumber,

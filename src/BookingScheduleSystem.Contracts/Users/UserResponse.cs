@@ -15,4 +15,5 @@ public sealed record UserResponse
     public required DateTime CreatedAt { get; init; }
     public required bool IsActive { get; init; }
     public string? WorkingHours { get; init; }
+    public bool AutoAcceptBookings { get; init; }
 }

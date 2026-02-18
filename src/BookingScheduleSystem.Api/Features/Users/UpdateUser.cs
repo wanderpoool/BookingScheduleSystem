@@ -15,6 +15,7 @@ public sealed class UpdateUserEndpointRequest
     public string? LastName { get; set; }
     public string? PhoneNumber { get; set; }
     public string? WorkingHours { get; set; }
+    public bool? AutoAcceptBookings { get; set; }
     public Guid? TenantId { get; set; }
 }
 
@@ -104,6 +105,15 @@ public sealed class UpdateUser : Endpoint<UpdateUserEndpointRequest, UserRespons
         if (req.WorkingHours is not null)
             targetUser.WorkingHours = req.WorkingHours;
 
+        if (req.AutoAcceptBookings.HasValue)
+        {
+            if (!targetUser.IsProvider)
+            {
+                ThrowError("AutoAcceptBookings can only be set for providers", 400);
+            }
+            targetUser.AutoAcceptBookings = req.AutoAcceptBookings.Value;
+        }
+
         // TenantId can only be changed by GlobalAdmin
         if (req.TenantId.HasValue)
         {
@@ -137,7 +147,8 @@ public sealed class UpdateUser : Endpoint<UpdateUserEndpointRequest, UserRespons
             IsProvider = targetUser.IsProvider,
             CreatedAt = targetUser.CreatedAt,
             IsActive = targetUser.IsActive,
-            WorkingHours = targetUser.WorkingHours
+            WorkingHours = targetUser.WorkingHours,
+            AutoAcceptBookings = targetUser.AutoAcceptBookings
         };
     }
 }

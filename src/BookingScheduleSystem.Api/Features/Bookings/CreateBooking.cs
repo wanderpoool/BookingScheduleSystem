@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using BookingScheduleSystem.Api.Infrastructure.Auth;
 using BookingScheduleSystem.Api.Infrastructure.Bookings;
 using BookingScheduleSystem.Api.Infrastructure.MultiTenancy;
 using BookingScheduleSystem.Api.Infrastructure.Notifications;
@@ -16,6 +17,7 @@ public sealed class CreateBooking : Endpoint<CreateBookingRequest, BookingRespon
     public required IDocumentStore DocumentStore { get; init; }
     public required ITenantContext TenantContext { get; init; }
     public required BookingNotificationService NotificationService { get; init; }
+    public required BookingEmailNotificationService EmailNotificationService { get; init; }
 
     public override void Configure()
     {
@@ -151,8 +153,17 @@ public sealed class CreateBooking : Endpoint<CreateBookingRequest, BookingRespon
             ThrowError("You already have a booking for this schedule", 409);
         }
 
-        // If schedule has a provider, booking requires approval
-        var requiresApproval = schedule.ProviderId.HasValue;
+        // Determine booking status based on provider auto-accept setting
+        User? provider = null;
+        var bookingStatus = BookingStatus.Confirmed;
+
+        if (schedule.ProviderId.HasValue)
+        {
+            provider = await session.LoadAsync<User>(schedule.ProviderId.Value, ct);
+            bookingStatus = provider is { AutoAcceptBookings: true }
+                ? BookingStatus.Confirmed
+                : BookingStatus.Pending;
+        }
 
         var booking = new Booking
         {
@@ -160,7 +171,7 @@ public sealed class CreateBooking : Endpoint<CreateBookingRequest, BookingRespon
             ScheduleId = scheduleId,
             UserId = userId,
             TenantId = tenantId.Value,
-            Status = requiresApproval ? BookingStatus.Pending : BookingStatus.Confirmed,
+            Status = bookingStatus,
             Notes = req.Notes,
             BookedAt = DateTime.SpecifyKind(DateTimeOffset.UtcNow.DateTime, DateTimeKind.Unspecified)
         };
@@ -179,10 +190,33 @@ public sealed class CreateBooking : Endpoint<CreateBookingRequest, BookingRespon
             session.Update(subscription);
         }
 
-        // Create notifications
+        // Create in-app notifications
         NotificationService.NotifyBookingCreated(session, booking, schedule);
 
         await session.SaveChangesAsync(ct);
+
+        // Send email to provider (fire-and-forget — failure must not block response)
+        if (provider is not null)
+        {
+            var customer = await session.LoadAsync<User>(userId, ct);
+            if (customer is not null)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        if (bookingStatus == BookingStatus.Confirmed)
+                            await EmailNotificationService.SendBookingConfirmedEmailAsync(provider, booking, schedule, customer);
+                        else
+                            await EmailNotificationService.SendBookingApprovalEmailAsync(provider, booking, schedule, customer);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError(ex, "Failed to send booking email for {BookingId}", booking.Id);
+                    }
+                });
+            }
+        }
 
         Logger.LogInformation(
             "Created booking {BookingId} for schedule {ScheduleId} by user {UserId} with status {Status}",

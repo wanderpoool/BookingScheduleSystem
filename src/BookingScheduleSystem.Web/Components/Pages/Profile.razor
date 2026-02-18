@@ -84,6 +84,36 @@
                         </MudText>
                     </MudStack>
 
+                    @if (_user.IsProvider)
+                    {
+                        <MudDivider />
+
+                        <MudText Typo="Typo.subtitle2" Style="font-weight: 700;">Booking Preferences</MudText>
+
+                        <MudPaper Elevation="0" Class="pa-3 pa-sm-4" Style="border: 1px solid var(--mud-palette-divider); border-radius: 12px;">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                    <MudIcon Icon="@(_user.AutoAcceptBookings ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.HourglassTop)"
+                                             Color="@(_user.AutoAcceptBookings ? Color.Success : Color.Warning)"
+                                             Size="Size.Small" />
+                                    <div>
+                                        <MudText Typo="Typo.body2" Style="font-weight: 600;">Auto-Accept Bookings</MudText>
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                            @(_user.AutoAcceptBookings
+                                                ? "New bookings are automatically confirmed"
+                                                : "New bookings require your manual approval")
+                                        </MudText>
+                                    </div>
+                                </MudStack>
+                                <MudSwitch T="bool"
+                                           Value="_user.AutoAcceptBookings"
+                                           ValueChanged="ToggleAutoAccept"
+                                           Color="Color.Success"
+                                           Disabled="_isTogglingAutoAccept" />
+                            </MudStack>
+                        </MudPaper>
+                    }
+
                     <MudButton Variant="Variant.Outlined" Color="Color.Primary"
                                StartIcon="@Icons.Material.Filled.Edit"
                                OnClick="StartEditing">
@@ -142,6 +172,7 @@
     private bool _isLoading = true;
     private bool _isEditing;
     private bool _isSaving;
+    private bool _isTogglingAutoAccept;
     private string? _userId;
     private string _editFirstName = string.Empty;
     private string _editLastName = string.Empty;
@@ -191,6 +222,38 @@
     private void CancelEditing()
     {
         _isEditing = false;
+    }
+
+    private async Task ToggleAutoAccept(bool newValue)
+    {
+        if (_user == null) return;
+
+        _isTogglingAutoAccept = true;
+        try
+        {
+            var request = new UpdateUserRequest
+            {
+                AutoAcceptBookings = newValue
+            };
+
+            var updated = await UserService.UpdateUserAsync(Guid.Parse(_userId!), request);
+            if (updated != null)
+            {
+                _user = updated;
+                Snackbar.Add(newValue
+                    ? "Auto-accept enabled. New bookings will be confirmed automatically."
+                    : "Auto-accept disabled. New bookings will require your approval.",
+                    Severity.Success);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isTogglingAutoAccept = false;
+        }
     }
 
     private async Task SaveProfile()

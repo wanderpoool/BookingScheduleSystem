@@ -16,6 +16,7 @@ public sealed class User
     public TenantId? TenantId { get; set; }
     public bool IsGlobalAdmin { get; set; }
     public bool IsProvider { get; set; }
+    public bool AutoAcceptBookings { get; set; }
     public DateTime CreatedAt { get; set; }
     public bool IsActive { get; set; }
 

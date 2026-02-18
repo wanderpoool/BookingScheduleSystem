@@ -1,5 +1,6 @@
 using BookingScheduleSystem.Api.Infrastructure.Bookings;
 using BookingScheduleSystem.Api.Infrastructure.Schedules;
+using BookingScheduleSystem.Contracts.Common;
 using BookingScheduleSystem.Contracts.Notifications;
 using Marten;
 
@@ -16,35 +17,39 @@ public class BookingNotificationService
 
     public void NotifyBookingCreated(IDocumentSession session, Booking booking, Schedule schedule)
     {
+        var isAutoConfirmed = booking.Status == BookingStatus.Confirmed && schedule.ProviderId.HasValue;
+
         if (schedule.ProviderId.HasValue)
         {
-            // Notify provider of new pending booking
             var providerNotification = new InAppNotification
             {
                 UserId = schedule.ProviderId.Value.Value,
                 TenantId = booking.TenantId.Value,
                 Type = NotificationType.BookingCreated,
-                Title = "New Booking Request",
-                Message = $"A new booking request has been made for \"{schedule.Title}\" on {schedule.StartTime:MMM dd, yyyy 'at' h:mm tt}.",
+                Title = isAutoConfirmed ? "Booking Auto-Confirmed" : "New Booking Request",
+                Message = isAutoConfirmed
+                    ? $"A booking for \"{schedule.Title}\" on {schedule.StartTime:MMM dd, yyyy 'at' h:mm tt} has been automatically confirmed."
+                    : $"A new booking request has been made for \"{schedule.Title}\" on {schedule.StartTime:MMM dd, yyyy 'at' h:mm tt}.",
                 RelatedEntityId = booking.Id.Value
             };
             session.Store(providerNotification);
 
             _logger.LogInformation("=== BOOKING NOTIFICATION ===");
             _logger.LogInformation("To Provider: {ProviderId}", schedule.ProviderId.Value);
-            _logger.LogInformation("Type: New Booking Request (Pending Approval)");
+            _logger.LogInformation("Type: {NotificationType}", isAutoConfirmed ? "Booking Auto-Confirmed" : "New Booking Request (Pending Approval)");
             _logger.LogInformation("Schedule: {Title} on {StartTime}", schedule.Title, schedule.StartTime);
             _logger.LogInformation("============================");
         }
 
         // Notify customer of booking status
+        var isPending = booking.Status == BookingStatus.Pending;
         var customerNotification = new InAppNotification
         {
             UserId = booking.UserId.Value,
             TenantId = booking.TenantId.Value,
             Type = NotificationType.BookingCreated,
-            Title = schedule.ProviderId.HasValue ? "Booking Pending Approval" : "Booking Confirmed",
-            Message = schedule.ProviderId.HasValue
+            Title = isPending ? "Booking Pending Approval" : "Booking Confirmed",
+            Message = isPending
                 ? $"Your booking for \"{schedule.Title}\" on {schedule.StartTime:MMM dd, yyyy 'at' h:mm tt} is pending provider approval."
                 : $"Your booking for \"{schedule.Title}\" on {schedule.StartTime:MMM dd, yyyy 'at' h:mm tt} has been confirmed!",
             RelatedEntityId = booking.Id.Value
@@ -53,7 +58,7 @@ public class BookingNotificationService
 
         _logger.LogInformation("=== BOOKING NOTIFICATION ===");
         _logger.LogInformation("To Customer: {UserId}", booking.UserId);
-        _logger.LogInformation("Type: Booking {Status}", schedule.ProviderId.HasValue ? "Pending" : "Confirmed");
+        _logger.LogInformation("Type: Booking {Status}", isPending ? "Pending" : "Confirmed");
         _logger.LogInformation("Schedule: {Title} on {StartTime}", schedule.Title, schedule.StartTime);
         _logger.LogInformation("============================");
     }

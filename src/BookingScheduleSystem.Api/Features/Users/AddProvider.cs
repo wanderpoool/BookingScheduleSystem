@@ -163,7 +163,8 @@ public sealed class AddProvider : Endpoint<AddProviderRequest, UserResponse>
             IsProvider = user.IsProvider,
             CreatedAt = user.CreatedAt,
             IsActive = user.IsActive,
-            WorkingHours = user.WorkingHours
+            WorkingHours = user.WorkingHours,
+            AutoAcceptBookings = user.AutoAcceptBookings
         };
     }
 }

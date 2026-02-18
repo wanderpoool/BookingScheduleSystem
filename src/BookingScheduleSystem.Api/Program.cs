@@ -127,6 +127,12 @@ builder.Services.AddSingleton<OtpService>();
 builder.Services.AddSingleton<OtpNotificationService>();
 builder.Services.AddScoped<BookingNotificationService>();
 
+// Register booking action token and email notification services
+builder.Services.Configure<BookingActionTokenOptions>(
+    builder.Configuration.GetSection(BookingActionTokenOptions.SectionName));
+builder.Services.AddSingleton<BookingActionTokenService>();
+builder.Services.AddScoped<BookingEmailNotificationService>();
+
 // Register background jobs
 builder.Services.Configure<BackgroundJobOptions>(
     builder.Configuration.GetSection(BackgroundJobOptions.SectionName));
