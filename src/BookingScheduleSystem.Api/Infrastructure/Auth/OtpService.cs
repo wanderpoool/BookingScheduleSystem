@@ -1,135 +1,164 @@
-using System.Collections.Concurrent;
 using System.Security.Cryptography;
+using Marten;
 
 namespace BookingScheduleSystem.Api.Infrastructure.Auth;
 
 /// <summary>
-/// In-memory OTP service for managing one-time passwords
-/// In production, use Redis or a database for distributed scenarios
+/// Marten-backed OTP service for managing one-time passwords.
+/// Supports multi-instance deployments and survives process restarts.
 /// </summary>
 public class OtpService
 {
-    private readonly ConcurrentDictionary<string, OtpEntry> _otpStore = new();
+    private readonly IDocumentStore _store;
     private readonly ILogger<OtpService> _logger;
     private const int OTP_EXPIRY_MINUTES = 10;
     private const int OTP_LENGTH = 6;
+    private const int RESEND_COOLDOWN_SECONDS = 60;
+    private const int MAX_VERIFY_ATTEMPTS = 5;
 
-    public OtpService(ILogger<OtpService> logger)
+    public OtpService(IDocumentStore store, ILogger<OtpService> logger)
     {
+        _store = store;
         _logger = logger;
     }
 
-    public (string otpCode, DateTime expiresAt) GenerateOtp(string identifier, string purpose)
+    public async Task<(string otpCode, DateTime expiresAt)> GenerateOtpAsync(string identifier, string purpose, CancellationToken ct = default)
     {
-        // Generate 6-digit OTP
-        var otpCode = GenerateNumericCode(OTP_LENGTH);
-        var expiresAt = DateTime.UtcNow.AddMinutes(OTP_EXPIRY_MINUTES);
-
         var key = GetKey(identifier, purpose);
-        var entry = new OtpEntry
+        var now = DateTime.UtcNow;
+
+        await using var session = _store.LightweightSession();
+
+        var existing = await session.LoadAsync<OtpRecord>(key, ct);
+
+        // Enforce cooldown
+        if (existing is not null && existing.SentAt.AddSeconds(RESEND_COOLDOWN_SECONDS) > now)
         {
+            var waitSeconds = (int)(existing.SentAt.AddSeconds(RESEND_COOLDOWN_SECONDS) - now).TotalSeconds;
+            _logger.LogWarning("OTP resend cooldown active for {Identifier}, {WaitSeconds}s remaining",
+                MaskIdentifier(identifier), waitSeconds);
+            throw new InvalidOperationException($"Please wait {waitSeconds} seconds before requesting a new code.");
+        }
+
+        var otpCode = GenerateNumericCode(OTP_LENGTH);
+        var expiresAt = now.AddMinutes(OTP_EXPIRY_MINUTES);
+
+        var record = new OtpRecord
+        {
+            Id = key,
             OtpCode = otpCode,
             ExpiresAt = expiresAt,
+            SentAt = now,
             Attempts = 0,
-            IsVerified = false
+            IsVerified = false,
+            VerificationToken = null
         };
 
-        _otpStore[key] = entry;
+        session.Store(record);
+        await session.SaveChangesAsync(ct);
+
         _logger.LogInformation("Generated OTP for {Identifier} with purpose {Purpose}, expires at {ExpiresAt}",
             MaskIdentifier(identifier), purpose, expiresAt);
-
-        // Clean up expired entries periodically
-        CleanupExpiredEntries();
 
         return (otpCode, expiresAt);
     }
 
-    public (bool isValid, string? verificationToken) VerifyOtp(string identifier, string otpCode, string purpose)
+    public async Task<(bool isValid, string? verificationToken)> VerifyOtpAsync(string identifier, string otpCode, string purpose, CancellationToken ct = default)
     {
         var key = GetKey(identifier, purpose);
 
-        if (!_otpStore.TryGetValue(key, out var entry))
+        await using var session = _store.LightweightSession();
+
+        var record = await session.LoadAsync<OtpRecord>(key, ct);
+
+        if (record is null)
         {
             _logger.LogWarning("OTP verification failed - not found for {Identifier}", MaskIdentifier(identifier));
             return (false, null);
         }
 
         // Check expiry
-        if (DateTime.UtcNow > entry.ExpiresAt)
+        if (DateTime.UtcNow > record.ExpiresAt)
         {
             _logger.LogWarning("OTP expired for {Identifier}", MaskIdentifier(identifier));
-            _otpStore.TryRemove(key, out _);
+            session.Delete(record);
+            await session.SaveChangesAsync(ct);
             return (false, null);
         }
 
-        // Check attempts (max 5)
-        if (entry.Attempts >= 5)
+        // Check attempts
+        record.Attempts++;
+        if (record.Attempts > MAX_VERIFY_ATTEMPTS)
         {
             _logger.LogWarning("Max OTP attempts exceeded for {Identifier}", MaskIdentifier(identifier));
-            _otpStore.TryRemove(key, out _);
+            session.Delete(record);
+            await session.SaveChangesAsync(ct);
             return (false, null);
         }
 
-        entry.Attempts++;
-
         // Verify code
-        if (entry.OtpCode != otpCode)
+        if (record.OtpCode != otpCode)
         {
             _logger.LogWarning("Invalid OTP code for {Identifier}, attempt {Attempts}",
-                MaskIdentifier(identifier), entry.Attempts);
+                MaskIdentifier(identifier), record.Attempts);
+            session.Store(record); // persist updated attempt count
+            await session.SaveChangesAsync(ct);
             return (false, null);
         }
 
         // Mark as verified and generate verification token
-        entry.IsVerified = true;
+        record.IsVerified = true;
         var verificationToken = GenerateVerificationToken();
-        entry.VerificationToken = verificationToken;
+        record.VerificationToken = verificationToken;
+        session.Store(record);
+        await session.SaveChangesAsync(ct);
 
         _logger.LogInformation("OTP verified successfully for {Identifier}", MaskIdentifier(identifier));
         return (true, verificationToken);
     }
 
-    public bool ValidateVerificationToken(string identifier, string verificationToken, string purpose)
+    public async Task<bool> ValidateVerificationTokenAsync(string identifier, string verificationToken, string purpose, CancellationToken ct = default)
     {
         var key = GetKey(identifier, purpose);
 
-        if (!_otpStore.TryGetValue(key, out var entry))
-        {
-            return false;
-        }
+        await using var session = _store.LightweightSession();
 
-        // Token must be verified and match
-        var isValid = entry.IsVerified && entry.VerificationToken == verificationToken &&
-                      DateTime.UtcNow <= entry.ExpiresAt;
+        var record = await session.LoadAsync<OtpRecord>(key, ct);
+
+        if (record is null)
+            return false;
+
+        var isValid = record.IsVerified &&
+                      record.VerificationToken == verificationToken &&
+                      DateTime.UtcNow <= record.ExpiresAt;
 
         if (isValid)
         {
-            // Clean up after successful validation
-            _otpStore.TryRemove(key, out _);
+            session.Delete(record);
+            await session.SaveChangesAsync(ct);
         }
 
         return isValid;
     }
 
-    private string GetKey(string identifier, string purpose) => $"{identifier}:{purpose}";
+    private static string GetKey(string identifier, string purpose) => $"{identifier}:{purpose}";
 
-    private string GenerateNumericCode(int length)
+    private static string GenerateNumericCode(int length)
     {
-        var code = string.Empty;
         using var rng = RandomNumberGenerator.Create();
         var bytes = new byte[4];
+        Span<char> buffer = stackalloc char[length];
 
         for (int i = 0; i < length; i++)
         {
             rng.GetBytes(bytes);
-            var randomNumber = BitConverter.ToUInt32(bytes, 0);
-            code += (randomNumber % 10).ToString();
+            buffer[i] = (char)('0' + BitConverter.ToUInt32(bytes, 0) % 10);
         }
 
-        return code;
+        return new string(buffer);
     }
 
-    private string GenerateVerificationToken()
+    private static string GenerateVerificationToken()
     {
         using var rng = RandomNumberGenerator.Create();
         var bytes = new byte[32];
@@ -137,35 +166,11 @@ public class OtpService
         return Convert.ToBase64String(bytes);
     }
 
-    private string MaskIdentifier(string identifier)
+    private static string MaskIdentifier(string identifier)
     {
         if (string.IsNullOrEmpty(identifier) || identifier.Length < 4)
             return "***";
 
-        // Mask middle characters
-        return identifier.Substring(0, 2) + new string('*', identifier.Length - 4) + identifier.Substring(identifier.Length - 2);
-    }
-
-    private void CleanupExpiredEntries()
-    {
-        var now = DateTime.UtcNow;
-        var expiredKeys = _otpStore
-            .Where(kvp => kvp.Value.ExpiresAt < now)
-            .Select(kvp => kvp.Key)
-            .ToList();
-
-        foreach (var key in expiredKeys)
-        {
-            _otpStore.TryRemove(key, out _);
-        }
-    }
-
-    private class OtpEntry
-    {
-        public required string OtpCode { get; set; }
-        public DateTime ExpiresAt { get; set; }
-        public int Attempts { get; set; }
-        public bool IsVerified { get; set; }
-        public string? VerificationToken { get; set; }
+        return identifier[..2] + new string('*', identifier.Length - 4) + identifier[^2..];
     }
 }

@@ -15,6 +15,7 @@ public sealed class SendOtp : Endpoint<SendOtpRequest, OtpResponse>
     {
         Post("/api/auth/send-otp");
         AllowAnonymous();
+        Options(x => x.RequireRateLimiting("OtpSend"));
         Description(d => d
             .WithTags("Authentication")
             .WithSummary("Send OTP via email or phone")
@@ -77,8 +78,18 @@ public sealed class SendOtp : Endpoint<SendOtpRequest, OtpResponse>
             }
         }
 
-        // Generate OTP
-        var (otpCode, expiresAt) = OtpService.GenerateOtp(identifier, req.Purpose ?? "registration");
+        // Generate OTP (enforces resend cooldown)
+        string otpCode;
+        DateTime expiresAt;
+        try
+        {
+            (otpCode, expiresAt) = await OtpService.GenerateOtpAsync(identifier, req.Purpose ?? "registration", ct);
+        }
+        catch (InvalidOperationException ex)
+        {
+            ThrowError(ex.Message, 429);
+            return;
+        }
 
         // Send OTP via appropriate channel
         bool sent;

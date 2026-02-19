@@ -15,6 +15,7 @@ public sealed class ResetPassword : Endpoint<ResetPasswordRequest>
     {
         Post("/api/auth/reset-password");
         AllowAnonymous();
+        Options(x => x.RequireRateLimiting("Auth"));
         Description(d => d
             .WithTags("Authentication")
             .WithSummary("Reset password using OTP verification token")
@@ -23,9 +24,15 @@ public sealed class ResetPassword : Endpoint<ResetPasswordRequest>
 
     public override async Task HandleAsync(ResetPasswordRequest req, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(req.NewPassword) || req.NewPassword.Length < 6)
+        if (string.IsNullOrWhiteSpace(req.NewPassword) || req.NewPassword.Length < 8)
         {
-            ThrowError("Password must be at least 6 characters");
+            ThrowError("Password must be at least 8 characters");
+            return;
+        }
+
+        if (req.NewPassword.Length > 128)
+        {
+            ThrowError("Password must not exceed 128 characters");
             return;
         }
 
@@ -62,7 +69,7 @@ public sealed class ResetPassword : Endpoint<ResetPasswordRequest>
         }
 
         // Validate OTP verification token
-        var isTokenValid = OtpService.ValidateVerificationToken(identifier, req.OtpVerificationToken, "password-reset");
+        var isTokenValid = await OtpService.ValidateVerificationTokenAsync(identifier, req.OtpVerificationToken, "password-reset", ct);
         if (!isTokenValid)
         {
             ThrowError("Invalid or expired verification token. Please request a new password reset.");

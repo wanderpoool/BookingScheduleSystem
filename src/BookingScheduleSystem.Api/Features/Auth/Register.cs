@@ -18,6 +18,7 @@ public sealed class Register : Endpoint<RegisterUserRequest, AuthenticationRespo
     {
         Post("/api/auth/register");
         AllowAnonymous();
+        Options(x => x.RequireRateLimiting("Auth"));
         Description(d => d
             .WithTags("Authentication")
             .WithSummary("Register a new user")
@@ -26,6 +27,19 @@ public sealed class Register : Endpoint<RegisterUserRequest, AuthenticationRespo
 
     public override async Task HandleAsync(RegisterUserRequest req, CancellationToken ct)
     {
+        // Validate password
+        if (string.IsNullOrWhiteSpace(req.Password) || req.Password.Length < 8)
+        {
+            ThrowError("Password must be at least 8 characters", 400);
+            return;
+        }
+
+        if (req.Password.Length > 128)
+        {
+            ThrowError("Password must not exceed 128 characters", 400);
+            return;
+        }
+
         await using var session = DocumentStore.LightweightSession();
 
         // Determine the identifier (email or phone)

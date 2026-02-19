@@ -84,14 +84,13 @@ public class OtpNotificationService
             await smtpClient.DisconnectAsync(true);
 
             _logger.LogInformation("Email OTP sent via SMTP to {Email}", MaskEmail(email));
-            LogOtpFallback("EMAIL-SMTP", email, otpCode, purpose);
-
             return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to send email OTP via SMTP to {Email}", MaskEmail(email));
-            LogOtpFallback("EMAIL-SMTP", email, otpCode, purpose);
+            if (_isDevelopment)
+                LogOtpFallback("EMAIL-SMTP", email, otpCode, purpose);
             return false;
         }
     }
@@ -129,14 +128,13 @@ public class OtpNotificationService
             var response = await _sesClient.SendEmailAsync(sendRequest);
             _logger.LogInformation("Email OTP sent via SES to {Email}, MessageId: {MessageId}",
                 MaskEmail(email), response.MessageId);
-            LogOtpFallback("EMAIL-SES", email, otpCode, purpose);
-
             return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to send email OTP via SES to {Email}", MaskEmail(email));
-            LogOtpFallback("EMAIL-SES", email, otpCode, purpose);
+            if (_isDevelopment)
+                LogOtpFallback("EMAIL-SES", email, otpCode, purpose);
             return false;
         }
     }
@@ -177,14 +175,13 @@ public class OtpNotificationService
             var response = await _snsClient.PublishAsync(publishRequest);
             _logger.LogInformation("SMS OTP sent to {PhoneNumber}, SNS MessageId: {MessageId}",
                 MaskPhone(phoneNumber), response.MessageId);
-            LogOtpFallback("SMS", phoneNumber, otpCode, purpose);
-
             return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to send SMS OTP to {PhoneNumber}", MaskPhone(phoneNumber));
-            LogOtpFallback("SMS", phoneNumber, otpCode, purpose);
+            if (_isDevelopment)
+                LogOtpFallback("SMS", phoneNumber, otpCode, purpose);
             return false;
         }
     }

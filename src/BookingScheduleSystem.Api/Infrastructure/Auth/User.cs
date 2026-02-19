@@ -19,6 +19,8 @@ public sealed class User
     public bool AutoAcceptBookings { get; set; }
     public DateTime CreatedAt { get; set; }
     public bool IsActive { get; set; }
+    public int FailedLoginAttempts { get; set; }
+    public DateTime? LockedUntil { get; set; }
 
     /// <summary>
     /// Provider working hours (must be within organization operating hours)

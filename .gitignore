@@ -292,5 +292,8 @@ ses-production-access-request.txt
 # Temp test projects
 tmp-test/
 
+# Development settings with secrets (secrets injected via env vars in production)
+**/appsettings.Development.json
+
 # Windows nul artifacts
 nul

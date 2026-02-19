@@ -15,6 +15,7 @@ public sealed class LoginWithOtp : Endpoint<LoginWithOtpRequest, AuthenticationR
     {
         Post("/api/auth/login-otp");
         AllowAnonymous();
+        Options(x => x.RequireRateLimiting("Auth"));
         Description(d => d
             .WithTags("Authentication")
             .WithSummary("Login with OTP verification")
@@ -38,7 +39,7 @@ public sealed class LoginWithOtp : Endpoint<LoginWithOtpRequest, AuthenticationR
         }
 
         // Validate the OTP verification token
-        var isValid = OtpService.ValidateVerificationToken(identifier, req.OtpVerificationToken, "login");
+        var isValid = await OtpService.ValidateVerificationTokenAsync(identifier, req.OtpVerificationToken, "login", ct);
         if (!isValid)
         {
             ThrowError("Invalid or expired OTP verification token", 401);

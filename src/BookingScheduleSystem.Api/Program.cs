@@ -23,6 +23,8 @@ using OpenTelemetry.Extensions.AWS.Trace;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -141,6 +143,9 @@ builder.Services.AddMarten(options =>
 
     // Configure InAppNotification document
     options.Schema.For<InAppNotification>().Identity(n => n.Id);
+
+    // Configure OtpRecord document for distributed OTP storage
+    options.Schema.For<OtpRecord>().Identity(o => o.Id);
 });
 
 // Register multi-tenancy services
@@ -222,6 +227,46 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Configure rate limiting
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // Global: 200 requests per minute per IP
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: ctx.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 200,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            }));
+
+    // Strict policy for OTP send: 5 requests per 10 minutes per IP
+    options.AddPolicy("OtpSend", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(10),
+                QueueLimit = 0
+            }));
+
+    // Auth policy for login/register/verify: 10 requests per minute per IP
+    options.AddPolicy("Auth", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+});
+
 var app = builder.Build();
 
 // Seed Global Admin user (idempotent)
@@ -248,6 +293,9 @@ if (!app.Environment.IsDevelopment() && !string.IsNullOrEmpty(Environment.GetEnv
 }
 
 app.UseCors("AllowBlazorUI");
+
+// Rate limiting — shed load before any auth/DB work
+app.UseRateLimiter();
 
 // Tenant resolution from request header
 app.UseTenantResolution();

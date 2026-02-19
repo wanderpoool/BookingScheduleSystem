@@ -12,6 +12,7 @@ public sealed class VerifyOtp : Endpoint<VerifyOtpRequest, OtpResponse>
     {
         Post("/api/auth/verify-otp");
         AllowAnonymous();
+        Options(x => x.RequireRateLimiting("Auth"));
         Description(d => d
             .WithTags("Authentication")
             .WithSummary("Verify OTP code")
@@ -65,7 +66,7 @@ public sealed class VerifyOtp : Endpoint<VerifyOtpRequest, OtpResponse>
         }
 
         // Verify OTP
-        var (isValid, verificationToken) = OtpService.VerifyOtp(identifier, req.OtpCode, req.Purpose ?? "registration");
+        var (isValid, verificationToken) = await OtpService.VerifyOtpAsync(identifier, req.OtpCode, req.Purpose ?? "registration", ct);
 
         if (!isValid)
         {
@@ -82,7 +83,5 @@ public sealed class VerifyOtp : Endpoint<VerifyOtpRequest, OtpResponse>
             IsVerified = true,
             VerificationToken = verificationToken
         };
-
-        await Task.CompletedTask;
     }
 }
