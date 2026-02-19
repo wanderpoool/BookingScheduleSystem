@@ -28,12 +28,12 @@
 
                         @* Step 1: Select Date *@
                         <MudStep Title="Date" Icon="@Icons.Material.Filled.CalendarToday">
-                            <ChildContent>
                                 <MudStack Spacing="3" Class="mt-4 pa-4">
                                     <MudText Typo="Typo.h6">When would you like to come in?</MudText>
 
                                     <div class="d-flex justify-center">
-                                        <MudDatePicker @bind-Date="_selectedDate"
+                                        <MudDatePicker @key="_operatingHours"
+                                                       @bind-Date="_selectedDate"
                                                        PickerVariant="PickerVariant.Static"
                                                        MinDate="DateTime.Today"
                                                        IsDateDisabledFunc="IsDateDisabled"
@@ -88,12 +88,10 @@
                                         </MudButton>
                                     </MudHidden>
                                 </MudStack>
-                            </ChildContent>
                         </MudStep>
 
                         @* Step 2: Select Time *@
                         <MudStep Title="Time" Icon="@Icons.Material.Filled.Schedule">
-                            <ChildContent>
                                 <MudStack Spacing="3" Class="mt-4 pa-4">
                                     <MudStack Spacing="0">
                                         <MudText Typo="Typo.h6">Pick a time</MudText>
@@ -172,12 +170,10 @@
                                         </MudStack>
                                     </MudHidden>
                                 </MudStack>
-                            </ChildContent>
                         </MudStep>
 
                         @* Step 3: Select Provider *@
                         <MudStep Title="Provider" Icon="@Icons.Material.Filled.Person">
-                            <ChildContent>
                                 <MudStack Spacing="3" Class="mt-4 pa-4">
                                     <MudStack Spacing="0">
                                         <MudText Typo="Typo.h6">Choose a provider</MudText>
@@ -260,12 +256,10 @@
                                         </MudStack>
                                     </MudHidden>
                                 </MudStack>
-                            </ChildContent>
                         </MudStep>
 
                         @* Step 4: Confirm *@
                         <MudStep Title="Confirm" Icon="@Icons.Material.Filled.CheckCircle">
-                            <ChildContent>
                                 <MudStack Spacing="3" Class="mt-4 pa-4">
                                     <MudText Typo="Typo.h6">Confirm your booking</MudText>
 
@@ -322,7 +316,6 @@
                                         Back
                                     </MudButton>
                                 </MudStack>
-                            </ChildContent>
                         </MudStep>
                     </MudStepper>
                 </MudPaper>
@@ -350,7 +343,7 @@
 
     private Guid _tenantId;
     private string _customerName = "Customer";
-    private Dictionary<DayOfWeek, DayScheduleModel>? _operatingHours;
+    private Dictionary<DayOfWeek, DayScheduleModel> _operatingHours = OperatingHoursHelper.GetDefaultHours();
     private List<ScheduleCalendarItem> _allCalendarItems = new();
     private List<ScheduleCalendarItem> _availableTimeSlots = new();
     private List<ProviderOption> _availableProviders = new();
@@ -390,7 +383,6 @@
 
     private bool IsDateDisabled(DateTime date)
     {
-        if (_operatingHours is null) return false;
         return _operatingHours.TryGetValue(date.DayOfWeek, out var day) && !day.IsOpen;
     }
 
