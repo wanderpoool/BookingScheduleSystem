@@ -5,26 +5,51 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
-    @* Design System CSS *@
+
+    @* Self-hosted fonts — no external requests, instant load *@
+    <link rel="stylesheet" href="@Assets["fonts/fonts.css"]" />
+
+    @* Critical CSS — loaded synchronously *@
     <link rel="stylesheet" href="@Assets["design-tokens.css"]" />
     <link rel="stylesheet" href="@Assets["global-styles.css"]" />
     <link rel="stylesheet" href="@Assets["app.css"]" />
-    <link rel="stylesheet" href="@Assets["css/landing.css"]" />
     <link rel="stylesheet" href="@Assets["BookingScheduleSystem.Web.styles.css"]" />
-
-    @* Fonts *@
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet" />
 
     @* MudBlazor *@
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
+
+    @* Landing page CSS — deferred since it's only used on one page *@
+    <link rel="stylesheet" href="@Assets["css/landing.css"]" media="print" onload="this.media='all'" />
+
     <ImportMap />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <HeadOutlet @rendermode="InteractiveServer" />
 </head>
 
 <body>
+    @* Inline loading placeholder — paints immediately while SignalR circuit connects.
+       Blazor replaces this content once the interactive circuit is ready. *@
+    <div id="app-loading" style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#FFF8F0;font-family:'DM Sans',system-ui,sans-serif;">
+        <div style="text-align:center;">
+            <div style="width:40px;height:40px;border:3px solid #E8DFD5;border-top-color:#E85D2A;border-radius:50%;margin:0 auto 16px;animation:app-spin 0.8s linear infinite;"></div>
+            <div style="color:#5A6B80;font-size:14px;">Loading...</div>
+        </div>
+    </div>
+    <style>@@keyframes app-spin{to{transform:rotate(360deg)}}</style>
     <Routes />
+    <script>
+        // Remove loading placeholder once Blazor renders
+        document.addEventListener('DOMContentLoaded', function() {
+            var observer = new MutationObserver(function() {
+                var appEl = document.getElementById('app-loading');
+                if (appEl && document.querySelector('.mud-layout')) {
+                    appEl.remove();
+                    observer.disconnect();
+                }
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+        });
+    </script>
     <div id="components-reconnect-modal" style="display:none;"></div>
     <script src="_framework/blazor.web.js" autostart="false"></script>
     <script>
