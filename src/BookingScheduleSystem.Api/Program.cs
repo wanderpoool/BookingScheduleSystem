@@ -227,6 +227,14 @@ var app = builder.Build();
 // Seed Global Admin user (idempotent)
 await GlobalAdminSeeder.SeedAsync(app.Services);
 
+// Warm up Marten schema — apply all pending migrations before accepting traffic
+// to avoid TimedLock contention when concurrent requests hit on cold start
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    var store = scope.ServiceProvider.GetRequiredService<IDocumentStore>();
+    await store.Storage.ApplyAllConfiguredChangesToDatabaseAsync();
+}
+
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {

@@ -161,8 +161,8 @@ public sealed class BookingEmailNotificationService
                 {notesSection}
             </table>
             <div style=""text-align: center; margin: 30px 0;"">
-                <a href=""{approveUrl}"" style=""display: inline-block; background-color: #16a34a; color: white; padding: 14px 32px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-right: 12px;"">Accept Booking</a>
-                <a href=""{rejectUrl}"" style=""display: inline-block; background-color: #dc2626; color: white; padding: 14px 32px; text-decoration: none; border-radius: 6px; font-weight: bold;"">Decline Booking</a>
+                <a href=""{approveUrl}"" style=""display: block; background-color: #16a34a; color: white; padding: 14px 32px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 0 auto 12px auto; max-width: 220px;"">Accept Booking</a>
+                <a href=""{rejectUrl}"" style=""display: block; background-color: #dc2626; color: white; padding: 14px 32px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 0 auto; max-width: 220px;"">Decline Booking</a>
             </div>
             <p style=""color: #9ca3af; font-size: 13px; text-align: center;"">These links expire in 3 hours. After expiration, use the app to manage this booking.</p>
             <p style=""margin-top: 20px;"">Best regards,<br>BookMeApp Team</p>

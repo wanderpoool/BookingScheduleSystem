@@ -272,3 +272,25 @@ FakesAssemblies/
 GeneratedArtifacts/
 _Pvt_Extensions/
 ModelManifest.xml
+
+# Claude Code settings & agent memory
+.claude/settings.local.json
+**/.claude/settings.local.json
+**/.claude/agent-memory/
+
+# Agent prompt files
+agent/*.txt
+
+# Local plans, infra notes, mock-ups
+infra/*.md
+plans/*.md
+mock-ups/
+
+# SES request
+ses-production-access-request.txt
+
+# Temp test projects
+tmp-test/
+
+# Windows nul artifacts
+nul

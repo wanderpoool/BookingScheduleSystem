@@ -140,6 +140,12 @@ public sealed class BookingAction : Endpoint<BookingActionRequest>
 </head>
 <body style=""font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f3f4f6;"">
     <div style=""max-width: 500px; margin: 60px auto; padding: 20px;"">
+        <div style=""text-align: center; margin-bottom: 24px;"">
+            <div style=""display: inline-flex; align-items: center; gap: 8px;"">
+                <div style=""width: 38px; height: 38px; background: #E85D2A; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 18px; font-family: Georgia, serif;"">B</div>
+                <span style=""font-family: Georgia, serif; font-weight: 700; font-size: 20px; color: #333;"">Book Me App!</span>
+            </div>
+        </div>
         <div style=""background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden;"">
             <div style=""background-color: {color}; color: white; padding: 24px; text-align: center;"">
                 <h1 style=""margin: 0; font-size: 22px;"">{System.Net.WebUtility.HtmlEncode(title)}</h1>
