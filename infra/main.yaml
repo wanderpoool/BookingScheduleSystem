@@ -577,22 +577,19 @@ Resources:
               - !Ref 'AWS::NoValue'
           Secrets:
             - Name: ConnectionStrings__PostgreSQL
-              ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/db-connection-string'
+              ValueFrom: 'arn:aws:secretsmanager:ap-southeast-1:454371013705:secret:bookmeapp/production/db-connection-string-vhi4ol'
             - Name: Jwt__SecretKey
-              ValueFrom: !Ref JwtSecretKey
+              ValueFrom: 'arn:aws:secretsmanager:ap-southeast-1:454371013705:secret:bookmeapp/production/jwt-secret-wDRjHh'
             - Name: BookingActionToken__SecretKey
-              ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/bookingactiontoken'
+              ValueFrom: 'arn:aws:secretsmanager:ap-southeast-1:454371013705:secret:bookmeapp/production/bookingactiontoken-1aNWzS'
             - Name: SmtpEmail__Username
-              ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-username'
+              ValueFrom: 'arn:aws:secretsmanager:ap-southeast-1:454371013705:secret:bookmeapp/production/smtp-username-vLcVu7'
             - Name: SmtpEmail__Password
-              ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-password'
+              ValueFrom: 'arn:aws:secretsmanager:ap-southeast-1:454371013705:secret:bookmeapp/production/smtp-password-0F0Lnv'
             - Name: Semaphore__ApiKey
-              ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/semaphore-api-key'
-            - !If
-              - HasGlobalAdmin
-              - Name: Seed__GlobalAdmin__Password
-                ValueFrom: !Ref GlobalAdminPasswordSecret
-              - !Ref 'AWS::NoValue'
+              ValueFrom: 'arn:aws:secretsmanager:ap-southeast-1:454371013705:secret:bookmeapp/production/semaphore-api-key-n28tkY'
+            - Name: Seed__GlobalAdmin__Password
+              ValueFrom: 'arn:aws:secretsmanager:ap-southeast-1:454371013705:secret:bookmeapp/production/global-admin-password-3kKlS8'
           LogConfiguration:
             LogDriver: awslogs
             Options:
