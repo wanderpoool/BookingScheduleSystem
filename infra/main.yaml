@@ -567,7 +567,7 @@ Resources:
             - Name: AwsNotification__AwsRegion
               Value: !Ref 'AWS::Region'
             - Name: BookingActionToken__SecretKey
-              Value: !Sub '{{resolve:secretsmanager:${AppName}/${Environment}/bookingactiontoken:SecretString:BookingActionToken__SecretKey}}'
+              Value: !Sub '{{resolve:secretsmanager:${AppName}/${Environment}/bookingactiontoken:SecretString}}'
             - Name: BookingActionToken__ExpirationHours
               Value: '3'
             - Name: Semaphore__SenderName
