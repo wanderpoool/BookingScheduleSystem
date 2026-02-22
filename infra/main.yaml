@@ -367,7 +367,7 @@ Resources:
                   - !Ref JwtSecretKey
                   - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/bookingactiontoken-*'
                   - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-credentials-*'
-                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/Semaphore__ApiKey-*'
+                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/semaphore-api-key-*'
                   - !If
                     - HasGlobalAdmin
                     - !Ref GlobalAdminPasswordSecret
@@ -572,7 +572,7 @@ Resources:
             - Name: BookingActionToken__ExpirationHours
               Value: '3'
             - Name: Semaphore__ApiKey
-              Value: !Sub '{{resolve:secretsmanager:${AppName}/${Environment}/Semaphore__ApiKey:SecretString:Semaphore__ApiKey}}'
+              Value: !Sub '{{resolve:secretsmanager:${AppName}/${Environment}/semaphore-api-key:SecretString}}'
             - Name: Semaphore__SenderName
               Value: BookMeApp
             - Name: Semaphore__BaseUrl
