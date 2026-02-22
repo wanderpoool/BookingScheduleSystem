@@ -138,4 +138,27 @@ public class AdminSubscriptionService : IAdminSubscriptionService
             throw new HttpRequestException("Unable to reactivate subscription. Please try again.", ex);
         }
     }
+
+    public async Task<bool> SeedDefaultPlansAsync()
+    {
+        try
+        {
+            var response = await _httpClient.PostAsync("/api/subscription-plans/seed-defaults", null);
+            if (response.IsSuccessStatusCode)
+            {
+                return true;
+            }
+
+            var body = await response.Content.ReadAsStringAsync();
+            _logger.LogWarning("Failed to seed default plans: {StatusCode} {Body}", response.StatusCode, body);
+            var message = ApiErrorHelper.ExtractMessage(body) ?? "Failed to seed default plans.";
+            throw new HttpRequestException(message, null, response.StatusCode);
+        }
+        catch (HttpRequestException) { throw; }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error seeding default plans");
+            throw new HttpRequestException("Unable to seed default plans. Please try again.", ex);
+        }
+    }
 }

@@ -14,4 +14,5 @@ public interface IAdminSubscriptionService
     Task<TenantSubscriptionResponse?> AdminChangePlanAsync(AdminChangePlanRequest request);
     Task<TenantSubscriptionResponse?> AdminSuspendAsync(AdminSuspendSubscriptionRequest request);
     Task<TenantSubscriptionResponse?> AdminReactivateAsync(AdminReactivateSubscriptionRequest request);
+    Task<bool> SeedDefaultPlansAsync();
 }

@@ -35,6 +35,30 @@
         }
     </MudStack>
 
+    @if (_availablePlans.Count == 0 && !_loading)
+    {
+        <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Class="mb-4">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width: 100%;">
+                <MudText>No subscription plans found. Seed the default plans to enable plan management.</MudText>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           OnClick="SeedDefaultPlansAsync"
+                           Disabled="_isSeeding"
+                           StartIcon="@Icons.Material.Filled.Add"
+                           Size="Size.Small">
+                    @if (_isSeeding)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-1" />
+                        <text>Seeding...</text>
+                    }
+                    else
+                    {
+                        <text>Seed Default Plans</text>
+                    }
+                </MudButton>
+            </MudStack>
+        </MudAlert>
+    }
+
     @if (_loading)
     {
         <MudStack Spacing="2">
@@ -199,6 +223,7 @@
     private List<SubscriptionPlanResponse> _availablePlans = new();
     private SubscriptionStatusDto? _selectedStatus;
     private bool _loading = true;
+    private bool _isSeeding;
     private string? _errorMessage;
     private int _currentPage = 1;
     private int _totalPages = 1;
@@ -252,15 +277,37 @@
         try
         {
             _availablePlans = await AdminSubscriptionService.ListAllPlansAsync() ?? new();
-            if (_availablePlans.Count == 0)
-            {
-                Snackbar.Add("No subscription plans found. Have you seeded the default plans?", Severity.Warning);
-            }
         }
         catch (Exception ex)
         {
             _availablePlans = new();
             Snackbar.Add($"Failed to load subscription plans: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task SeedDefaultPlansAsync()
+    {
+        _isSeeding = true;
+        StateHasChanged();
+
+        try
+        {
+            await AdminSubscriptionService.SeedDefaultPlansAsync();
+            Snackbar.Add("Default plans seeded successfully!", Severity.Success);
+            await LoadPlansAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch
+        {
+            Snackbar.Add("Failed to seed default plans.", Severity.Error);
+        }
+        finally
+        {
+            _isSeeding = false;
+            StateHasChanged();
         }
     }
 
