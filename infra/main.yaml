@@ -366,7 +366,6 @@ Resources:
                   - !Ref DbPasswordSecret
                   - !Ref JwtSecretKey
                   - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/bookingactiontoken-*'
-                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-credentials-*'
                   - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-username-*'
                   - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-password-*'
                   - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/semaphore-api-key-*'
@@ -567,8 +566,7 @@ Resources:
               Value: !Ref SenderEmail
             - Name: AwsNotification__AwsRegion
               Value: !Ref 'AWS::Region'
-            - Name: BookingActionToken__SecretKey
-              Value: !Sub '{{resolve:secretsmanager:${AppName}/${Environment}/bookingactiontoken:SecretString}}'
+            # BookingActionToken__SecretKey moved to Secrets section below
             - Name: BookingActionToken__ExpirationHours
               Value: '3'
             - Name: Semaphore__SenderName
@@ -590,6 +588,8 @@ Resources:
               ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-username'
             - Name: SmtpEmail__Password
               ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-password'
+            - Name: BookingActionToken__SecretKey
+              ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/bookingactiontoken'
             - Name: Semaphore__ApiKey
               ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/semaphore-api-key'
             - !If
