@@ -25,15 +25,12 @@ public sealed class AdminChangePlan : Endpoint<AdminChangePlanRequest, TenantSub
     {
         await using var session = DocumentStore.LightweightSession();
 
-        var subscription = await session.Query<TenantSubscription>()
-            .FirstOrDefaultAsync(s => s.TenantId == req.TenantId
-                && (s.Status == SubscriptionStatus.Active
-                    || s.Status == SubscriptionStatus.PastDue
-                    || s.Status == SubscriptionStatus.Suspended), token: ct);
+        var tenant = await session.Query<Tenant>()
+            .FirstOrDefaultAsync(t => t.Id == req.TenantId, token: ct);
 
-        if (subscription is null)
+        if (tenant is null)
         {
-            ThrowError("No active subscription found for this tenant", 404);
+            ThrowError("Tenant not found", 404);
         }
 
         var newPlan = await session.LoadAsync<SubscriptionPlan>(req.NewPlanId, ct);
@@ -47,37 +44,74 @@ public sealed class AdminChangePlan : Endpoint<AdminChangePlanRequest, TenantSub
             ThrowError("Subscription plan is not available", 400);
         }
 
-        if (subscription.PlanId == req.NewPlanId)
-        {
-            ThrowError("Tenant is already on this plan", 400);
-        }
-
         var now = DateTime.UtcNow;
-        var newBillingCycle = req.NewBillingCycle ?? (subscription.BillingCycle == BillingCycle.Monthly
-            ? BillingCycleDto.Monthly
-            : BillingCycleDto.Yearly);
-
-        subscription.PlanId = req.NewPlanId;
-        subscription.BillingCycle = newBillingCycle == BillingCycleDto.Monthly
+        var newBillingCycle = req.NewBillingCycle ?? BillingCycleDto.Monthly;
+        var billingCycle = newBillingCycle == BillingCycleDto.Monthly
             ? BillingCycle.Monthly
             : BillingCycle.Yearly;
-        subscription.UpdatedAt = now;
-        subscription.EndDate = newBillingCycle == BillingCycleDto.Monthly
+        var endDate = newBillingCycle == BillingCycleDto.Monthly
             ? now.AddMonths(1)
             : now.AddYears(1);
-        subscription.UsageResetDate = subscription.EndDate.Value;
 
-        session.Update(subscription);
+        var subscription = await session.Query<TenantSubscription>()
+            .FirstOrDefaultAsync(s => s.TenantId == req.TenantId
+                && (s.Status == SubscriptionStatus.Active
+                    || s.Status == SubscriptionStatus.PastDue
+                    || s.Status == SubscriptionStatus.Suspended), token: ct);
+
+        if (subscription is not null)
+        {
+            // Update existing subscription
+            if (subscription.PlanId == req.NewPlanId)
+            {
+                ThrowError("Tenant is already on this plan", 400);
+            }
+
+            subscription.PlanId = req.NewPlanId;
+            subscription.BillingCycle = billingCycle;
+            subscription.Status = SubscriptionStatus.Active;
+            subscription.UpdatedAt = now;
+            subscription.EndDate = endDate;
+            subscription.UsageResetDate = endDate;
+
+            session.Update(subscription);
+        }
+        else
+        {
+            // Trial tenant or no subscription — create a new one
+            subscription = new TenantSubscription
+            {
+                Id = TenantSubscriptionId.New(),
+                TenantId = req.TenantId,
+                PlanId = req.NewPlanId,
+                Status = SubscriptionStatus.Active,
+                BillingCycle = billingCycle,
+                StartDate = now,
+                EndDate = endDate,
+                TrialEndDate = tenant.IsInTrial ? tenant.TrialEndDate : null,
+                IsTrialConverted = tenant.IsInTrial,
+                CreatedAt = now,
+                CurrentUsage = new UsageStats(),
+                UsageResetDate = endDate
+            };
+
+            session.Store(subscription);
+
+            // End trial if applicable
+            if (tenant.IsInTrial)
+            {
+                tenant.IsInTrial = false;
+                session.Update(tenant);
+            }
+        }
+
         await session.SaveChangesAsync(ct);
-
-        var tenant = await session.Query<Tenant>()
-            .FirstOrDefaultAsync(t => t.Id == req.TenantId, token: ct);
 
         Logger.LogInformation(
             "GlobalAdmin changed plan for tenant {TenantId} to {NewPlanId}. Reason: {Reason}",
             req.TenantId, req.NewPlanId, req.Reason ?? "N/A");
 
-        Response = MapToResponse(subscription, newPlan, tenant?.Name);
+        Response = MapToResponse(subscription, newPlan, tenant.Name);
     }
 
     private static TenantSubscriptionResponse MapToResponse(
