@@ -538,8 +538,6 @@ Resources:
               Value: !Ref JwtIssuer
             - Name: Jwt__Audience
               Value: !Ref JwtAudience
-            - Name: Jwt__SecretKey
-              Value: !Sub '{{resolve:secretsmanager:${JwtSecretKey}:SecretString}}'
             - Name: Cors__AllowedOrigins
               Value: !If
                 - HasDomain
@@ -557,22 +555,14 @@ Resources:
               Value: !Ref SenderEmail
             - Name: SmtpEmail__SenderName
               Value: BookMeApp
-            - Name: SmtpEmail__Username
-              Value: !Sub '{{resolve:secretsmanager:${AppName}/${Environment}/smtp-credentials:SecretString:Username}}'
-            - Name: SmtpEmail__Password
-              Value: !Sub '{{resolve:secretsmanager:${AppName}/${Environment}/smtp-credentials:SecretString:Password}}'
             - Name: OpenTelemetry__ExporterEndpoint
               Value: !Sub 'https://xray.${AWS::Region}.amazonaws.com/v1/traces'
             - Name: AwsNotification__SenderEmail
               Value: !Ref SenderEmail
             - Name: AwsNotification__AwsRegion
               Value: !Ref 'AWS::Region'
-            - Name: BookingActionToken__SecretKey
-              Value: !Sub '{{resolve:secretsmanager:${AppName}/${Environment}/bookingactiontoken:SecretString}}'
             - Name: BookingActionToken__ExpirationHours
               Value: '3'
-            - Name: Semaphore__ApiKey
-              Value: !Sub '{{resolve:secretsmanager:${AppName}/${Environment}/semaphore-api-key:SecretString}}'
             - Name: Semaphore__SenderName
               Value: BookMeApp
             - Name: Semaphore__BaseUrl
@@ -588,6 +578,16 @@ Resources:
                 Value: !Ref GlobalAdminEmail
               - !Ref 'AWS::NoValue'
           Secrets:
+            - Name: Jwt__SecretKey
+              ValueFrom: !Ref JwtSecretKey
+            - Name: BookingActionToken__SecretKey
+              ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/bookingactiontoken'
+            - Name: SmtpEmail__Username
+              ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-credentials:Username::'
+            - Name: SmtpEmail__Password
+              ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-credentials:Password::'
+            - Name: Semaphore__ApiKey
+              ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/semaphore-api-key'
             - !If
               - HasGlobalAdmin
               - Name: Seed__GlobalAdmin__Password
