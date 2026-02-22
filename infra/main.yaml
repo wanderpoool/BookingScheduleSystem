@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   BookMeApp Infrastructure - Cost-optimized deployment using ECS Fargate Spot,
-  RDS PostgreSQL (t4g.micro), ALB, SNS, SES, and Secrets Manager.
+  RDS PostgreSQL (t4g.micro), ALB, SES, Semaphore SMS, and Secrets Manager.
 
 # =============================================================================
 # PARAMETERS
@@ -367,6 +367,7 @@ Resources:
                   - !Ref JwtSecretKey
                   - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/bookingactiontoken-*'
                   - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-credentials-*'
+                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/Semaphore__ApiKey-*'
                   - !If
                     - HasGlobalAdmin
                     - !Ref GlobalAdminPasswordSecret
@@ -564,14 +565,18 @@ Resources:
               Value: !Sub 'https://xray.${AWS::Region}.amazonaws.com/v1/traces'
             - Name: AwsNotification__SenderEmail
               Value: !Ref SenderEmail
-            - Name: AwsNotification__SmsSenderId
-              Value: BookMeApp
             - Name: AwsNotification__AwsRegion
               Value: !Ref 'AWS::Region'
             - Name: BookingActionToken__SecretKey
               Value: !Sub '{{resolve:secretsmanager:${AppName}/${Environment}/bookingactiontoken:SecretString:BookingActionToken__SecretKey}}'
             - Name: BookingActionToken__ExpirationHours
               Value: '3'
+            - Name: Semaphore__ApiKey
+              Value: !Sub '{{resolve:secretsmanager:${AppName}/${Environment}/Semaphore__ApiKey:SecretString}}'
+            - Name: Semaphore__SenderName
+              Value: BookMeApp
+            - Name: Semaphore__BaseUrl
+              Value: 'https://api.semaphore.co/api/v4'
             - Name: App__BaseUrl
               Value: !If
                 - HasDomain
