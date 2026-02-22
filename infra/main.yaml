@@ -365,6 +365,7 @@ Resources:
                 Resource:
                   - !Ref DbPasswordSecret
                   - !Ref JwtSecretKey
+                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/db-connection-string-*'
                   - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/bookingactiontoken-*'
                   - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-username-*'
                   - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-password-*'
@@ -530,11 +531,7 @@ Resources:
               Value: Production
             - Name: ASPNETCORE_URLS
               Value: 'http://+:8080'
-            - Name: ConnectionStrings__PostgreSQL
-              Value: !Sub
-                - 'Host=${DbHost};Database=${DbName};Username=${DbUsername};Password=${DbPassword}'
-                - DbHost: !GetAtt PostgresInstance.Endpoint.Address
-                  DbPassword: !Sub '{{resolve:secretsmanager:${DbPasswordSecret}:SecretString}}'
+            # ConnectionStrings__PostgreSQL is now in Secrets section below
             - Name: Jwt__Issuer
               Value: !Ref JwtIssuer
             - Name: Jwt__Audience
@@ -579,6 +576,8 @@ Resources:
                 Value: !Ref GlobalAdminEmail
               - !Ref 'AWS::NoValue'
           Secrets:
+            - Name: ConnectionStrings__PostgreSQL
+              ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/db-connection-string'
             - Name: Jwt__SecretKey
               ValueFrom: !Ref JwtSecretKey
             - Name: BookingActionToken__SecretKey
