@@ -572,7 +572,7 @@ Resources:
             - Name: BookingActionToken__ExpirationHours
               Value: '3'
             - Name: Semaphore__ApiKey
-              Value: !Sub '{{resolve:secretsmanager:${AppName}/${Environment}/Semaphore__ApiKey:SecretString}}'
+              Value: !Sub '{{resolve:secretsmanager:${AppName}/${Environment}/Semaphore__ApiKey:SecretString:Semaphore__ApiKey}}'
             - Name: Semaphore__SenderName
               Value: BookMeApp
             - Name: Semaphore__BaseUrl
