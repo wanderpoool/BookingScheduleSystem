@@ -272,6 +272,9 @@ var app = builder.Build();
 // Seed Global Admin user (idempotent)
 await GlobalAdminSeeder.SeedAsync(app.Services);
 
+// Seed default subscription plans (idempotent)
+await SubscriptionPlanSeeder.SeedAsync(app.Services);
+
 // Warm up Marten schema — apply all pending migrations before accepting traffic
 // to avoid TimedLock contention when concurrent requests hit on cold start
 await using (var scope = app.Services.CreateAsyncScope())

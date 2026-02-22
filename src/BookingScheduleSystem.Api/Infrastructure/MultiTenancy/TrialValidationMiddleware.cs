@@ -15,6 +15,7 @@ public sealed class TrialValidationMiddleware
     {
         "/api/billing",
         "/api/subscriptions",
+        "/api/subscription-plans",
         "/api/auth/login",
         "/api/auth/register",
         "/api/tenants" // Allow viewing tenant info to see trial status
