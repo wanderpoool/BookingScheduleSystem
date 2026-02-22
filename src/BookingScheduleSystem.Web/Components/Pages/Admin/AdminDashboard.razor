@@ -1,0 +1,233 @@
+@page "/admin/dashboard"
+@page "/{Slug}/admin/dashboard"
+@attribute [Authorize]
+@using BookingScheduleSystem.Contracts.Analytics
+@using BookingScheduleSystem.Contracts.Common
+@using BookingScheduleSystem.Web.Services
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "GlobalAdmin")]
+@inject IAdminDashboardService AdminDashboardService
+
+<PageTitle>Admin Dashboard</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="py-4">
+    <MudText Typo="Typo.h5" Class="mb-4">Platform Dashboard</MudText>
+
+    @if (_loading)
+    {
+        <MudGrid Spacing="3" Class="mb-4">
+            @for (var i = 0; i < 4; i++)
+            {
+                <MudItem xs="6" sm="3">
+                    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="100px" />
+                </MudItem>
+            }
+        </MudGrid>
+        <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="48px" Class="mb-3" />
+        <MudStack Spacing="2">
+            @for (var i = 0; i < 5; i++)
+            {
+                <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="52px" />
+            }
+        </MudStack>
+    }
+    else if (_errorMessage is not null)
+    {
+        <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Class="mb-4">
+            @_errorMessage
+        </MudAlert>
+        <MudButton Variant="Variant.Outlined" OnClick="LoadDataAsync"
+                   StartIcon="@Icons.Material.Filled.Refresh">
+            Retry
+        </MudButton>
+    }
+    else if (_summary is not null)
+    {
+        @* Stat Cards *@
+        <MudGrid Spacing="3" Class="mb-4">
+            <MudItem xs="6" sm="3">
+                <MudPaper Class="pa-4" Elevation="1">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Total Tenants</MudText>
+                    <MudText Typo="Typo.h4">@_summary.TotalTenants</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        @_summary.ActiveTenants active · @_summary.TrialTenants trial
+                    </MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="6" sm="3">
+                <MudPaper Class="pa-4" Elevation="1">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Total Customers</MudText>
+                    <MudText Typo="Typo.h4">@_summary.TotalCustomers</MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="6" sm="3">
+                <MudPaper Class="pa-4" Elevation="1">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Total Providers</MudText>
+                    <MudText Typo="Typo.h4">@_summary.TotalProviders</MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="6" sm="3">
+                <MudPaper Class="pa-4" Elevation="1">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Total Bookings</MudText>
+                    <MudText Typo="Typo.h4">@_summary.TotalBookings</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        @_summary.BookingsToday today · @_summary.BookingsThisMonth this month
+                    </MudText>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        @* Tenant Filter *@
+        <MudSelect T="TenantId?" Label="Filter by Tenant" Value="_selectedTenantId" ValueChanged="OnTenantFilterChanged"
+                   Variant="Variant.Outlined" Dense="true" Class="mb-4" Clearable="true"
+                   Style="max-width: 400px;">
+            @foreach (var tenant in _summary.TenantStats)
+            {
+                <MudSelectItem T="TenantId?" Value="@tenant.TenantId">@tenant.TenantName</MudSelectItem>
+            }
+        </MudSelect>
+
+        @* Desktop Table *@
+        <MudHidden Breakpoint="Breakpoint.Xs">
+            <MudTable Items="_filteredStats" Hover="true" Striped="true" Dense="true">
+                <HeaderContent>
+                    <MudTh>Tenant</MudTh>
+                    <MudTh>Customers</MudTh>
+                    <MudTh>Providers</MudTh>
+                    <MudTh>Bookings</MudTh>
+                    <MudTh>Status</MudTh>
+                </HeaderContent>
+                <RowTemplate Context="stat">
+                    <MudTd DataLabel="Tenant">@stat.TenantName</MudTd>
+                    <MudTd DataLabel="Customers">@stat.CustomerCount</MudTd>
+                    <MudTd DataLabel="Providers">@stat.ProviderCount</MudTd>
+                    <MudTd DataLabel="Bookings">@stat.BookingCount</MudTd>
+                    <MudTd DataLabel="Status">
+                        @if (stat.IsInTrial)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Filled">Trial</MudChip>
+                        }
+                        else if (stat.IsActive)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Filled">Active</MudChip>
+                        }
+                        else
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Default" Variant="Variant.Filled">Inactive</MudChip>
+                        }
+                    </MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText Typo="Typo.body1" Align="Align.Center" Class="py-6">
+                        No tenants found.
+                    </MudText>
+                </NoRecordsContent>
+            </MudTable>
+        </MudHidden>
+
+        @* Mobile Card List *@
+        <MudHidden Breakpoint="Breakpoint.SmAndUp">
+            <MudStack Spacing="2">
+                @if (!_filteredStats.Any())
+                {
+                    <MudText Typo="Typo.body1" Align="Align.Center" Class="py-6">
+                        No tenants found.
+                    </MudText>
+                }
+                @foreach (var stat in _filteredStats)
+                {
+                    <MudCard Elevation="1">
+                        <MudCardContent>
+                            <MudStack Spacing="1">
+                                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                    <MudText Typo="Typo.subtitle1" Style="font-weight: 600;">
+                                        @stat.TenantName
+                                    </MudText>
+                                    @if (stat.IsInTrial)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Filled">Trial</MudChip>
+                                    }
+                                    else if (stat.IsActive)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Filled">Active</MudChip>
+                                    }
+                                    else
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Default" Variant="Variant.Filled">Inactive</MudChip>
+                                    }
+                                </MudStack>
+                                <MudStack Row="true" Spacing="4">
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                        @stat.CustomerCount customers
+                                    </MudText>
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                        @stat.ProviderCount providers
+                                    </MudText>
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                        @stat.BookingCount bookings
+                                    </MudText>
+                                </MudStack>
+                            </MudStack>
+                        </MudCardContent>
+                    </MudCard>
+                }
+            </MudStack>
+        </MudHidden>
+    }
+</MudContainer>
+
+@code {
+    [Parameter] public string? Slug { get; set; }
+
+    private PlatformSummaryResponse? _summary;
+    private List<TenantStatsDto> _filteredStats = new();
+    private TenantId? _selectedTenantId;
+    private bool _loading = true;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        _loading = true;
+        _errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            _summary = await AdminDashboardService.GetPlatformSummaryAsync();
+            ApplyFilter();
+        }
+        catch (HttpRequestException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void OnTenantFilterChanged(TenantId? tenantId)
+    {
+        _selectedTenantId = tenantId;
+        ApplyFilter();
+    }
+
+    private void ApplyFilter()
+    {
+        if (_summary is null)
+        {
+            _filteredStats = new();
+            return;
+        }
+
+        _filteredStats = _selectedTenantId.HasValue
+            ? _summary.TenantStats.Where(s => s.TenantId == _selectedTenantId.Value).ToList()
+            : _summary.TenantStats;
+    }
+}
