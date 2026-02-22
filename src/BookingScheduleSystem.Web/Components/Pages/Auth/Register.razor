@@ -413,24 +413,24 @@
 
     private async Task SendOtpForVerification()
     {
+        // Validate contact method before setting loading state
+        if (_registerModel.ContactMethod == "email" && string.IsNullOrWhiteSpace(_registerModel.Email))
+        {
+            Snackbar.Add("Please enter your email address", Severity.Warning);
+            return;
+        }
+
+        if (_registerModel.ContactMethod == "phone" && string.IsNullOrWhiteSpace(_registerModel.PhoneNumber))
+        {
+            Snackbar.Add("Please enter your phone number", Severity.Warning);
+            return;
+        }
+
         _isLoading = true;
+        StateHasChanged();
 
         try
         {
-            // Validate contact method
-            if (_registerModel.ContactMethod == "email" && string.IsNullOrWhiteSpace(_registerModel.Email))
-            {
-                Snackbar.Add("Please enter your email address", Severity.Warning);
-                _isLoading = false;
-                return;
-            }
-
-            if (_registerModel.ContactMethod == "phone" && string.IsNullOrWhiteSpace(_registerModel.PhoneNumber))
-            {
-                Snackbar.Add("Please enter your phone number", Severity.Warning);
-                _isLoading = false;
-                return;
-            }
 
             var request = new SendOtpRequest
             {
@@ -461,12 +461,14 @@
         finally
         {
             _isLoading = false;
+            StateHasChanged();
         }
     }
 
     private async Task VerifyOtpCode()
     {
         _isLoading = true;
+        StateHasChanged();
 
         try
         {
@@ -499,6 +501,7 @@
         finally
         {
             _isLoading = false;
+            StateHasChanged();
         }
     }
 
@@ -517,6 +520,7 @@
         }
 
         _isLoading = true;
+        StateHasChanged();
 
         try
         {
@@ -555,6 +559,7 @@
         finally
         {
             _isLoading = false;
+            StateHasChanged();
         }
     }
 

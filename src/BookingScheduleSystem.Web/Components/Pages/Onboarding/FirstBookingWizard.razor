@@ -425,6 +425,7 @@
         finally
         {
             _isLoadingSchedules = false;
+            StateHasChanged();
         }
     }
 
@@ -585,6 +586,7 @@
         finally
         {
             _isBooking = false;
+            StateHasChanged();
         }
     }
 

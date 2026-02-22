@@ -482,6 +482,7 @@
         }
 
         _isLoading = true;
+        StateHasChanged();
 
         try
         {
@@ -537,6 +538,7 @@
         finally
         {
             _isLoading = false;
+            StateHasChanged();
         }
     }
 }

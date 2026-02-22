@@ -414,6 +414,7 @@
         }
 
         _isLoading = true;
+        StateHasChanged();
 
         try
         {
@@ -439,6 +440,7 @@
         finally
         {
             _isLoading = false;
+            StateHasChanged();
         }
     }
 
@@ -452,6 +454,7 @@
         }
 
         _isLoading = true;
+        StateHasChanged();
 
         try
         {
@@ -486,12 +489,14 @@
         finally
         {
             _isLoading = false;
+            StateHasChanged();
         }
     }
 
     private async Task VerifyLoginOtp()
     {
         _isLoading = true;
+        StateHasChanged();
 
         try
         {
@@ -535,6 +540,7 @@
         finally
         {
             _isLoading = false;
+            StateHasChanged();
         }
     }
 
