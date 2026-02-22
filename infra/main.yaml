@@ -558,9 +558,9 @@ Resources:
             - Name: SmtpEmail__SenderName
               Value: BookMeApp
             - Name: SmtpEmail__Username
-              Value: !Sub '{{resolve:secretsmanager:${AppName}/${Environment}/smtp-credentials:SecretString:SmtpEmail__Username}}'
+              Value: !Sub '{{resolve:secretsmanager:${AppName}/${Environment}/smtp-credentials:SecretString:Username}}'
             - Name: SmtpEmail__Password
-              Value: !Sub '{{resolve:secretsmanager:${AppName}/${Environment}/smtp-credentials:SecretString:SmtpEmail__Password}}'
+              Value: !Sub '{{resolve:secretsmanager:${AppName}/${Environment}/smtp-credentials:SecretString:Password}}'
             - Name: OpenTelemetry__ExporterEndpoint
               Value: !Sub 'https://xray.${AWS::Region}.amazonaws.com/v1/traces'
             - Name: AwsNotification__SenderEmail
