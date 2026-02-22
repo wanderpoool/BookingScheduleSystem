@@ -18,7 +18,7 @@ public class AdminSubscriptionService : IAdminSubscriptionService
     {
         try
         {
-            var query = $"/api/subscription-plans?includeInactive={includeInactive}";
+            var query = $"/api/subscription-plans?includeInactive={includeInactive.ToString().ToLowerInvariant()}";
             var response = await _httpClient.GetAsync(query);
             if (response.IsSuccessStatusCode)
             {
@@ -26,7 +26,8 @@ public class AdminSubscriptionService : IAdminSubscriptionService
                 return wrapper?.Plans;
             }
 
-            _logger.LogWarning("Failed to list all plans: {StatusCode}", response.StatusCode);
+            var body = await response.Content.ReadAsStringAsync();
+            _logger.LogWarning("Failed to list all plans: {StatusCode} {Body}", response.StatusCode, body);
             return null;
         }
         catch (Exception ex)

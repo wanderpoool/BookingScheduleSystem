@@ -252,10 +252,15 @@
         try
         {
             _availablePlans = await AdminSubscriptionService.ListAllPlansAsync() ?? new();
+            if (_availablePlans.Count == 0)
+            {
+                Snackbar.Add("No subscription plans found. Have you seeded the default plans?", Severity.Warning);
+            }
         }
-        catch
+        catch (Exception ex)
         {
             _availablePlans = new();
+            Snackbar.Add($"Failed to load subscription plans: {ex.Message}", Severity.Error);
         }
     }
 
@@ -274,6 +279,18 @@
 
     private async Task OpenChangePlanDialog(TenantSubscriptionResponse sub)
     {
+        // Retry loading plans if the initial load failed
+        if (_availablePlans.Count == 0)
+        {
+            await LoadPlansAsync();
+        }
+
+        if (_availablePlans.Count == 0)
+        {
+            Snackbar.Add("No subscription plans available. Please seed the default plans first.", Severity.Warning);
+            return;
+        }
+
         var parameters = new DialogParameters<ChangePlanDialog>
         {
             { x => x.TenantDisplayName, GetTenantDisplay(sub) },
