@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   BookMeApp Infrastructure - Cost-optimized deployment using ECS Fargate Spot,
-  RDS PostgreSQL (t4g.micro), ALB, SES, Semaphore SMS, and Secrets Manager.
+  RDS PostgreSQL (t4g.micro), ALB, SNS, SES, and Secrets Manager.
 
 # =============================================================================
 # PARAMETERS
@@ -365,11 +365,8 @@ Resources:
                 Resource:
                   - !Ref DbPasswordSecret
                   - !Ref JwtSecretKey
-                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/db-connection-string-*'
                   - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/bookingactiontoken-*'
-                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-username-*'
-                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-password-*'
-                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/semaphore-api-key-*'
+                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-credentials-*'
                   - !If
                     - HasGlobalAdmin
                     - !Ref GlobalAdminPasswordSecret
@@ -531,11 +528,17 @@ Resources:
               Value: Production
             - Name: ASPNETCORE_URLS
               Value: 'http://+:8080'
-            # ConnectionStrings__PostgreSQL is now in Secrets section below
+            - Name: ConnectionStrings__PostgreSQL
+              Value: !Sub
+                - 'Host=${DbHost};Database=${DbName};Username=${DbUsername};Password=${DbPassword}'
+                - DbHost: !GetAtt PostgresInstance.Endpoint.Address
+                  DbPassword: !Sub '{{resolve:secretsmanager:${DbPasswordSecret}:SecretString}}'
             - Name: Jwt__Issuer
               Value: !Ref JwtIssuer
             - Name: Jwt__Audience
               Value: !Ref JwtAudience
+            - Name: Jwt__SecretKey
+              Value: !Sub '{{resolve:secretsmanager:${JwtSecretKey}:SecretString}}'
             - Name: Cors__AllowedOrigins
               Value: !If
                 - HasDomain
@@ -553,12 +556,18 @@ Resources:
               Value: !Ref SenderEmail
             - Name: SmtpEmail__SenderName
               Value: BookMeApp
+            - Name: SmtpEmail__Username
+              Value: !Sub '{{resolve:secretsmanager:${AppName}/${Environment}/smtp-credentials:SecretString:SmtpEmail__Username}}'
+            - Name: SmtpEmail__Password
+              Value: !Sub '{{resolve:secretsmanager:${AppName}/${Environment}/smtp-credentials:SecretString:SmtpEmail__Password}}'
             - Name: OpenTelemetry__ExporterEndpoint
               Value: !Sub 'https://xray.${AWS::Region}.amazonaws.com/v1/traces'
             - Name: AwsNotification__SenderEmail
               Value: !Ref SenderEmail
             - Name: AwsNotification__AwsRegion
               Value: !Ref 'AWS::Region'
+            - Name: BookingActionToken__SecretKey
+              Value: !Sub '{{resolve:secretsmanager:${AppName}/${Environment}/bookingactiontoken:SecretString:BookingActionToken__SecretKey}}'
             - Name: BookingActionToken__ExpirationHours
               Value: '3'
             - Name: Semaphore__SenderName
@@ -576,20 +585,11 @@ Resources:
                 Value: !Ref GlobalAdminEmail
               - !Ref 'AWS::NoValue'
           Secrets:
-            - Name: ConnectionStrings__PostgreSQL
-              ValueFrom: 'arn:aws:secretsmanager:ap-southeast-1:454371013705:secret:bookmeapp/production/db-connection-string-vhi4ol'
-            - Name: Jwt__SecretKey
-              ValueFrom: 'arn:aws:secretsmanager:ap-southeast-1:454371013705:secret:bookmeapp/production/jwt-secret-wDRjHh'
-            - Name: BookingActionToken__SecretKey
-              ValueFrom: 'arn:aws:secretsmanager:ap-southeast-1:454371013705:secret:bookmeapp/production/bookingactiontoken-1aNWzS'
-            - Name: SmtpEmail__Username
-              ValueFrom: 'arn:aws:secretsmanager:ap-southeast-1:454371013705:secret:bookmeapp/production/smtp-username-vLcVu7'
-            - Name: SmtpEmail__Password
-              ValueFrom: 'arn:aws:secretsmanager:ap-southeast-1:454371013705:secret:bookmeapp/production/smtp-password-0F0Lnv'
-            - Name: Semaphore__ApiKey
-              ValueFrom: 'arn:aws:secretsmanager:ap-southeast-1:454371013705:secret:bookmeapp/production/semaphore-api-key-n28tkY'
-            - Name: Seed__GlobalAdmin__Password
-              ValueFrom: 'arn:aws:secretsmanager:ap-southeast-1:454371013705:secret:bookmeapp/production/global-admin-password-3kKlS8'
+            - !If
+              - HasGlobalAdmin
+              - Name: Seed__GlobalAdmin__Password
+                ValueFrom: !Ref GlobalAdminPasswordSecret
+              - !Ref 'AWS::NoValue'
           LogConfiguration:
             LogDriver: awslogs
             Options:
