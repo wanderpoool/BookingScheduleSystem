@@ -1,3 +1,4 @@
+using BookingScheduleSystem.Api.Infrastructure.Auth;
 using BookingScheduleSystem.Api.Infrastructure.Bookings;
 using BookingScheduleSystem.Api.Infrastructure.Schedules;
 using BookingScheduleSystem.Contracts.Common;
@@ -9,15 +10,23 @@ namespace BookingScheduleSystem.Api.Infrastructure.Notifications;
 public class BookingNotificationService
 {
     private readonly ILogger<BookingNotificationService> _logger;
+    private readonly ISmsService _smsService;
+    private readonly IDocumentStore _store;
 
-    public BookingNotificationService(ILogger<BookingNotificationService> logger)
+    public BookingNotificationService(
+        ILogger<BookingNotificationService> logger,
+        ISmsService smsService,
+        IDocumentStore store)
     {
         _logger = logger;
+        _smsService = smsService;
+        _store = store;
     }
 
     public void NotifyBookingCreated(IDocumentSession session, Booking booking, Schedule schedule)
     {
         var isAutoConfirmed = booking.Status == BookingStatus.Confirmed && schedule.ProviderId.HasValue;
+        var dateFormatted = schedule.StartTime.ToString("MMM dd, yyyy");
 
         if (schedule.ProviderId.HasValue)
         {
@@ -39,6 +48,12 @@ public class BookingNotificationService
             _logger.LogInformation("Type: {NotificationType}", isAutoConfirmed ? "Booking Auto-Confirmed" : "New Booking Request (Pending Approval)");
             _logger.LogInformation("Schedule: {Title} on {StartTime}", schedule.Title, schedule.StartTime);
             _logger.LogInformation("============================");
+
+            // Fire-and-forget SMS to provider
+            var providerSms = isAutoConfirmed
+                ? $"[BookMeApp] New booking confirmed for \"{schedule.Title}\" on {dateFormatted}."
+                : $"[BookMeApp] New booking request for \"{schedule.Title}\" on {dateFormatted}. Please review.";
+            _ = SendBookingSmsAsync(schedule.ProviderId.Value.Value, providerSms);
         }
 
         // Notify customer of booking status
@@ -61,6 +76,12 @@ public class BookingNotificationService
         _logger.LogInformation("Type: Booking {Status}", isPending ? "Pending" : "Confirmed");
         _logger.LogInformation("Schedule: {Title} on {StartTime}", schedule.Title, schedule.StartTime);
         _logger.LogInformation("============================");
+
+        // Fire-and-forget SMS to customer
+        var customerSms = isPending
+            ? $"[BookMeApp] Your booking for \"{schedule.Title}\" on {dateFormatted} is pending approval."
+            : $"[BookMeApp] Your booking for \"{schedule.Title}\" on {dateFormatted} is confirmed!";
+        _ = SendBookingSmsAsync(booking.UserId.Value, customerSms);
     }
 
     public void NotifyBookingConfirmed(IDocumentSession session, Booking booking, Schedule schedule)
@@ -81,6 +102,9 @@ public class BookingNotificationService
         _logger.LogInformation("Type: Booking Confirmed");
         _logger.LogInformation("Schedule: {Title} on {StartTime}", schedule.Title, schedule.StartTime);
         _logger.LogInformation("============================");
+
+        var dateFormatted = schedule.StartTime.ToString("MMM dd, yyyy");
+        _ = SendBookingSmsAsync(booking.UserId.Value, $"[BookMeApp] Your booking for \"{schedule.Title}\" on {dateFormatted} has been approved!");
     }
 
     public void NotifyBookingRejected(IDocumentSession session, Booking booking, Schedule schedule, string? reason)
@@ -106,6 +130,9 @@ public class BookingNotificationService
         _logger.LogInformation("Schedule: {Title}", schedule.Title);
         _logger.LogInformation("Reason: {Reason}", reason ?? "No reason provided");
         _logger.LogInformation("============================");
+
+        var dateFormatted = schedule.StartTime.ToString("MMM dd, yyyy");
+        _ = SendBookingSmsAsync(booking.UserId.Value, $"[BookMeApp] Your booking for \"{schedule.Title}\" on {dateFormatted} has been declined.");
     }
 
     public void NotifyBookingCancelled(IDocumentSession session, Booking booking, Schedule schedule)
@@ -129,6 +156,30 @@ public class BookingNotificationService
             _logger.LogInformation("Type: Booking Cancelled");
             _logger.LogInformation("Schedule: {Title} on {StartTime}", schedule.Title, schedule.StartTime);
             _logger.LogInformation("============================");
+
+            var dateFormatted = schedule.StartTime.ToString("MMM dd, yyyy");
+            _ = SendBookingSmsAsync(schedule.ProviderId.Value.Value, $"[BookMeApp] A booking for \"{schedule.Title}\" on {dateFormatted} has been cancelled.");
+        }
+    }
+
+    private async Task SendBookingSmsAsync(Guid userId, string message)
+    {
+        try
+        {
+            await using var querySession = _store.QuerySession();
+            var user = await querySession.LoadAsync<User>(new UserId(userId));
+
+            if (user?.PhoneNumber is null or "")
+            {
+                _logger.LogDebug("No phone number for user {UserId}, skipping booking SMS", userId);
+                return;
+            }
+
+            await _smsService.SendSmsAsync(user.PhoneNumber, message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send booking SMS to user {UserId}", userId);
         }
     }
 }
