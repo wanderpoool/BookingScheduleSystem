@@ -75,6 +75,11 @@ builder.Services.AddOpenTelemetry()
             {
                 opts.Endpoint = new Uri(otelExporterEndpoint);
                 opts.Protocol = OtlpExportProtocol.HttpProtobuf;
+                opts.ExportProcessorType = ExportProcessorType.Batch;
+                opts.BatchExportProcessorOptions = new BatchExportProcessorOptions<System.Diagnostics.Activity>
+                {
+                    ExporterTimeoutMilliseconds = 10_000,
+                };
                 opts.HttpClientFactory = () =>
                 {
                     var credentials = FallbackCredentialsFactory.GetCredentials();
@@ -145,7 +150,7 @@ builder.Services.AddMarten(options =>
 
     // Configure OtpRecord document for distributed OTP storage
     options.Schema.For<OtpRecord>().Identity(o => o.Id);
-});
+}).UseLightweightSessions();
 
 // Register multi-tenancy services
 builder.Services.AddScoped<ITenantContext, TenantContext>();
@@ -310,10 +315,10 @@ app.UseTrialValidation();
 
 app.UseAuthorization();
 
+// Request logging — placed before endpoints for accurate full-pipeline timing
+app.UseSerilogRequestLogging();
+
 // Use FastEndpoints
 app.UseFastEndpoints();
-
-// Request logging
-app.UseSerilogRequestLogging();
 
 app.Run();

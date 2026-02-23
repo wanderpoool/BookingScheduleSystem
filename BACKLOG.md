@@ -325,6 +325,71 @@ Allow a single Customer account to be associated with multiple tenants (organiza
 
 ---
 
+## 🚀 Performance & Observability (HIGH PRIORITY)
+
+### 17. **Fix X-Ray OTLP Endpoint (Broken — Zero Traces)**
+**Priority**: HIGH
+**Effort**: Low
+
+**Description**:
+X-Ray shows 0 traces in production. The OTLP exporter endpoint in CloudFormation is set to `https://xray.{region}.amazonaws.com/v1/traces`, but the OpenTelemetry .NET OTLP HTTP exporter auto-appends `/v1/traces`, resulting in a doubled path (`/v1/traces/v1/traces`).
+
+**Fix**:
+- Change `OpenTelemetry__ExporterEndpoint` in `infra/main.yaml` from `https://xray.${AWS::Region}.amazonaws.com/v1/traces` to `https://xray.${AWS::Region}.amazonaws.com`
+
+---
+
+### 18. **Enable OTEL Export Error Logging**
+**Priority**: HIGH
+**Effort**: Low
+
+**Description**:
+OTEL exporters fail silently by default. When X-Ray export fails, nothing appears in CloudWatch logs.
+
+**Fix**:
+- Add `ExportProcessorType` and error callback to the OTLP exporter configuration in `Program.cs` (API)
+- Log export failures so broken telemetry pipelines are detectable
+
+---
+
+### 19. **Use Marten Lightweight Sessions**
+**Priority**: HIGH
+**Effort**: Low
+
+**Description**:
+Every request logs: "Opening a session without explicitly providing desired type." Default Marten sessions use identity map + dirty tracking overhead, which is unnecessary for a read-heavy API.
+
+**Fix**:
+- Add `.UseLightweightSessions()` to the `AddMarten()` call in API `Program.cs`
+- Eliminates per-request identity map overhead
+
+---
+
+### 20. **Move Serilog Request Logging Before Endpoints**
+**Priority**: HIGH
+**Effort**: Low
+
+**Description**:
+`UseSerilogRequestLogging()` is placed after `UseFastEndpoints()` in the middleware pipeline. It should be before endpoints to capture accurate full-pipeline request timing.
+
+**Fix**:
+- Move `app.UseSerilogRequestLogging()` before `app.UseFastEndpoints()` in API `Program.cs`
+
+---
+
+### 21. **Fail Fast on send-otp When SMS Not Configured**
+**Priority**: HIGH
+**Effort**: Low
+
+**Description**:
+`POST /api/auth/send-otp` takes 5.5 seconds to return 500 when Semaphore API key is missing. It does DB lookups and OTP generation before discovering the SMS provider isn't configured.
+
+**Fix**:
+- In `SendOtp.HandleAsync`, check SMS provider availability **before** DB lookup and OTP generation when `ContactMethod == "phone"`
+- Add an `IsConfigured` check on `ISmsService` or `SemaphoreSmsService` to short-circuit early
+
+---
+
 ## 📈 Future Enhancements
 
 ### 14. **Add-Ons & Custom Features**
@@ -359,6 +424,13 @@ Reward users for referring new customers.
 
 ## Implementation Priority
 
+### Phase 0 (Performance — HIGH PRIORITY)
+- [x] Fix X-Ray OTLP Endpoint (#17) — zero traces, doubled path
+- [x] Enable OTEL Export Error Logging (#18) — silent failures
+- [x] Use Marten Lightweight Sessions (#19) — unnecessary overhead per request
+- [x] Move Serilog Request Logging Before Endpoints (#20) — inaccurate timing
+- [x] Fail Fast on send-otp When SMS Not Configured (#21) — 5.5s wasted on missing key
+
 ### Phase 1 (Critical)
 - [x] Auto-Expire Subscriptions Job
 - [ ] Payment Gateway Integration
@@ -384,4 +456,4 @@ Reward users for referring new customers.
 
 ---
 
-**Last Updated**: 2026-02-12
+**Last Updated**: 2026-02-23

@@ -1,4 +1,5 @@
 using BookingScheduleSystem.Api.Infrastructure.Auth;
+using BookingScheduleSystem.Api.Infrastructure.Notifications;
 using BookingScheduleSystem.Contracts.Auth;
 using FastEndpoints;
 using Marten;
@@ -10,6 +11,7 @@ public sealed class SendOtp : Endpoint<SendOtpRequest, OtpResponse>
     public required IDocumentStore DocumentStore { get; init; }
     public required OtpService OtpService { get; init; }
     public required OtpNotificationService NotificationService { get; init; }
+    public required ISmsService SmsService { get; init; }
 
     public override void Configure()
     {
@@ -34,6 +36,13 @@ public sealed class SendOtp : Endpoint<SendOtpRequest, OtpResponse>
         if (req.ContactMethod.ToLower() != "email" && req.ContactMethod.ToLower() != "phone")
         {
             ThrowError("Contact method must be 'email' or 'phone'");
+            return;
+        }
+
+        // Fail fast if SMS is requested but not configured — avoids wasted DB/OTP work
+        if (req.ContactMethod.Equals("phone", StringComparison.OrdinalIgnoreCase) && !SmsService.IsConfigured)
+        {
+            ThrowError("SMS service is not configured. Please use email instead.", 503);
             return;
         }
 

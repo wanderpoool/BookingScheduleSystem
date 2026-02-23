@@ -563,7 +563,7 @@ Resources:
             - Name: SmtpEmail__Password
               Value: !Sub '{{resolve:secretsmanager:${AppName}/${Environment}/smtp-password:SecretString}}'
             - Name: OpenTelemetry__ExporterEndpoint
-              Value: !Sub 'https://xray.${AWS::Region}.amazonaws.com/v1/traces'
+              Value: !Sub 'https://xray.${AWS::Region}.amazonaws.com'
             - Name: AwsNotification__SenderEmail
               Value: !Ref SenderEmail
             - Name: AwsNotification__AwsRegion

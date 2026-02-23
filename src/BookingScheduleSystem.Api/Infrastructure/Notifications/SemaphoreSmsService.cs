@@ -22,6 +22,8 @@ public sealed class SemaphoreSmsService : ISmsService
         _isDevelopment = environment.IsDevelopment();
     }
 
+    public bool IsConfigured => _isDevelopment || !string.IsNullOrEmpty(_options.ApiKey);
+
     public async Task<bool> SendSmsAsync(string phoneNumber, string message, CancellationToken ct = default)
     {
         if (_isDevelopment)
