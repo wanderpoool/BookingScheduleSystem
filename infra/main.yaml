@@ -214,6 +214,29 @@ Resources:
       RouteTableId: !Ref PrivateRouteTable
 
   # =============================================================================
+  # SERVICE DISCOVERY (Cloud Map) — internal DNS for ECS-to-ECS communication
+  # =============================================================================
+  ServiceDiscoveryNamespace:
+    Type: AWS::ServiceDiscovery::PrivateDnsNamespace
+    Properties:
+      Name: !Sub '${AppName}.internal'
+      Vpc: !Ref Vpc
+      Description: Private DNS namespace for internal service discovery
+
+  ApiDiscoveryService:
+    Type: AWS::ServiceDiscovery::Service
+    Properties:
+      Name: api
+      NamespaceId: !Ref ServiceDiscoveryNamespace
+      DnsConfig:
+        DnsRecords:
+          - Type: A
+            TTL: 10
+        RoutingPolicy: MULTIVALUE
+      HealthCheckCustomConfig:
+        FailureThreshold: 1
+
+  # =============================================================================
   # SECURITY GROUPS
   # =============================================================================
   AlbSecurityGroup:
@@ -234,13 +257,24 @@ Resources:
   EcsSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: ECS tasks - allow traffic from ALB only
+      GroupDescription: ECS tasks - allow traffic from ALB and other ECS tasks
       VpcId: !Ref Vpc
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 8080
           ToPort: 8080
           SourceSecurityGroupId: !Ref AlbSecurityGroup
+
+  # Self-referencing ingress: allows ECS tasks to communicate with each other
+  # (separate resource to avoid circular reference in EcsSecurityGroup)
+  EcsToEcsIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref EcsSecurityGroup
+      IpProtocol: tcp
+      FromPort: 8080
+      ToPort: 8080
+      SourceSecurityGroupId: !Ref EcsSecurityGroup
 
   RdsSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -539,8 +573,7 @@ Resources:
               Value: !Ref JwtIssuer
             - Name: Jwt__Audience
               Value: !Ref JwtAudience
-            - Name: Jwt__SecretKey
-              Value: !Sub '{{resolve:secretsmanager:${JwtSecretKey}:SecretString}}'
+            # Jwt__SecretKey moved to Secrets section below
             - Name: Cors__AllowedOrigins
               Value: !If
                 - HasDomain
@@ -558,22 +591,17 @@ Resources:
               Value: !Ref SenderEmail
             - Name: SmtpEmail__SenderName
               Value: BookMeApp
-            - Name: SmtpEmail__Username
-              Value: !Sub '{{resolve:secretsmanager:${AppName}/${Environment}/smtp-username:SecretString}}'
-            - Name: SmtpEmail__Password
-              Value: !Sub '{{resolve:secretsmanager:${AppName}/${Environment}/smtp-password:SecretString}}'
+            # SmtpEmail__Username and SmtpEmail__Password moved to Secrets section below
+            # (ECS resolves at runtime, avoiding CloudFormation JSON-key parsing issues)
             - Name: OpenTelemetry__ExporterEndpoint
               Value: !Sub 'https://xray.${AWS::Region}.amazonaws.com'
             - Name: AwsNotification__SenderEmail
               Value: !Ref SenderEmail
             - Name: AwsNotification__AwsRegion
               Value: !Ref 'AWS::Region'
-            - Name: BookingActionToken__SecretKey
-              Value: !Sub '{{resolve:secretsmanager:${AppName}/${Environment}/bookingactiontoken:SecretString}}'
+            # BookingActionToken__SecretKey moved to Secrets section below
             - Name: BookingActionToken__ExpirationHours
               Value: '3'
-            - Name: Semaphore__ApiKey
-              Value: !Sub '{{resolve:secretsmanager:${AppName}/${Environment}/semaphore-api-key:SecretString}}'
             - Name: Semaphore__SenderName
               Value: BookMeApp
             - Name: Semaphore__BaseUrl
@@ -589,6 +617,16 @@ Resources:
                 Value: !Ref GlobalAdminEmail
               - !Ref 'AWS::NoValue'
           Secrets:
+            - Name: Jwt__SecretKey
+              ValueFrom: !Ref JwtSecretKey
+            - Name: SmtpEmail__Username
+              ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-username'
+            - Name: SmtpEmail__Password
+              ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-password'
+            - Name: BookingActionToken__SecretKey
+              ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/bookingactiontoken'
+            - Name: Semaphore__ApiKey
+              ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/semaphore-api-key'
             - !If
               - HasGlobalAdmin
               - Name: Seed__GlobalAdmin__Password
@@ -622,10 +660,7 @@ Resources:
             - Name: ASPNETCORE_URLS
               Value: 'http://+:8080'
             - Name: ApiSettings__BaseUrl
-              Value: !If
-                - HasDomain
-                - !Sub 'https://${DomainName}/api'
-                - !Sub 'http://${ApplicationLoadBalancer.DNSName}/api'
+              Value: !Sub 'http://api.${AppName}.internal:8080'
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -656,6 +691,8 @@ Resources:
         - ContainerName: api
           ContainerPort: 8080
           TargetGroupArn: !Ref ApiTargetGroup
+      ServiceRegistries:
+        - RegistryArn: !GetAtt ApiDiscoveryService.Arn
 
   WebService:
     Type: AWS::ECS::Service
