@@ -5,7 +5,7 @@ using System.Text;
 using Amazon.Runtime;
 using Microsoft.Extensions.Logging;
 
-namespace BookingScheduleSystem.Api.Infrastructure.Telemetry;
+namespace BookingScheduleSystem.Web.Infrastructure.Telemetry;
 
 /// <summary>
 /// Signs outbound HTTP requests with AWS SigV4 for the X-Ray OTLP endpoint.

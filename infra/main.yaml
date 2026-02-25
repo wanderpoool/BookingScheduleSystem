@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   BookMeApp Infrastructure - Cost-optimized deployment using ECS Fargate Spot,
-  RDS PostgreSQL (t4g.micro), ALB, SNS, SES, and Secrets Manager.
+  RDS PostgreSQL (t4g.micro), ALB, SES, Semaphore SMS, and Secrets Manager.
 
 # =============================================================================
 # PARAMETERS
@@ -39,8 +39,8 @@ Parameters:
 
   DomainName:
     Type: String
-    Default: 'bookmeapp.ph'
-    Description: Custom domain for the application
+    Default: ''
+    Description: Optional custom domain for the ALB (leave empty for ALB DNS)
 
   HostedZoneId:
     Type: String
@@ -72,9 +72,6 @@ Parameters:
 # =============================================================================
 Conditions:
   HasGlobalAdmin: !Not [!Equals [!Ref GlobalAdminEmail, '']]
-  HasDomain: !And
-    - !Not [!Equals [!Ref DomainName, '']]
-    - !Not [!Equals [!Ref HostedZoneId, '']]
 
 # =============================================================================
 # NETWORKING - VPC, Subnets, Security Groups
@@ -333,7 +330,7 @@ Resources:
       EngineVersion: '16.6'
       DBInstanceClass: db.t3.micro
       AllocatedStorage: 20
-      StorageType: gp2
+      StorageType: gp3
       DBName: !Ref DbName
       MasterUsername: !Ref DbUsername
       MasterUserPassword: !Sub '{{resolve:secretsmanager:${DbPasswordSecret}:SecretString}}'
@@ -341,7 +338,7 @@ Resources:
       VPCSecurityGroups:
         - !Ref RdsSecurityGroup
       PubliclyAccessible: false
-      BackupRetentionPeriod: 1
+      BackupRetentionPeriod: 7
       MultiAZ: false
       StorageEncrypted: true
       Tags:
@@ -373,7 +370,7 @@ Resources:
           Base: 1
       ClusterSettings:
         - Name: containerInsights
-          Value: disabled
+          Value: enabled
 
   # --- IAM Roles ---
   EcsTaskExecutionRole:
@@ -399,7 +396,11 @@ Resources:
                 Resource:
                   - !Ref DbPasswordSecret
                   - !Ref JwtSecretKey
+                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/db-connection-string-*'
                   - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/bookingactiontoken-*'
+                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-username-*'
+                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-password-*'
+                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/semaphore-api-key-*'
                   - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-username-*'
                   - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-password-*'
                   - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/semaphore-api-key-*'
@@ -564,16 +565,11 @@ Resources:
               Value: Production
             - Name: ASPNETCORE_URLS
               Value: 'http://+:8080'
-            - Name: ConnectionStrings__PostgreSQL
-              Value: !Sub
-                - 'Host=${DbHost};Database=${DbName};Username=${DbUsername};Password=${DbPassword}'
-                - DbHost: !GetAtt PostgresInstance.Endpoint.Address
-                  DbPassword: !Sub '{{resolve:secretsmanager:${DbPasswordSecret}:SecretString}}'
+            # ConnectionStrings__PostgreSQL is now in Secrets section below
             - Name: Jwt__Issuer
               Value: !Ref JwtIssuer
             - Name: Jwt__Audience
               Value: !Ref JwtAudience
-            # Jwt__SecretKey moved to Secrets section below
             - Name: Cors__AllowedOrigins
               Value: !If
                 - HasDomain
@@ -591,15 +587,12 @@ Resources:
               Value: !Ref SenderEmail
             - Name: SmtpEmail__SenderName
               Value: BookMeApp
-            # SmtpEmail__Username and SmtpEmail__Password moved to Secrets section below
-            # (ECS resolves at runtime, avoiding CloudFormation JSON-key parsing issues)
             - Name: OpenTelemetry__ExporterEndpoint
               Value: !Sub 'https://xray.${AWS::Region}.amazonaws.com'
             - Name: AwsNotification__SenderEmail
               Value: !Ref SenderEmail
             - Name: AwsNotification__AwsRegion
               Value: !Ref 'AWS::Region'
-            # BookingActionToken__SecretKey moved to Secrets section below
             - Name: BookingActionToken__ExpirationHours
               Value: '3'
             - Name: Semaphore__SenderName
@@ -627,11 +620,20 @@ Resources:
               ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/bookingactiontoken'
             - Name: Semaphore__ApiKey
               ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/semaphore-api-key'
-            - !If
-              - HasGlobalAdmin
-              - Name: Seed__GlobalAdmin__Password
-                ValueFrom: !Ref GlobalAdminPasswordSecret
-              - !Ref 'AWS::NoValue'
+            - Name: ConnectionStrings__PostgreSQL
+              ValueFrom: 'arn:aws:secretsmanager:ap-southeast-1:454371013705:secret:bookmeapp/production/db-connection-string-vhi4ol'
+            - Name: Jwt__SecretKey
+              ValueFrom: 'arn:aws:secretsmanager:ap-southeast-1:454371013705:secret:bookmeapp/production/jwt-secret-wDRjHh'
+            - Name: BookingActionToken__SecretKey
+              ValueFrom: 'arn:aws:secretsmanager:ap-southeast-1:454371013705:secret:bookmeapp/production/bookingactiontoken-1aNWzS'
+            - Name: SmtpEmail__Username
+              ValueFrom: 'arn:aws:secretsmanager:ap-southeast-1:454371013705:secret:bookmeapp/production/smtp-username-vLcVu7'
+            - Name: SmtpEmail__Password
+              ValueFrom: 'arn:aws:secretsmanager:ap-southeast-1:454371013705:secret:bookmeapp/production/smtp-password-0F0Lnv'
+            - Name: Semaphore__ApiKey
+              ValueFrom: 'arn:aws:secretsmanager:ap-southeast-1:454371013705:secret:bookmeapp/production/semaphore-api-key-n28tkY'
+            - Name: Seed__GlobalAdmin__Password
+              ValueFrom: 'arn:aws:secretsmanager:ap-southeast-1:454371013705:secret:bookmeapp/production/global-admin-password-3kKlS8'
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -648,6 +650,7 @@ Resources:
       NetworkMode: awsvpc
       RequiresCompatibilities: [FARGATE]
       ExecutionRoleArn: !GetAtt EcsTaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt EcsTaskRole.Arn
       ContainerDefinitions:
         - Name: web
           Image: !Ref WebImageUri
@@ -661,6 +664,8 @@ Resources:
               Value: 'http://+:8080'
             - Name: ApiSettings__BaseUrl
               Value: !Sub 'http://api.${AppName}.internal:8080'
+            - Name: OpenTelemetry__ExporterEndpoint
+              Value: !Sub 'https://xray.${AWS::Region}.amazonaws.com'
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -816,24 +821,3 @@ Outputs:
   WebEcrRepoUri:
     Description: ECR repository URI for Web
     Value: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${AppName}-web'
-
-  RdsEndpoint:
-    Description: PostgreSQL endpoint
-    Value: !GetAtt PostgresInstance.Endpoint.Address
-
-  DbPasswordSecretArn:
-    Description: ARN for the DB password secret
-    Value: !Ref DbPasswordSecret
-
-  JwtSecretArn:
-    Description: ARN for the JWT secret
-    Value: !Ref JwtSecretKey
-
-  VpcId:
-    Description: VPC ID
-    Value: !Ref Vpc
-
-  CustomDomainUrl:
-    Condition: HasDomain
-    Description: Application URL (custom domain)
-    Value: !Sub 'https://${DomainName}'

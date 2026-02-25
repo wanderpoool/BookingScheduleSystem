@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Amazon.Runtime;
 using BookingScheduleSystem.Api.Infrastructure.Telemetry;
+using Microsoft.Extensions.Logging;
 using OpenTelemetry;
 using OpenTelemetry.Context.Propagation;
 using OpenTelemetry.Exporter;
@@ -64,13 +65,12 @@ builder.Services.AddOpenTelemetry()
             {
                 opts.RecordException = true;
             })
-            .AddHttpClientInstrumentation()
-            .AddSource("Npgsql");
+            .AddHttpClientInstrumentation();
 
         if (!string.IsNullOrEmpty(otelExporterEndpoint) && isProduction)
         {
-            // Production: export to X-Ray via OTLP with SigV4 signing, 10% sampling for cost control
-            tracing.SetSampler(new TraceIdRatioBasedSampler(0.1));
+            // Production: 100% sampling (low-traffic app), export to X-Ray via OTLP with SigV4 signing
+            tracing.SetSampler(new AlwaysOnSampler());
             tracing.AddOtlpExporter(opts =>
             {
                 opts.Endpoint = new Uri(otelExporterEndpoint);
@@ -84,7 +84,10 @@ builder.Services.AddOpenTelemetry()
                 {
                     var credentials = FallbackCredentialsFactory.GetCredentials();
                     var region = Environment.GetEnvironmentVariable("AWS_REGION") ?? "ap-southeast-1";
-                    return new HttpClient(new XRaySigV4Handler(credentials, region));
+                    var logger = builder.Services.BuildServiceProvider()
+                        .GetRequiredService<ILoggerFactory>()
+                        .CreateLogger<XRaySigV4Handler>();
+                    return new HttpClient(new XRaySigV4Handler(credentials, region, logger));
                 };
             });
         }
