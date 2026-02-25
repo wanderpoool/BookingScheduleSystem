@@ -1,0 +1,1020 @@
+@page "/privacy"
+@layout EmptyLayout
+@attribute [AllowAnonymous]
+@using Microsoft.AspNetCore.Authorization
+
+<PageTitle>Privacy Policy | Book Me App!</PageTitle>
+
+<style>
+    .terms-page *, .terms-page *::before, .terms-page *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    .terms-page {
+        font-family: 'DM Sans', system-ui, sans-serif;
+        background: #FFF8F0;
+        color: #1B2D45;
+        line-height: 1.7;
+        -webkit-font-smoothing: antialiased;
+        min-height: 100vh;
+    }
+
+    /* ===== CSS VARIABLES ===== */
+    .terms-page {
+        --clr-bg: #FFF8F0;
+        --clr-surface: #FFFFFF;
+        --clr-primary: #E85D2A;
+        --clr-primary-dark: #C94A1D;
+        --clr-primary-light: rgba(232, 93, 42, 0.08);
+        --clr-secondary: #1B2D45;
+        --clr-accent: #FFC53D;
+        --clr-text: #1B2D45;
+        --clr-text-muted: #5A6B80;
+        --clr-text-light: #8A96A6;
+        --clr-border: #E8DFD5;
+        --clr-border-light: #F0EBE4;
+        --content-max: 720px;
+        --sidebar-w: 260px;
+    }
+
+    /* ===== ANIMATIONS ===== */
+    @@keyframes termsFadeIn {
+        from { opacity: 0; transform: translateY(16px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== NAV ===== */
+    .terms-nav {
+        position: sticky;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        padding: 14px 40px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        background: rgba(255, 248, 240, 0.88);
+        border-bottom: 1px solid rgba(232, 223, 213, 0.5);
+    }
+    .terms-nav-logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        color: #1B2D45;
+    }
+    .terms-nav-logo-icon {
+        width: 36px;
+        height: 36px;
+        background: #E85D2A;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 17px;
+    }
+    .terms-nav-logo-text {
+        font-weight: 700;
+        font-size: 18px;
+        letter-spacing: -0.3px;
+    }
+    .terms-nav-links {
+        display: flex;
+        align-items: center;
+        gap: 28px;
+        list-style: none;
+    }
+    .terms-nav-links a {
+        text-decoration: none;
+        color: #5A6B80;
+        font-size: 14px;
+        font-weight: 500;
+        transition: color 0.2s;
+    }
+    .terms-nav-links a:hover { color: #1B2D45; }
+    .terms-nav-btn {
+        padding: 10px 22px;
+        border-radius: 10px;
+        background: #E85D2A;
+        color: white !important;
+        font-weight: 600 !important;
+        transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1) !important;
+        box-shadow: 0 2px 10px rgba(232, 93, 42, 0.2);
+    }
+    .terms-nav-btn:hover {
+        background: #C94A1D !important;
+        transform: translateY(-1px);
+    }
+
+    /* ===== HERO ===== */
+    .terms-hero {
+        padding: 100px 40px 60px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        animation: termsFadeIn 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .terms-hero::before {
+        content: '';
+        position: absolute;
+        top: -30%;
+        right: -10%;
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle, rgba(232,93,42,0.06) 0%, transparent 70%);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+    .terms-hero-breadcrumb {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: #5A6B80;
+        margin-bottom: 20px;
+    }
+    .terms-hero-breadcrumb a {
+        color: #E85D2A;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    .terms-hero-breadcrumb a:hover { text-decoration: underline; }
+    .terms-hero-breadcrumb span { color: #E8DFD5; }
+    .terms-hero h1 {
+        font-size: clamp(36px, 5vw, 52px);
+        font-weight: 700;
+        letter-spacing: -1.5px;
+        line-height: 1.1;
+        margin-bottom: 16px;
+    }
+    .terms-hero-subtitle {
+        font-size: 17px;
+        color: #5A6B80;
+        max-width: 520px;
+        margin: 0 auto 24px;
+    }
+    .terms-hero-meta {
+        display: inline-flex;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .terms-hero-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: #8A96A6;
+        font-weight: 500;
+    }
+
+    /* ===== LAYOUT ===== */
+    .terms-layout {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 0 40px 100px;
+        display: grid;
+        grid-template-columns: var(--sidebar-w) 1fr;
+        gap: 60px;
+        align-items: flex-start;
+    }
+
+    /* ===== TABLE OF CONTENTS ===== */
+    .terms-toc-wrapper {
+        position: sticky;
+        top: 90px;
+        animation: termsFadeIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+    }
+    .terms-toc {
+        background: #FFFFFF;
+        border: 1px solid #E8DFD5;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 20px rgba(27,45,69,0.03);
+    }
+    .terms-toc-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: #1B2D45;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .terms-toc-title::before {
+        content: '';
+        width: 3px;
+        height: 16px;
+        background: #E85D2A;
+        border-radius: 3px;
+    }
+    .terms-toc-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    .terms-toc-list a {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 500;
+        color: #5A6B80;
+        transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .terms-toc-list a:hover {
+        background: rgba(232, 93, 42, 0.08);
+        color: #E85D2A;
+    }
+    .terms-toc-num {
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        background: #FFF8F0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        color: #8A96A6;
+        flex-shrink: 0;
+        transition: all 0.2s;
+    }
+    .terms-toc-list a:hover .terms-toc-num {
+        background: #E85D2A;
+        color: white;
+    }
+    .terms-toc-help {
+        margin-top: 16px;
+        background: #1B2D45;
+        border-radius: 14px;
+        padding: 20px;
+        color: white;
+    }
+    .terms-toc-help-title {
+        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 6px;
+    }
+    .terms-toc-help-desc {
+        font-size: 12px;
+        color: rgba(255,255,255,0.55);
+        line-height: 1.6;
+        margin-bottom: 14px;
+    }
+    .terms-toc-help-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border-radius: 8px;
+        background: rgba(255,255,255,0.12);
+        color: white;
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 600;
+        transition: background 0.2s;
+    }
+    .terms-toc-help-btn:hover { background: rgba(255,255,255,0.2); }
+
+    /* ===== CONTENT ===== */
+    .terms-content {
+        max-width: var(--content-max);
+        animation: termsFadeIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+    }
+    .terms-section {
+        margin-bottom: 48px;
+        scroll-margin-top: 100px;
+    }
+    .terms-section-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 9px;
+        background: rgba(232, 93, 42, 0.08);
+        color: #E85D2A;
+        font-weight: 700;
+        font-size: 14px;
+        margin-bottom: 10px;
+    }
+    .terms-section h2 {
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        margin-bottom: 16px;
+        line-height: 1.2;
+    }
+    .terms-section p {
+        font-size: 15px;
+        color: #5A6B80;
+        line-height: 1.8;
+        margin-bottom: 14px;
+    }
+    .terms-section p:last-child { margin-bottom: 0; }
+    .terms-section strong {
+        color: #1B2D45;
+        font-weight: 600;
+    }
+
+    /* ===== LISTS ===== */
+    .terms-list {
+        list-style: none;
+        margin: 12px 0 16px;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .terms-list li {
+        display: flex;
+        gap: 12px;
+        font-size: 15px;
+        color: #5A6B80;
+        line-height: 1.7;
+    }
+    .terms-list-icon {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        background: rgba(232, 93, 42, 0.08);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        flex-shrink: 0;
+        margin-top: 3px;
+        color: #E85D2A;
+        font-weight: 700;
+    }
+
+    /* ===== CALLOUTS ===== */
+    .terms-callout {
+        background: #FFFFFF;
+        border: 1px solid #E8DFD5;
+        border-radius: 14px;
+        padding: 20px 24px;
+        margin: 20px 0;
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
+    }
+    .terms-callout-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+    .terms-callout-icon.info { background: rgba(99, 102, 241, 0.1); }
+    .terms-callout-icon.warning { background: rgba(245, 158, 11, 0.12); }
+    .terms-callout-icon.ph { background: rgba(232, 93, 42, 0.1); }
+    .terms-callout-content { flex: 1; }
+    .terms-callout-title {
+        font-weight: 700;
+        font-size: 14px;
+        margin-bottom: 4px;
+    }
+    .terms-callout-text {
+        font-size: 13px;
+        color: #5A6B80;
+        line-height: 1.7;
+    }
+
+    /* ===== DIVIDER ===== */
+    .terms-section-divider {
+        height: 1px;
+        background: #F0EBE4;
+        margin: 48px 0;
+    }
+
+    /* ===== FOOTER ===== */
+    .terms-footer {
+        padding: 40px;
+        text-align: center;
+        border-top: 1px solid #E8DFD5;
+    }
+    .terms-footer-inner {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    .terms-footer-logo {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        color: #1B2D45;
+        margin-bottom: 12px;
+    }
+    .terms-footer-logo-icon {
+        width: 32px;
+        height: 32px;
+        background: #E85D2A;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 15px;
+    }
+    .terms-footer-logo-text {
+        font-weight: 700;
+        font-size: 16px;
+    }
+    .terms-footer-desc {
+        font-size: 13px;
+        color: #5A6B80;
+        margin-bottom: 16px;
+    }
+    .terms-footer-links {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+    .terms-footer-links a {
+        font-size: 13px;
+        color: #8A96A6;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s;
+    }
+    .terms-footer-links a:hover { color: #E85D2A; }
+    .terms-footer-copy {
+        margin-top: 20px;
+        font-size: 12px;
+        color: #8A96A6;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @@media (max-width: 900px) {
+        .terms-layout {
+            grid-template-columns: 1fr;
+            gap: 0;
+            padding: 0 24px 80px;
+        }
+        .terms-toc-wrapper {
+            position: relative;
+            top: 0;
+            margin-bottom: 40px;
+        }
+        .terms-hero { padding: 80px 24px 40px; }
+        .terms-nav { padding: 12px 20px; }
+        .terms-nav-links { display: none; }
+    }
+</style>
+
+<div class="terms-page">
+    <!-- NAV -->
+    <nav class="terms-nav">
+        <a href="/" class="terms-nav-logo">
+            <div class="terms-nav-logo-icon">B</div>
+            <span class="terms-nav-logo-text">Book Me App!</span>
+        </a>
+        <ul class="terms-nav-links">
+            <li><a href="/register" class="terms-nav-btn">Get Started Free</a></li>
+        </ul>
+    </nav>
+
+    <!-- HERO -->
+    <section class="terms-hero">
+        <div class="terms-hero-breadcrumb">
+            <a href="/">Home</a>
+            <span>&#8250;</span>
+            <a href="#">Legal</a>
+            <span>&#8250;</span>
+            Privacy Policy
+        </div>
+        <h1>Privacy Policy</h1>
+        <p class="terms-hero-subtitle">This Privacy Policy explains how Book Me App! collects, uses, stores, and protects your personal information in compliance with Philippine data privacy laws.</p>
+        <div class="terms-hero-meta">
+            <div class="terms-hero-meta-item">
+                <span>&#128197;</span>
+                Effective: February 1, 2026
+            </div>
+            <div class="terms-hero-meta-item">
+                <span>&#128260;</span>
+                Last Updated: February 25, 2026
+            </div>
+            <div class="terms-hero-meta-item">
+                <span>&#127477;&#127469;</span>
+                RA 10173 Compliant
+            </div>
+        </div>
+    </section>
+
+    <!-- LAYOUT -->
+    <div class="terms-layout">
+
+        <!-- TOC SIDEBAR -->
+        <aside class="terms-toc-wrapper">
+            <div class="terms-toc">
+                <div class="terms-toc-title">Table of Contents</div>
+                <ul class="terms-toc-list">
+                    <li><a href="#introduction"><span class="terms-toc-num">1</span> Introduction</a></li>
+                    <li><a href="#information-collected"><span class="terms-toc-num">2</span> Information We Collect</a></li>
+                    <li><a href="#how-we-use"><span class="terms-toc-num">3</span> How We Use Your Data</a></li>
+                    <li><a href="#legal-basis"><span class="terms-toc-num">4</span> Legal Basis</a></li>
+                    <li><a href="#data-sharing"><span class="terms-toc-num">5</span> Data Sharing</a></li>
+                    <li><a href="#data-retention"><span class="terms-toc-num">6</span> Data Retention</a></li>
+                    <li><a href="#data-security"><span class="terms-toc-num">7</span> Data Security</a></li>
+                    <li><a href="#your-rights"><span class="terms-toc-num">8</span> Your Rights</a></li>
+                    <li><a href="#cookies"><span class="terms-toc-num">9</span> Cookies &amp; Tracking</a></li>
+                    <li><a href="#children"><span class="terms-toc-num">10</span> Children's Privacy</a></li>
+                    <li><a href="#international"><span class="terms-toc-num">11</span> International Transfers</a></li>
+                    <li><a href="#breach"><span class="terms-toc-num">12</span> Data Breach Protocol</a></li>
+                    <li><a href="#changes"><span class="terms-toc-num">13</span> Policy Changes</a></li>
+                    <li><a href="#contact"><span class="terms-toc-num">14</span> Contact &amp; Complaints</a></li>
+                </ul>
+            </div>
+
+            <div class="terms-toc-help">
+                <div class="terms-toc-help-title">Data Privacy Officer</div>
+                <div class="terms-toc-help-desc">For any questions about how we handle your personal data, contact our DPO directly.</div>
+                <a href="mailto:dpo@bookmeapp.ph" class="terms-toc-help-btn">dpo&#64;bookmeapp.ph</a>
+            </div>
+        </aside>
+
+        <!-- CONTENT -->
+        <main class="terms-content">
+
+            <!-- 1. Introduction -->
+            <div class="terms-section" id="introduction">
+                <div class="terms-section-number">1</div>
+                <h2>Introduction</h2>
+                <p><strong>Book Me App! Philippines, Inc.</strong> ("we," "us," or "our") is committed to protecting the privacy and personal information of all users of the Book Me App! platform ("the Platform"). This Privacy Policy describes our practices regarding the collection, use, storage, disclosure, and protection of your personal data.</p>
+                <p>This Privacy Policy is issued in compliance with <strong>Republic Act No. 10173</strong>, also known as the Data Privacy Act of 2012 ("DPA"), its Implementing Rules and Regulations ("IRR"), and all applicable issuances of the <strong>National Privacy Commission ("NPC")</strong>.</p>
+                <p>By creating an account, making a booking, listing your services, or otherwise using the Platform, you acknowledge that you have read and understood this Privacy Policy and consent to the collection and processing of your personal data as described herein.</p>
+                <div class="terms-callout">
+                    <div class="terms-callout-icon ph">&#127477;&#127469;</div>
+                    <div class="terms-callout-content">
+                        <div class="terms-callout-title">Data Privacy Act of 2012 (RA 10173)</div>
+                        <div class="terms-callout-text">This Privacy Policy is anchored on the principles of transparency, legitimate purpose, and proportionality as mandated by the Data Privacy Act. Book Me App! Philippines, Inc. is a registered Personal Information Controller (PIC) with the National Privacy Commission.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="terms-section-divider"></div>
+
+            <!-- 2. Information We Collect -->
+            <div class="terms-section" id="information-collected">
+                <div class="terms-section-number">2</div>
+                <h2>Information We Collect</h2>
+                <p>We collect personal information that is necessary, relevant, and proportionate to the services we provide. The types of information we collect depend on whether you are a <strong>Client</strong> (booking appointments) or a <strong>Service Provider</strong> (offering services).</p>
+
+                <p><strong>From Clients:</strong></p>
+                <ul class="terms-list">
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Account information</strong> — Full name, email address, mobile number (Philippine format: +63), and password.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Booking information</strong> — Appointment date, time, selected service, chosen provider, and any notes or special requests you provide.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Transaction information</strong> — Payment method, transaction reference numbers, and billing details (processed by third-party payment partners; we do not store full payment credentials).</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Device and usage information</strong> — Browser type, IP address, device identifier, operating system, pages visited, and access timestamps.</span>
+                    </li>
+                </ul>
+
+                <p><strong>From Service Providers:</strong></p>
+                <ul class="terms-list">
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Business information</strong> — Organization name, subdomain, business type, description, branch location(s), and operating hours.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Owner/staff information</strong> — Names, email addresses, mobile numbers, and roles of authorized personnel managing the account.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Schedule and availability data</strong> — Working hours, service durations, provider schedules, and capacity settings.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Subscription and billing data</strong> — Plan type, payment history, and invoice records.</span>
+                    </li>
+                </ul>
+
+                <div class="terms-callout">
+                    <div class="terms-callout-icon warning">&#9888;&#65039;</div>
+                    <div class="terms-callout-content">
+                        <div class="terms-callout-title">Sensitive Personal Information</div>
+                        <div class="terms-callout-text">For dental clinic and healthcare-related bookings, limited health information (e.g., dental history, allergies, or medical conditions relevant to treatment) may be collected through booking notes. Under RA 10173, this constitutes sensitive personal information and is subject to stricter processing requirements. We collect such data only with your explicit consent and solely for the purpose of facilitating your appointment.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="terms-section-divider"></div>
+
+            <!-- 3. How We Use Your Data -->
+            <div class="terms-section" id="how-we-use">
+                <div class="terms-section-number">3</div>
+                <h2>How We Use Your Data</h2>
+                <p>We process your personal data only for specific, declared, and legitimate purposes. These include:</p>
+                <ul class="terms-list">
+                    <li>
+                        <span class="terms-list-icon">&#128197;</span>
+                        <span><strong>Appointment management</strong> — Processing, confirming, modifying, and cancelling bookings between Clients and Service Providers.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#128276;</span>
+                        <span><strong>Notifications and reminders</strong> — Sending appointment confirmations, reminders, status updates, and cancellation notices via email, SMS, or in-app notifications.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#128179;</span>
+                        <span><strong>Payment processing</strong> — Facilitating payments between Clients and Service Providers through authorized third-party payment channels.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#128100;</span>
+                        <span><strong>Account administration</strong> — Creating and managing your account, verifying your identity, and providing customer support.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#128202;</span>
+                        <span><strong>Platform improvement</strong> — Analyzing usage patterns and feedback to enhance the Platform's features, performance, and user experience.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#128274;</span>
+                        <span><strong>Security and fraud prevention</strong> — Detecting, investigating, and preventing fraudulent or unauthorized access, abuse, or violations of our Terms and Conditions.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#9878;&#65039;</span>
+                        <span><strong>Legal compliance</strong> — Fulfilling obligations under Philippine law, responding to lawful requests from government authorities, and enforcing our legal rights.</span>
+                    </li>
+                </ul>
+                <p>We will not use your personal data for purposes that are incompatible with the purposes stated above, unless we obtain your separate consent or are required to do so by law.</p>
+            </div>
+
+            <div class="terms-section-divider"></div>
+
+            <!-- 4. Legal Basis for Processing -->
+            <div class="terms-section" id="legal-basis">
+                <div class="terms-section-number">4</div>
+                <h2>Legal Basis for Processing</h2>
+                <p>Under the Data Privacy Act of 2012, we process your personal data based on the following lawful criteria:</p>
+                <ul class="terms-list">
+                    <li>
+                        <span class="terms-list-icon">a</span>
+                        <span><strong>Consent</strong> — You provide your informed, voluntary, and specific consent when you create an account and agree to this Privacy Policy. For sensitive personal information (e.g., health-related booking notes), we obtain your explicit consent prior to collection.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">b</span>
+                        <span><strong>Contractual necessity</strong> — Processing is necessary to perform our obligations under the Terms and Conditions, including facilitating bookings, managing accounts, and processing payments.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">c</span>
+                        <span><strong>Legitimate interest</strong> — Processing is necessary for our legitimate business interests, such as improving the Platform, preventing fraud, and ensuring security, provided these interests do not override your fundamental rights and freedoms.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">d</span>
+                        <span><strong>Legal obligation</strong> — Processing is necessary to comply with applicable Philippine laws, regulations, and lawful orders from competent authorities, including the NPC, BIR (Bureau of Internal Revenue), and law enforcement agencies.</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="terms-section-divider"></div>
+
+            <!-- 5. Data Sharing and Disclosure -->
+            <div class="terms-section" id="data-sharing">
+                <div class="terms-section-number">5</div>
+                <h2>Data Sharing &amp; Disclosure</h2>
+                <p>We do not sell, rent, or trade your personal data to third parties. We share your information only in the following circumstances:</p>
+                <ul class="terms-list">
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Between Clients and Service Providers</strong> — When you book an appointment, relevant booking details (name, contact information, appointment time, and notes) are shared with the chosen Service Provider to fulfill the appointment. Similarly, Service Provider details (business name, location, available schedules) are displayed to Clients.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Payment processors</strong> — We share necessary transaction data with our authorized payment partners (e.g., GCash, Maya, Stripe, PayMongo) to process payments. These partners operate under their own privacy policies and are BSP-regulated entities.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Cloud infrastructure providers</strong> — Your data is stored on secure cloud infrastructure (Amazon Web Services) with data centers that maintain internationally recognized security certifications (ISO 27001, SOC 2).</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Communication service providers</strong> — We use third-party services to deliver SMS notifications, email communications, and push notifications.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Legal and regulatory authorities</strong> — We may disclose your data when required by law, court order, or regulatory directive from Philippine government agencies, or when necessary to protect our rights, safety, or the safety of others.</span>
+                    </li>
+                </ul>
+                <p>All third-party service providers engaged by Book Me App! are bound by <strong>data sharing agreements</strong> and are required to implement appropriate organizational, physical, and technical security measures in accordance with the DPA and NPC issuances.</p>
+            </div>
+
+            <div class="terms-section-divider"></div>
+
+            <!-- 6. Data Retention -->
+            <div class="terms-section" id="data-retention">
+                <div class="terms-section-number">6</div>
+                <h2>Data Retention</h2>
+                <p>We retain your personal data only for as long as necessary to fulfill the purposes for which it was collected, or as required by applicable laws and regulations:</p>
+                <ul class="terms-list">
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Active accounts</strong> — Your data is retained for the duration of your active account and for a reasonable period thereafter to allow for account reactivation, resolve disputes, and comply with legal obligations.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Booking records</strong> — Appointment history and transaction records are retained for <strong>five (5) years</strong> from the date of the appointment, consistent with BIR record-keeping requirements for business transactions.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Deleted accounts</strong> — Upon account deletion, your personal data is anonymized or securely deleted within <strong>thirty (30) days</strong>, except for data that must be retained under legal obligations (e.g., tax records, audit trails).</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Inactive accounts</strong> — Accounts with no login activity for <strong>twenty-four (24) consecutive months</strong> may be flagged for deactivation. We will notify you via email before deactivating or deleting an inactive account.</span>
+                    </li>
+                </ul>
+                <p>When data is no longer needed, it is securely disposed of through industry-standard methods such as cryptographic erasure or secure overwriting, in compliance with NPC guidelines on data disposal.</p>
+            </div>
+
+            <div class="terms-section-divider"></div>
+
+            <!-- 7. Data Security -->
+            <div class="terms-section" id="data-security">
+                <div class="terms-section-number">7</div>
+                <h2>Data Security</h2>
+                <p>We implement reasonable and appropriate organizational, physical, and technical security measures to protect your personal data against unauthorized access, alteration, disclosure, or destruction:</p>
+                <ul class="terms-list">
+                    <li>
+                        <span class="terms-list-icon">&#128274;</span>
+                        <span><strong>Encryption</strong> — All data in transit is encrypted using TLS 1.2 or higher. Sensitive data at rest is encrypted using AES-256 encryption.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#128272;</span>
+                        <span><strong>Authentication</strong> — User accounts are protected by secure password hashing (bcrypt). We support and encourage the use of strong passwords.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#128421;</span>
+                        <span><strong>Infrastructure security</strong> — Our cloud infrastructure employs network isolation, firewalls, intrusion detection systems, and regular security patching.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#128101;</span>
+                        <span><strong>Access controls</strong> — Access to personal data is restricted to authorized personnel on a need-to-know basis. Multi-tenancy architecture ensures that each organization's data is logically isolated.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#128203;</span>
+                        <span><strong>Regular assessments</strong> — We conduct periodic security reviews and vulnerability assessments to identify and address potential risks.</span>
+                    </li>
+                </ul>
+                <p>While we take every reasonable precaution, no method of electronic storage or transmission is completely secure. We encourage you to protect your account credentials and report any suspected unauthorized access immediately.</p>
+            </div>
+
+            <div class="terms-section-divider"></div>
+
+            <!-- 8. Your Rights -->
+            <div class="terms-section" id="your-rights">
+                <div class="terms-section-number">8</div>
+                <h2>Your Rights Under the Data Privacy Act</h2>
+                <p>As a data subject under Republic Act No. 10173, you have the following rights regarding your personal data:</p>
+                <ul class="terms-list">
+                    <li>
+                        <span class="terms-list-icon">1</span>
+                        <span><strong>Right to be informed</strong> — You have the right to be informed of the collection and processing of your personal data, including the purpose, scope, and method of processing, as well as the identity of the personal information controller.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">2</span>
+                        <span><strong>Right to access</strong> — You may request a copy of your personal data that we hold, the sources from which it was obtained, the recipients or classes of recipients to whom it has been disclosed, and the manner by which it was processed.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">3</span>
+                        <span><strong>Right to object</strong> — You may object to the processing of your personal data, including processing for direct marketing, automated processing, or profiling. We will cease processing upon receipt of a valid objection, unless we have compelling legitimate grounds.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">4</span>
+                        <span><strong>Right to erasure or blocking</strong> — You may request the removal or blocking of your personal data if it is incomplete, outdated, false, unlawfully obtained, no longer necessary for the declared purpose, or if you withdraw your consent.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">5</span>
+                        <span><strong>Right to rectification</strong> — You may dispute and request the correction of any inaccurate or erroneous personal data we hold about you.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">6</span>
+                        <span><strong>Right to data portability</strong> — You may request a copy of your personal data in an electronic or structured format that allows further use, and have it transmitted to another personal information controller where technically feasible.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">7</span>
+                        <span><strong>Right to file a complaint</strong> — If you believe your data privacy rights have been violated, you have the right to file a complaint with the National Privacy Commission.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">8</span>
+                        <span><strong>Right to damages</strong> — You may claim compensation for damages sustained as a result of inaccurate, incomplete, outdated, false, unlawfully obtained, or unauthorized use of your personal data.</span>
+                    </li>
+                </ul>
+                <p>To exercise any of these rights, please contact our Data Protection Officer at <strong>dpo&#64;bookmeapp.ph</strong>. We will respond to your request within <strong>fifteen (15) business days</strong> from receipt of a complete and verified request, in accordance with NPC guidelines.</p>
+                <div class="terms-callout">
+                    <div class="terms-callout-icon ph">&#128274;</div>
+                    <div class="terms-callout-content">
+                        <div class="terms-callout-title">How to Exercise Your Rights</div>
+                        <div class="terms-callout-text">Submit your request to dpo&#64;bookmeapp.ph with the subject line "Data Privacy Request." Include your full name, registered email address, and a description of your request. For identity verification, we may ask for a copy of a valid government-issued ID. Requests are processed free of charge unless they are manifestly unfounded or excessive.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="terms-section-divider"></div>
+
+            <!-- 9. Cookies & Tracking -->
+            <div class="terms-section" id="cookies">
+                <div class="terms-section-number">9</div>
+                <h2>Cookies &amp; Tracking Technologies</h2>
+                <p>The Platform uses cookies and similar technologies to provide, secure, and improve our services:</p>
+                <ul class="terms-list">
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Essential cookies</strong> — Required for the Platform to function properly, including session management, authentication, and security tokens. These cannot be disabled.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Functional cookies</strong> — Remember your preferences such as language settings, selected organization, and display options to provide a personalized experience.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span><strong>Analytics cookies</strong> — Help us understand how users interact with the Platform so we can improve features and performance. We use anonymized and aggregated analytics data where possible.</span>
+                    </li>
+                </ul>
+                <p>We do not use cookies for third-party advertising or cross-site behavioral tracking. You can manage cookie preferences through your browser settings, but disabling essential cookies may affect the Platform's functionality.</p>
+            </div>
+
+            <div class="terms-section-divider"></div>
+
+            <!-- 10. Children's Privacy -->
+            <div class="terms-section" id="children">
+                <div class="terms-section-number">10</div>
+                <h2>Children's Privacy</h2>
+                <p>The Platform is not directed at children under the age of <strong>thirteen (13)</strong>. We do not knowingly collect personal data from children under 13 without verifiable parental or guardian consent.</p>
+                <p>Users between the ages of <strong>13 and 17</strong> may use the Platform only with the consent and supervision of a parent or legal guardian, in accordance with the Data Privacy Act's provisions on the processing of personal data of minors.</p>
+                <p>If we become aware that we have collected personal data from a child under 13 without appropriate parental consent, we will take immediate steps to delete such data. If you believe a child has provided us with personal data without consent, please contact our Data Protection Officer at <strong>dpo&#64;bookmeapp.ph</strong>.</p>
+            </div>
+
+            <div class="terms-section-divider"></div>
+
+            <!-- 11. International Data Transfers -->
+            <div class="terms-section" id="international">
+                <div class="terms-section-number">11</div>
+                <h2>International Data Transfers</h2>
+                <p>Your personal data may be processed and stored on servers located outside the Philippines (currently in the <strong>Asia Pacific region via Amazon Web Services</strong>). When we transfer your data internationally, we ensure that:</p>
+                <ul class="terms-list">
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>The receiving country or organization provides an <strong>adequate level of data protection</strong> comparable to that provided by the Data Privacy Act, or that appropriate safeguards are in place.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>Transfers are covered by <strong>data processing agreements</strong> that include appropriate technical and organizational security measures.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>The transfer is necessary for the performance of our contract with you (i.e., providing the Platform's services) or is made with your informed consent.</span>
+                    </li>
+                </ul>
+                <p>We comply with the NPC's guidelines on cross-border data transfers as outlined in NPC Circular 2016-02 and other relevant issuances.</p>
+            </div>
+
+            <div class="terms-section-divider"></div>
+
+            <!-- 12. Data Breach Protocol -->
+            <div class="terms-section" id="breach">
+                <div class="terms-section-number">12</div>
+                <h2>Data Breach Notification</h2>
+                <p>In the event of a personal data breach that is likely to result in a risk to your rights and freedoms, Book Me App! will:</p>
+                <ul class="terms-list">
+                    <li>
+                        <span class="terms-list-icon">1</span>
+                        <span><strong>Notify the NPC</strong> within <strong>seventy-two (72) hours</strong> of becoming aware of the breach, in accordance with NPC Circular 16-03 and the mandatory breach notification requirements of the DPA.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">2</span>
+                        <span><strong>Notify affected data subjects</strong> within the same period if the breach involves sensitive personal information or is likely to cause serious harm, using the most expedient means available (email, SMS, or in-app notification).</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">3</span>
+                        <span><strong>Provide details</strong> of the nature of the breach, the personal data potentially compromised, the measures taken to address the breach, and recommendations for affected individuals to mitigate potential harm.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">4</span>
+                        <span><strong>Document and remediate</strong> by maintaining a record of all data breaches (whether notifiable or not), conducting a root cause analysis, and implementing corrective measures to prevent recurrence.</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="terms-section-divider"></div>
+
+            <!-- 13. Policy Changes -->
+            <div class="terms-section" id="changes">
+                <div class="terms-section-number">13</div>
+                <h2>Changes to This Privacy Policy</h2>
+                <p>We may update this Privacy Policy from time to time to reflect changes in our practices, legal requirements, or Platform features. When we make material changes, we will:</p>
+                <ul class="terms-list">
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>Post the updated Privacy Policy on the Platform with a revised "Last Updated" date.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>Notify registered users via email or in-app notification at least <strong>fifteen (15) days</strong> before the changes take effect.</span>
+                    </li>
+                    <li>
+                        <span class="terms-list-icon">&#8226;</span>
+                        <span>Where the changes involve new processing purposes or significantly alter how your data is used, we will seek your <strong>renewed consent</strong> before implementing the changes.</span>
+                    </li>
+                </ul>
+                <p>Your continued use of the Platform after the effective date constitutes your acceptance of the updated Privacy Policy. We encourage you to review this page periodically.</p>
+            </div>
+
+            <div class="terms-section-divider"></div>
+
+            <!-- 14. Contact & Complaints -->
+            <div class="terms-section" id="contact">
+                <div class="terms-section-number">14</div>
+                <h2>Contact Us &amp; Filing Complaints</h2>
+                <p>If you have any questions, concerns, or requests regarding this Privacy Policy or how we handle your personal data, please contact us through any of the following channels:</p>
+
+                <div class="terms-callout" style="flex-direction:column;gap:16px;">
+                    <div style="display:flex;gap:14px;align-items:flex-start;">
+                        <div class="terms-callout-icon ph">&#127970;</div>
+                        <div class="terms-callout-content">
+                            <div class="terms-callout-title">Book Me App! Philippines, Inc.</div>
+                            <div class="terms-callout-text">Unit 12F, One Ayala Tower, Makati Avenue corner Edsa, Makati City 1226, Metro Manila, Philippines</div>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:14px;align-items:center;">
+                        <div class="terms-callout-icon info">&#128274;</div>
+                        <div class="terms-callout-content">
+                            <div class="terms-callout-title">Data Protection Officer</div>
+                            <div class="terms-callout-text">dpo&#64;bookmeapp.ph</div>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:14px;align-items:center;">
+                        <div class="terms-callout-icon info">&#128231;</div>
+                        <div class="terms-callout-content">
+                            <div class="terms-callout-title">General Support</div>
+                            <div class="terms-callout-text">support&#64;bookmeapp.ph</div>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:14px;align-items:center;">
+                        <div class="terms-callout-icon warning">&#128222;</div>
+                        <div class="terms-callout-content">
+                            <div class="terms-callout-title">Hotline (Mon-Sat, 8 AM - 6 PM PHT)</div>
+                            <div class="terms-callout-text">(02) 8123-4567 | +63 917 123 4567</div>
+                        </div>
+                    </div>
+                </div>
+
+                <p>If you are unsatisfied with our response or believe that your data privacy rights have been violated, you have the right to file a complaint with the:</p>
+
+                <div class="terms-callout">
+                    <div class="terms-callout-icon ph">&#127477;&#127469;</div>
+                    <div class="terms-callout-content">
+                        <div class="terms-callout-title">National Privacy Commission (NPC)</div>
+                        <div class="terms-callout-text">
+                            3rd Floor, Core G, GSIS Headquarters, Financial Center, Pasay City 1308, Philippines<br />
+                            Website: <strong>privacy.gov.ph</strong><br />
+                            Email: <strong>complaints&#64;privacy.gov.ph</strong><br />
+                            Hotline: (02) 8234-2228
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="terms-footer">
+        <div class="terms-footer-inner">
+            <a href="/" class="terms-footer-logo">
+                <div class="terms-footer-logo-icon">B</div>
+                <span class="terms-footer-logo-text">Book Me App!</span>
+            </a>
+            <p class="terms-footer-desc">The modern booking platform built for Filipino dental clinics, spas, nail salons, and barbershops.</p>
+            <div class="terms-footer-links">
+                <a href="/privacy">Privacy Policy</a>
+                <a href="/terms">Terms &amp; Conditions</a>
+            </div>
+            <p class="terms-footer-copy">&#169; 2026 Book Me App! Philippines, Inc. All rights reserved.</p>
+        </div>
+    </footer>
+</div>
