@@ -199,9 +199,9 @@ public class OtpNotificationService
     <style>
         body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
         .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-        .header {{ background-color: #2563EB; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
+        .header {{ background-color: #E85D2A; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
         .content {{ background-color: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
-        .otp-code {{ background-color: white; border: 2px solid #2563EB; border-radius: 8px; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #2563EB; margin: 20px 0; }}
+        .otp-code {{ background-color: white; border: 2px solid #E85D2A; border-radius: 8px; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #E85D2A; margin: 20px 0; }}
         .warning {{ color: #F59E0B; font-size: 14px; margin-top: 20px; }}
     </style>
 </head>
