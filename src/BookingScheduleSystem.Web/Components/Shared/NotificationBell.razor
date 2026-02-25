@@ -36,26 +36,42 @@
             }
             else
             {
-                <MudList T="string" Dense="true" Class="overflow-y-auto" Style="max-height: min(400px, 60vh);">
+                <div class="overflow-y-auto" style="max-height: min(400px, 60vh);">
                     @foreach (var notification in _notifications)
                     {
-                        <MudListItem OnClick="@(() => MarkRead(notification))"
-                                     Style="@(!notification.IsRead ? "background-color: var(--mud-palette-primary-lighten); opacity: 0.9;" : "")">
-                            <MudStack Spacing="0">
-                                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-                                    <MudText Typo="Typo.body2"><strong>@notification.Title</strong></MudText>
+                        <div @onclick="@(() => MarkRead(notification))"
+                             style="position: relative; cursor: pointer; padding: 12px 16px; @(!notification.IsRead ? "background-color: rgba(var(--mud-palette-primary-rgb), 0.04);" : "")"
+                             @key="notification.Id">
+
+                            @if (!notification.IsRead)
+                            {
+                                <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background-color: var(--mud-palette-primary);"></div>
+                            }
+
+                            <MudStack Row="true" Spacing="3" AlignItems="AlignItems.Start">
+                                <div style="flex-shrink: 0; width: 44px; height: 44px; border-radius: 50%; background-color: @GetNotificationIconBg(notification.Type); display: flex; align-items: center; justify-content: center;">
                                     <MudIcon Icon="@GetNotificationIcon(notification.Type)"
-                                             Size="Size.Small"
+                                             Size="Size.Medium"
                                              Color="@GetNotificationColor(notification.Type)" />
+                                </div>
+
+                                <MudStack Spacing="1" Style="flex: 1; min-width: 0;">
+                                    <MudText Typo="Typo.body2" Style="font-weight: 700; font-size: 14px; line-height: 1.4;">
+                                        @notification.Title
+                                    </MudText>
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary" Style="font-size: 13px; line-height: 1.4;">
+                                        @notification.Message
+                                    </MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary" Style="font-size: 12px; margin-top: 2px;">
+                                        @GetTimeAgo(notification.CreatedAt)
+                                    </MudText>
                                 </MudStack>
-                                <MudText Typo="Typo.caption">@notification.Message</MudText>
-                                <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                    @GetTimeAgo(notification.CreatedAt)
-                                </MudText>
                             </MudStack>
-                        </MudListItem>
+                        </div>
+
+                        <MudDivider />
                     }
-                </MudList>
+                </div>
             }
         </MudStack>
     </MudPaper>
@@ -157,6 +173,15 @@
         NotificationType.BookingCancelled => Color.Error,
         NotificationType.BookingRejected => Color.Warning,
         _ => Color.Default
+    };
+
+    private string GetNotificationIconBg(NotificationType type) => type switch
+    {
+        NotificationType.BookingCreated => "rgba(33, 150, 243, 0.12)",
+        NotificationType.BookingConfirmed => "rgba(76, 175, 80, 0.12)",
+        NotificationType.BookingCancelled => "rgba(244, 67, 54, 0.12)",
+        NotificationType.BookingRejected => "rgba(255, 152, 0, 0.12)",
+        _ => "rgba(158, 158, 158, 0.12)"
     };
 
     private string GetTimeAgo(DateTime createdAt)
