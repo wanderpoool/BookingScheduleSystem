@@ -6,7 +6,6 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @inject IScheduleService ScheduleService
 @inject IBookingService BookingService
-@inject ITenantService TenantService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
@@ -32,7 +31,7 @@
                                     <MudText Typo="Typo.h6">When would you like to come in?</MudText>
 
                                     <div class="d-flex justify-center">
-                                        <MudDatePicker @key="_operatingHours"
+                                        <MudDatePicker @key="_providerWorkingDays"
                                                        @bind-Date="_selectedDate"
                                                        PickerVariant="PickerVariant.Static"
                                                        MinDate="DateTime.Today"
@@ -44,7 +43,7 @@
                                     @if (_selectedDate is not null && IsDateDisabled(_selectedDate.Value))
                                     {
                                         <MudAlert Severity="Severity.Warning" Dense="true">
-                                            This business is closed on @_selectedDate.Value.ToString("dddd")s.
+                                            No providers available on @_selectedDate.Value.ToString("dddd")s.
                                         </MudAlert>
                                     }
 
@@ -343,7 +342,7 @@
 
     private Guid _tenantId;
     private string _customerName = "Customer";
-    private Dictionary<DayOfWeek, DayScheduleModel> _operatingHours = OperatingHoursHelper.GetDefaultHours();
+    private HashSet<DayOfWeek> _providerWorkingDays = new(Enum.GetValues<DayOfWeek>());
     private List<ScheduleCalendarItem> _allCalendarItems = new();
     private List<ScheduleCalendarItem> _availableTimeSlots = new();
     private List<ProviderOption> _availableProviders = new();
@@ -371,19 +370,31 @@
 
         try
         {
-            var tenant = await TenantService.GetTenantAsync(_tenantId);
-            _operatingHours = OperatingHoursHelper.Parse(tenant?.OperatingHours)
-                              ?? OperatingHoursHelper.GetDefaultHours();
+            // Load provider availability for a full week to determine which days providers work
+            var tomorrow = DateTime.Today.AddDays(1);
+            var startDate = new DateTime(tomorrow.Year, tomorrow.Month, tomorrow.Day, 0, 0, 0, DateTimeKind.Utc);
+            var endDate = startDate.AddDays(7);
+
+            var result = await ScheduleService.ListPublicSchedulesAsync(_tenantId, startDate, endDate, 1, 200);
+
+            if (result?.Providers != null && result.Providers.Count > 0)
+            {
+                _providerWorkingDays = result.Providers
+                    .SelectMany(p => p.Days)
+                    .Select(d => d.Date.DayOfWeek)
+                    .ToHashSet();
+            }
         }
         catch
         {
-            _operatingHours = OperatingHoursHelper.GetDefaultHours();
+            // If loading fails, allow all days (user will see "no slots" when picking a date)
+            _providerWorkingDays = new(Enum.GetValues<DayOfWeek>());
         }
     }
 
     private bool IsDateDisabled(DateTime date)
     {
-        return _operatingHours.TryGetValue(date.DayOfWeek, out var day) && !day.IsOpen;
+        return !_providerWorkingDays.Contains(date.DayOfWeek);
     }
 
     private async Task GoToTimeStep()
