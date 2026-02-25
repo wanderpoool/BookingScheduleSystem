@@ -42,7 +42,7 @@
                         <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Available</MudText>
                     </span>
                     <span class="d-flex align-center gap-1">
-                        <span style="width: 8px; height: 8px; border-radius: 50%; background: #EF4444; display: inline-block;"></span>
+                        <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--mud-palette-error); display: inline-block;"></span>
                         <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">Booked</MudText>
                     </span>
                 </div>
@@ -74,15 +74,15 @@
                                 <div style="padding: 4px 8px; flex: 1; display: flex; flex-direction: column; gap: 2px;">
                                     @if (!string.IsNullOrWhiteSpace(calItem.TimeBlock.ScheduleTitle))
                                     {
-                                        <span style="font-size: 12px; font-weight: 700; color: #1B2D45; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@calItem.TimeBlock.ScheduleTitle</span>
+                                        <span style="font-size: 12px; font-weight: 700; color: var(--mud-palette-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@calItem.TimeBlock.ScheduleTitle</span>
                                     }
-                                    <span style="font-size: 12px; color: #5A6B80; display: flex; align-items: center; gap: 4px;">
-                                        <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Style="font-size: 14px; color: #5A6B80;" />
+                                    <span style="font-size: 12px; color: var(--mud-palette-text-secondary); display: flex; align-items: center; gap: 4px;">
+                                        <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Style="font-size: 14px; color: var(--mud-palette-text-secondary);" />
                                         @calItem.ProviderName
                                     </span>
                                     @if (!string.IsNullOrWhiteSpace(calItem.TimeBlock.BookingNotes))
                                     {
-                                        <span style="font-size: 12px; color: #5A6B80; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                        <span style="font-size: 12px; color: var(--mud-palette-text-secondary); font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                             @calItem.TimeBlock.BookingNotes
                                         </span>
                                     }
@@ -92,14 +92,14 @@
                         else if (!calItem.TimeBlock.IsAvailable)
                         {
                             @* Someone else's booking — just red, no info *@
-                            <div style="width: 100%; height: 100%; background: #EF4444; display: flex; align-items: center; justify-content: center; border-radius: 6px;">
-                                <span style="color: #fff; font-size: 12px; font-weight: 700;">Booked</span>
+                            <div style="width: 100%; height: 100%; background: var(--mud-palette-error); display: flex; align-items: center; justify-content: center; border-radius: 6px;">
+                                <span style="color: var(--mud-palette-error-text); font-size: 12px; font-weight: 700;">Booked</span>
                             </div>
                         }
                         else
                         {
                             @* Available slot *@
-                            <div style="width: 100%; height: 100%; background: #D1FAE5; border-left: 3px solid #10B981; border-radius: 6px;">
+                            <div style="width: 100%; height: 100%; background: var(--color-success-light); border-left: 3px solid var(--mud-palette-success); border-radius: 6px;">
                             </div>
                         }
                     </CellTemplate>
@@ -148,13 +148,13 @@
                                 </span>
                                 @if (!string.IsNullOrWhiteSpace(item.TimeBlock.CustomerName))
                                 {
-                                    <span style="font-size: 12px; color: #5A6B80; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    <span style="font-size: 12px; color: var(--mud-palette-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                         @item.TimeBlock.CustomerName
                                     </span>
                                 }
                                 @if (!string.IsNullOrWhiteSpace(item.TimeBlock.BookingNotes))
                                 {
-                                    <span style="font-size: 12px; color: #5A6B80; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    <span style="font-size: 12px; color: var(--mud-palette-text-secondary); font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                         @item.TimeBlock.BookingNotes
                                     </span>
                                 }
@@ -182,16 +182,16 @@
 
     private static string GetBookingStatusColor(BookingStatus? status) => status switch
     {
-        BookingStatus.Confirmed => "#10B981",
-        BookingStatus.Pending => "#F59E0B",
-        _ => "#E85D2A"
+        BookingStatus.Confirmed => "var(--mud-palette-success)",
+        BookingStatus.Pending => "var(--mud-palette-warning)",
+        _ => "var(--mud-palette-primary)"
     };
 
     private static string GetBookingStatusBg(BookingStatus? status) => status switch
     {
-        BookingStatus.Confirmed => "#D1FAE5",
-        BookingStatus.Pending => "#FEF3C7",
-        _ => "#FEE8DE"
+        BookingStatus.Confirmed => "var(--color-success-light)",
+        BookingStatus.Pending => "var(--color-warning-light)",
+        _ => "var(--color-error-light)"
     };
 
     private static string GetBookingStatusLabel(BookingStatus? status) => status switch
@@ -205,29 +205,29 @@
     {
         var (hex, light) = color switch
         {
-            Color.Success => ("#10B981", "#D1FAE5"),
-            Color.Error => ("#EF4444", "#FEE2E2"),
-            Color.Warning => ("#F59E0B", "#FEF3C7"),
-            Color.Info => ("#3B82F6", "#DBEAFE"),
-            _ => ("#5A6B80", "#FFF5EC")
+            Color.Success => ("var(--mud-palette-success)", "var(--color-success-light)"),
+            Color.Error => ("var(--mud-palette-error)", "var(--color-error-light)"),
+            Color.Warning => ("var(--mud-palette-warning)", "var(--color-warning-light)"),
+            Color.Info => ("var(--mud-palette-info)", "var(--color-info-light)"),
+            _ => ("var(--mud-palette-text-secondary)", "var(--color-action-disabled)")
         };
         return solid ? hex : light;
     }
 
     private static string GetProviderCellAccent(ScheduleCalendarItem item) => item.TimeBlock.BookingStatus switch
     {
-        BookingStatus.Confirmed => "#10B981",
-        BookingStatus.Pending => "#F59E0B",
-        BookingStatus.Cancelled => "#EF4444",
-        _ => "#F59E0B"
+        BookingStatus.Confirmed => "var(--mud-palette-success)",
+        BookingStatus.Pending => "var(--mud-palette-warning)",
+        BookingStatus.Cancelled => "var(--mud-palette-error)",
+        _ => "var(--mud-palette-warning)"
     };
 
     private static string GetProviderCellBg(ScheduleCalendarItem item) => item.TimeBlock.BookingStatus switch
     {
-        BookingStatus.Confirmed => "#F0FDF4",
-        BookingStatus.Pending => "#FFFBEB",
-        BookingStatus.Cancelled => "#FEF2F2",
-        _ => "#FFFBEB"
+        BookingStatus.Confirmed => "var(--color-success-light)",
+        BookingStatus.Pending => "var(--color-warning-light)",
+        BookingStatus.Cancelled => "var(--color-error-light)",
+        _ => "var(--color-warning-light)"
     };
 
     private static string GetProviderCellLabel(ScheduleCalendarItem item)

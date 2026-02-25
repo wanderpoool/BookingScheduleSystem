@@ -447,3 +447,61 @@
     .btn-nf { width: 100%; justify-content: center; min-height: 48px; }
     .quick-links { flex-direction: column; gap: 12px; }
 }
+
+/* ===== DARK MODE (OS preference) ===== */
+@media (prefers-color-scheme: dark) {
+    .notfound-page {
+        background: #1A1612;
+        color: #F9F5F0;
+    }
+    .cal-card {
+        background: #262018;
+        border-color: #3D3328;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    .cal-num {
+        color: #F9F5F0;
+    }
+    .cal-day-label {
+        color: #A89B8C;
+    }
+    .cal-empty-line {
+        background: #332B20;
+    }
+    .float-card {
+        background: #262018;
+        border-color: #3D3328;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    .float-card-title {
+        color: #F9F5F0;
+    }
+    .float-card-sub {
+        color: #A89B8C;
+    }
+    .error-desc {
+        color: #A89B8C;
+    }
+    .btn-nf-secondary {
+        background: #262018;
+        color: #F9F5F0;
+        border-color: #3D3328;
+    }
+    .btn-nf-secondary:hover {
+        border-color: #F28B5F;
+        color: #F28B5F;
+    }
+    .quick-link {
+        color: #A89B8C;
+    }
+    .quick-link-icon {
+        background: #262018;
+        border-color: #3D3328;
+    }
+    .footer-note {
+        color: #A89B8C;
+    }
+    .error-code::before {
+        border-color: #F28B5F;
+    }
+}

@@ -180,7 +180,7 @@
 }
 
 .bm-day-header.bm-today {
-    background: rgba(232, 93, 42, 0.06);
+    background: var(--color-action-hover);
 }
 
 .bm-day-header.bm-today .bm-day-name {
@@ -251,13 +251,13 @@
 
 /* Hour rows: solid line + dashed half-hour */
 .bm-hour-row {
-    border-bottom: 1px solid rgba(232, 226, 218, 0.5);
+    border-bottom: 1px solid var(--color-divider);
     position: relative;
     cursor: pointer;
 }
 
 .bm-hour-row:hover {
-    background: rgba(232, 93, 42, 0.02);
+    background: var(--color-action-hover);
 }
 
 .bm-hour-row::after {
@@ -266,7 +266,7 @@
     left: 0;
     right: 0;
     top: 50%;
-    border-bottom: 1px dashed rgba(232, 226, 218, 0.35);
+    border-bottom: 1px dashed var(--color-divider-light);
     pointer-events: none;
 }
 
@@ -451,6 +451,6 @@
     }
 
     .bm-day-header:hover {
-        background: rgba(232, 93, 42, 0.03);
+        background: var(--color-action-hover);
     }
 }

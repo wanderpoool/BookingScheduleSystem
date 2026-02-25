@@ -4,11 +4,13 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @implements IDisposable
 
-<MudBadge Content="@_unreadCount" Visible="@(_unreadCount > 0)" Color="Color.Error" Overlap="true">
-    <MudIconButton Icon="@Icons.Material.Filled.Notifications"
-                   Color="Color.Inherit"
-                   OnClick="TogglePopover" />
-</MudBadge>
+<span style="overflow: visible; display: inline-flex; margin-top: 6px;">
+    <MudBadge Content="@_unreadCount" Visible="@(_unreadCount > 0)" Color="Color.Error" Overlap="true">
+        <MudIconButton Icon="@Icons.Material.Filled.Notifications"
+                       Color="Color.Inherit"
+                       OnClick="TogglePopover" />
+    </MudBadge>
+</span>
 
 <MudPopover Open="@_isOpen" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight"
             Class="pa-0" Style="width: min(360px, calc(100vw - 32px));">

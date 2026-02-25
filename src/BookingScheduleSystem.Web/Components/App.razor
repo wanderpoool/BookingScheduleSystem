@@ -31,11 +31,18 @@
        Blazor replaces this content once the interactive circuit is ready. *@
     <div id="app-loading" style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#FFF8F0;font-family:'DM Sans',system-ui,sans-serif;">
         <div style="text-align:center;">
-            <div style="width:40px;height:40px;border:3px solid #E8DFD5;border-top-color:#E85D2A;border-radius:50%;margin:0 auto 16px;animation:app-spin 0.8s linear infinite;"></div>
-            <div style="color:#5A6B80;font-size:14px;">Loading...</div>
+            <div id="app-spinner" style="width:40px;height:40px;border:3px solid #E8DFD5;border-top-color:#E85D2A;border-radius:50%;margin:0 auto 16px;animation:app-spin 0.8s linear infinite;"></div>
+            <div id="app-loading-text" style="color:#5A6B80;font-size:14px;">Loading...</div>
         </div>
     </div>
-    <style>@@keyframes app-spin{to{transform:rotate(360deg)}}</style>
+    <style>
+        @@keyframes app-spin{to{transform:rotate(360deg)}}
+        @@media(prefers-color-scheme:dark){
+            #app-loading{background:#1A1612!important}
+            #app-spinner{border-color:#3D3328!important;border-top-color:#F28B5F!important}
+            #app-loading-text{color:#A89B8C!important}
+        }
+    </style>
     <Routes />
     <script>
         // Remove loading placeholder once Blazor renders

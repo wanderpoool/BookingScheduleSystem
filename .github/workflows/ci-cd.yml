@@ -49,7 +49,8 @@ jobs:
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+          dotnet-ve              "HostedZoneId=${{ secrets.HOSTED_ZONE_ID }}" \
+rsion: ${{ env.DOTNET_VERSION }}
 
       - name: Restore & Build
         run: dotnet build src/BookingScheduleSystem.Web/BookingScheduleSystem.Web.csproj -c Release
@@ -83,7 +84,35 @@ jobs:
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Recover stack from failed state
+      - name: Build, tag, and push API image
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build \
+            -t "$ECR_REGISTRY/${APP_NAME}-api:latest" \
+            -t "$ECR_REGISTRY/${APP_NAME}-api:${IMAGE_TAG}" \
+            -f src/BookingScheduleSystem.Api/Dockerfile \
+            src/
+
+          docker push "$ECR_REGISTRY/${APP_NAME}-api:latest"
+          docker push "$ECR_REGISTRY/${APP_NAME}-api:${IMAGE_TAG}"
+
+      - name: Build, tag, and push Web image
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build \
+            -t "$ECR_REGISTRY/${APP_NAME}-web:latest" \
+            -t "$ECR_REGISTRY/${APP_NAME}-web:${IMAGE_TAG}" \
+            -f src/BookingScheduleSystem.Web/Dockerfile \
+            src/
+
+          docker push "$ECR_REGISTRY/${APP_NAME}-web:latest"
+          docker push "$ECR_REGISTRY/${APP_NAME}-web:${IMAGE_TAG}"
+
+      - name: Delete failed stack if in ROLLBACK_COMPLETE
         run: |
           STACK_STATUS=$(aws cloudformation describe-stacks \
             --stack-name "${APP_NAME}-production" \
@@ -91,172 +120,14 @@ jobs:
             --output text \
             --region "$AWS_REGION" 2>/dev/null || echo "DOES_NOT_EXIST")
           echo "Current stack status: $STACK_STATUS"
-
-          # Wait for any in-progress operations to finish before proceeding
-          if echo "$STACK_STATUS" | grep -q "IN_PROGRESS"; then
-            echo "Stack has an operation in progress — polling until complete..."
-            while true; do
-              sleep 30
-              STACK_STATUS=$(aws cloudformation describe-stacks \
-                --stack-name "${APP_NAME}-production" \
-                --query 'Stacks[0].StackStatus' \
-                --output text \
-                --region "$AWS_REGION" 2>/dev/null || echo "DOES_NOT_EXIST")
-              echo "  Stack status: $STACK_STATUS"
-              if ! echo "$STACK_STATUS" | grep -q "IN_PROGRESS"; then
-                echo "Stack operation finished with status: $STACK_STATUS"
-                break
-              fi
-            done
-          fi
-
-          # UPDATE_ROLLBACK_FAILED: complete the rollback, skipping resources that can't be cleaned up
-          if [ "$STACK_STATUS" = "UPDATE_ROLLBACK_FAILED" ]; then
-            echo "Stack is in UPDATE_ROLLBACK_FAILED — finding resources that failed to roll back..."
-            FAILED_RESOURCES=$(aws cloudformation list-stack-resources \
-              --stack-name "${APP_NAME}-production" \
-              --region "$AWS_REGION" \
-              --query 'StackResourceSummaries[?ResourceStatus==`DELETE_FAILED`].LogicalResourceId' \
-              --output text 2>/dev/null || echo "")
-            echo "Failed resources: $FAILED_RESOURCES"
-
-            echo "Continuing rollback, skipping failed resources..."
-            aws cloudformation continue-update-rollback \
-              --stack-name "${APP_NAME}-production" \
-              --resources-to-skip $FAILED_RESOURCES \
-              --region "$AWS_REGION"
-            echo "Waiting for rollback to complete..."
-            aws cloudformation wait stack-rollback-complete \
-              --stack-name "${APP_NAME}-production" \
-              --region "$AWS_REGION"
-            echo "Rollback completed. Stack is now in UPDATE_ROLLBACK_COMPLETE."
-          fi
-
-          # REVIEW_IN_PROGRESS: stuck from a failed changeset — delete and start fresh
-          if [ "$STACK_STATUS" = "REVIEW_IN_PROGRESS" ]; then
-            echo "Stack is stuck in REVIEW_IN_PROGRESS — deleting..."
-            aws cloudformation delete-stack --stack-name "${APP_NAME}-production" --region "$AWS_REGION"
-            aws cloudformation wait stack-delete-complete --stack-name "${APP_NAME}-production" --region "$AWS_REGION"
-            echo "Stack deleted."
-            STACK_STATUS="DOES_NOT_EXIST"
-          fi
-
-          # Terminal create failures: delete and start fresh
           if [ "$STACK_STATUS" = "ROLLBACK_COMPLETE" ] || [ "$STACK_STATUS" = "ROLLBACK_FAILED" ] || [ "$STACK_STATUS" = "CREATE_FAILED" ] || [ "$STACK_STATUS" = "DELETE_FAILED" ]; then
             echo "Stack is in $STACK_STATUS state — deleting before re-creating..."
-            FAILED_RESOURCES=$(aws cloudformation list-stack-resources \
-              --stack-name "${APP_NAME}-production" \
-              --region "$AWS_REGION" \
-              --query 'StackResourceSummaries[?ResourceStatus==`DELETE_FAILED`].LogicalResourceId' \
-              --output text 2>/dev/null || echo "")
-            if [ -n "$FAILED_RESOURCES" ]; then
-              echo "Retaining stuck resources: $FAILED_RESOURCES"
-              aws cloudformation delete-stack --stack-name "${APP_NAME}-production" --region "$AWS_REGION" --retain-resources $FAILED_RESOURCES
-            else
-              aws cloudformation delete-stack --stack-name "${APP_NAME}-production" --region "$AWS_REGION"
-            fi
+            aws cloudformation delete-stack --stack-name "${APP_NAME}-production" --region "$AWS_REGION"
             aws cloudformation wait stack-delete-complete --stack-name "${APP_NAME}-production" --region "$AWS_REGION"
             echo "Stack deleted successfully."
-            STACK_STATUS="DOES_NOT_EXIST"
           fi
 
-          echo "Stack recovery complete. Current status: $STACK_STATUS"
-
-      - name: Clean up orphaned ALB listeners from failed rollbacks
-        run: |
-          # Get the ALB ARN from the existing stack
-          ALB_ARN=$(aws cloudformation describe-stack-resources \
-            --stack-name "${APP_NAME}-production" \
-            --logical-resource-id ApplicationLoadBalancer \
-            --query 'StackResources[0].PhysicalResourceId' \
-            --output text \
-            --region "$AWS_REGION" 2>/dev/null || echo "")
-
-          if [ -z "$ALB_ARN" ] || [ "$ALB_ARN" = "None" ]; then
-            echo "No ALB found in stack, skipping listener cleanup."
-            exit 0
-          fi
-
-          # Check if an HTTPS:443 listener physically exists on the ALB
-          HTTPS_LISTENER_ARN=$(aws elbv2 describe-listeners \
-            --load-balancer-arn "$ALB_ARN" \
-            --query 'Listeners[?Port==`443`].ListenerArn' \
-            --output text \
-            --region "$AWS_REGION" 2>/dev/null || echo "")
-
-          if [ -z "$HTTPS_LISTENER_ARN" ] || [ "$HTTPS_LISTENER_ARN" = "None" ]; then
-            echo "No HTTPS listener on ALB, nothing to clean up."
-            exit 0
-          fi
-
-          # Check if CloudFormation actually manages the HttpsListener
-          CF_LISTENER=$(aws cloudformation describe-stack-resource \
-            --stack-name "${APP_NAME}-production" \
-            --logical-resource-id HttpsListener \
-            --query 'StackResourceDetail.PhysicalResourceId' \
-            --output text \
-            --region "$AWS_REGION" 2>/dev/null || echo "")
-
-          if [ -z "$CF_LISTENER" ] || [ "$CF_LISTENER" = "None" ]; then
-            echo "Found orphaned HTTPS listener not managed by CloudFormation: $HTTPS_LISTENER_ARN"
-            echo "Deleting orphaned listener so CloudFormation can recreate it..."
-            aws elbv2 delete-listener \
-              --listener-arn "$HTTPS_LISTENER_ARN" \
-              --region "$AWS_REGION"
-            echo "Orphaned HTTPS listener deleted."
-          else
-            echo "HTTPS listener is managed by CloudFormation ($CF_LISTENER), no cleanup needed."
-          fi
-
-      - name: Ensure ECR repos exist and push images
-        env:
-          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
-        run: |
-          # Create ECR repos if they don't exist (managed outside CloudFormation)
-          for repo in "${APP_NAME}-api" "${APP_NAME}-web"; do
-            if ! aws ecr describe-repositories --repository-names "$repo" --region "$AWS_REGION" >/dev/null 2>&1; then
-              echo "Creating ECR repository: $repo"
-              aws ecr create-repository \
-                --repository-name "$repo" \
-                --image-scanning-configuration scanOnPush=true \
-                --region "$AWS_REGION"
-              # Add lifecycle policy
-              aws ecr put-lifecycle-policy \
-                --repository-name "$repo" \
-                --region "$AWS_REGION" \
-                --lifecycle-policy-text '{
-                  "rules": [
-                    {"rulePriority":1,"description":"Expire untagged after 1 day","selection":{"tagStatus":"untagged","countType":"sinceImagePushed","countUnit":"days","countNumber":1},"action":{"type":"expire"}},
-                    {"rulePriority":2,"description":"Keep last 5 tagged","selection":{"tagStatus":"tagged","tagPrefixList":["latest","main","production"],"countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}
-                  ]
-                }'
-            else
-              echo "ECR repository $repo already exists."
-            fi
-          done
-
-          # Build and push API image
-          echo "Building API image..."
-          docker build \
-            -t "$ECR_REGISTRY/${APP_NAME}-api:latest" \
-            -t "$ECR_REGISTRY/${APP_NAME}-api:${IMAGE_TAG}" \
-            -f src/BookingScheduleSystem.Api/Dockerfile \
-            src/
-          docker push "$ECR_REGISTRY/${APP_NAME}-api:latest"
-          docker push "$ECR_REGISTRY/${APP_NAME}-api:${IMAGE_TAG}"
-
-          # Build and push Web image
-          echo "Building Web image..."
-          docker build \
-            -t "$ECR_REGISTRY/${APP_NAME}-web:latest" \
-            -t "$ECR_REGISTRY/${APP_NAME}-web:${IMAGE_TAG}" \
-            -f src/BookingScheduleSystem.Web/Dockerfile \
-            src/
-          docker push "$ECR_REGISTRY/${APP_NAME}-web:latest"
-          docker push "$ECR_REGISTRY/${APP_NAME}-web:${IMAGE_TAG}"
-
-      - name: Deploy CloudFormation stack (RDS, ALB, ECS)
+      - name: Update CloudFormation stack
         env:
           ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
         run: |
@@ -270,28 +141,9 @@ jobs:
               "WebImageUri=${ECR_REGISTRY}/${APP_NAME}-web:latest" \
               "GlobalAdminEmail=${{ secrets.GLOBAL_ADMIN_EMAIL }}" \
               "GlobalAdminPassword=${{ secrets.GLOBAL_ADMIN_PASSWORD }}" \
-              "HostedZoneId=${{ secrets.HOSTED_ZONE_ID }}" \
             --capabilities CAPABILITY_IAM \
             --region "$AWS_REGION" \
             --no-fail-on-empty-changeset
-
-      - name: Show CloudFormation failure events
-        if: failure()
-        run: |
-          echo "=== CloudFormation Stack Events (failures) ==="
-          aws cloudformation describe-stack-events \
-            --stack-name "${APP_NAME}-production" \
-            --region "$AWS_REGION" \
-            --query 'StackEvents[?ResourceStatus==`CREATE_FAILED` || ResourceStatus==`UPDATE_FAILED` || ResourceStatus==`ROLLBACK_IN_PROGRESS`].[LogicalResourceId,ResourceStatus,ResourceStatusReason]' \
-            --output table 2>/dev/null || true
-
-          echo ""
-          echo "=== Last 20 Stack Events ==="
-          aws cloudformation describe-stack-events \
-            --stack-name "${APP_NAME}-production" \
-            --region "$AWS_REGION" \
-            --query 'StackEvents[:20].[Timestamp,LogicalResourceId,ResourceStatus,ResourceStatusReason]' \
-            --output table 2>/dev/null || true
 
       - name: Force ECS redeployment
         run: |
