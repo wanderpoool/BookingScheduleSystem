@@ -224,6 +224,12 @@ h1:focus {
         max-height: calc(100vh - 16px);
         border-radius: 16px;
     }
+
+    /* MudDatePicker: contain calendar width on mobile to prevent grid overflow */
+    .mud-picker-calendar {
+        max-width: 100%;
+        overflow: hidden;
+    }
 }
 
 /* ========================================

@@ -163,6 +163,12 @@ input[type="number"]::-webkit-outer-spin-button {
     min-height: var(--size-touch-target);
     min-width: var(--size-touch-target);
   }
+
+  /* Exclude MudBlazor picker calendar buttons — forced min-width breaks the 7-column grid alignment */
+  .mud-picker button {
+    min-width: unset;
+    min-height: unset;
+  }
 }
 
 /* ========================================
