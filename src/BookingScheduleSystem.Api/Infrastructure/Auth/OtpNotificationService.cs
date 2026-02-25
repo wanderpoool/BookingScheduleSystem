@@ -140,7 +140,7 @@ public class OtpNotificationService
 
     public async Task<bool> SendSmsOtpAsync(string phoneNumber, string otpCode, string purpose)
     {
-        var message = $"[BookMeApp] Your verification code is: {otpCode}. This code will expire in 10 minutes.";
+        var message = $"Your verification code is: {otpCode}. Valid for 10 min. Never share this code.";
         var result = await _smsService.SendSmsAsync(phoneNumber, message);
 
         if (!result)
