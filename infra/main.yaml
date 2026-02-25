@@ -71,6 +71,7 @@ Parameters:
 # CONDITIONS
 # =============================================================================
 Conditions:
+  HasDomain: !Not [!Equals [!Ref DomainName, '']]
   HasGlobalAdmin: !Not [!Equals [!Ref GlobalAdminEmail, '']]
 
 # =============================================================================
