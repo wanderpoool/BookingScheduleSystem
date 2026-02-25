@@ -31,11 +31,9 @@
                                     <MudText Typo="Typo.h6">When would you like to come in?</MudText>
 
                                     <div class="d-flex justify-center">
-                                        <MudDatePicker @key="_providerWorkingDays"
-                                                       @bind-Date="_selectedDate"
+                                        <MudDatePicker @bind-Date="_selectedDate"
                                                        PickerVariant="PickerVariant.Static"
                                                        MinDate="DateTime.Today"
-                                                       IsDateDisabledFunc="IsDateDisabled"
                                                        Elevation="0"
                                                        Color="Color.Primary" />
                                     </div>
@@ -43,7 +41,7 @@
                                     @if (_selectedDate is not null && IsDateDisabled(_selectedDate.Value))
                                     {
                                         <MudAlert Severity="Severity.Warning" Dense="true">
-                                            No providers available on @_selectedDate.Value.ToString("dddd")s.
+                                            No providers available on @_selectedDate.Value.ToString("dddd")s. Please select a different date.
                                         </MudAlert>
                                     }
 
