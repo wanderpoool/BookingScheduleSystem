@@ -402,9 +402,7 @@ Resources:
                   - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-username-*'
                   - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-password-*'
                   - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/semaphore-api-key-*'
-                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-username-*'
-                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-password-*'
-                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/semaphore-api-key-*'
+                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/anthropic-api-key-*'
                   - !If
                     - HasGlobalAdmin
                     - !Ref GlobalAdminPasswordSecret
@@ -657,6 +655,11 @@ Resources:
               Value: !Sub 'http://api.${AppName}.internal:8080'
             - Name: OpenTelemetry__ExporterEndpoint
               Value: !Sub 'https://xray.${AWS::Region}.amazonaws.com'
+            - Name: Anthropic__Model
+              Value: 'claude-haiku-4-5-20251001'
+          Secrets:
+            - Name: Anthropic__ApiKey
+              ValueFrom: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/anthropic-api-key'
           LogConfiguration:
             LogDriver: awslogs
             Options:

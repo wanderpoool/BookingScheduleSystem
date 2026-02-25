@@ -64,6 +64,13 @@
                                     <MudText Typo="Typo.body2" Color="Color.Secondary">@_tenant.Subdomain</MudText>
                                 </MudStack>
 
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Web" Size="Size.Small" Color="Color.Secondary" />
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                        Landing page: @((_tenant.LandingPageTemplate ?? "simple") == "premium" ? "Premium" : "Simple")
+                                    </MudText>
+                                </MudStack>
+
                                 <MudStack Row="true" Spacing="2">
                                     <MudChip T="string" Size="Size.Small"
                                              Color="@(_tenant.IsActive ? Color.Success : Color.Error)"
@@ -107,6 +114,14 @@
                                           Variant="Variant.Outlined"
                                           Placeholder="e.g., Manila, Philippines" />
 
+                            <MudSelect @bind-Value="_editLandingPageTemplate"
+                                       Label="Landing Page Template"
+                                       Variant="Variant.Outlined"
+                                       HelperText="Choose how your public booking page looks">
+                                <MudSelectItem Value="@("simple")">Simple — Clean & Minimal</MudSelectItem>
+                                <MudSelectItem Value="@("premium")">Premium — Rich Marketing Page</MudSelectItem>
+                            </MudSelect>
+
                             <MudStack Row="true" Spacing="2" Justify="Justify.FlexEnd">
                                 <MudButton Variant="Variant.Text" OnClick="CancelEditing">Cancel</MudButton>
                                 <MudButton Variant="Variant.Filled" Color="Color.Primary"
@@ -145,6 +160,7 @@
     private string _editName = string.Empty;
     private string? _editDescription;
     private string? _editLocation;
+    private string _editLandingPageTemplate = "simple";
 
     protected override async Task OnInitializedAsync()
     {
@@ -184,6 +200,7 @@
         _editName = _tenant.Name;
         _editDescription = _tenant.Description;
         _editLocation = _tenant.Location;
+        _editLandingPageTemplate = _tenant.LandingPageTemplate ?? "simple";
         _isEditing = true;
     }
 
@@ -211,7 +228,8 @@
                 Description = string.IsNullOrWhiteSpace(_editDescription) ? null : _editDescription.Trim(),
                 Location = string.IsNullOrWhiteSpace(_editLocation) ? null : _editLocation.Trim(),
                 OperatingHours = _tenant?.OperatingHours,
-                BannerUrl = _tenant?.BannerUrl
+                BannerUrl = _tenant?.BannerUrl,
+                LandingPageTemplate = _editLandingPageTemplate
             };
 
             var updated = await TenantService.UpdateTenantAsync(Guid.Parse(_tenantId!), request);

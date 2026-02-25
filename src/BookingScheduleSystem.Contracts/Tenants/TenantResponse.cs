@@ -17,4 +17,5 @@ public sealed record TenantResponse
     public string? OperatingHours { get; init; }
     public string? BannerUrl { get; init; }
     public string? Location { get; init; }
+    public string? LandingPageTemplate { get; init; }
 }

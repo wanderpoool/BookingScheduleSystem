@@ -1,7 +1,6 @@
 @page "/{*path}"
 @rendermode InteractiveServer
 @inject NavigationManager Navigation
-@inject ITenantService TenantService
 
 <PageTitle>Redirecting...</PageTitle>
 
@@ -11,31 +10,15 @@
 
     private bool _checked;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override void OnAfterRender(bool firstRender)
     {
         if (!firstRender || _checked)
             return;
 
         _checked = true;
 
-        if (Path != null && !Path.Contains('/'))
-        {
-            // Single segment — might be a bare slug like /smileclinic
-            try
-            {
-                var tenant = await TenantService.GetTenantBySubdomainAsync(Path);
-                if (tenant != null)
-                {
-                    Navigation.NavigateTo($"/{Path}/login", replace: true);
-                    return;
-                }
-            }
-            catch
-            {
-                // API unreachable — fall through to not-found
-            }
-        }
-
+        // Single-segment slugs are handled by ProviderLanding.razor at /{Slug}.
+        // This catch-all only handles multi-segment unknown paths.
         Navigation.NavigateTo("/not-found", replace: true);
     }
 }

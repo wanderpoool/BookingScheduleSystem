@@ -1,0 +1,224 @@
+@using BookingScheduleSystem.Web.Models
+@using BookingScheduleSystem.Web.Services.Chatbot
+@inject IChatbotService ChatbotService
+
+@* Floating Action Button *@
+@if (!_isOpen)
+{
+    <MudFab Color="Color.Primary"
+            StartIcon="@Icons.Material.Filled.Chat"
+            Class="chatbot-fab"
+            Size="Size.Large"
+            OnClick="Open"
+            aria-label="Open chat assistant" />
+}
+
+@* Chat Panel *@
+@if (_isOpen)
+{
+    <div class="chatbot-panel @(_isClosing ? "closing" : "")">
+        @* Header *@
+        <div class="chatbot-header">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Style="flex: 1; min-width: 0;">
+                <MudAvatar Size="Size.Small" Color="Color.Primary"
+                           Style="width: 32px; height: 32px; font-size: 14px;">
+                    <MudIcon Icon="@Icons.Material.Filled.SmartToy" Size="Size.Small" />
+                </MudAvatar>
+                <div style="min-width: 0;">
+                    <MudText Typo="Typo.subtitle2" Style="font-weight: 700; line-height: 1.2;">
+                        Booking Assistant
+                    </MudText>
+                    <MudText Typo="Typo.caption" Style="opacity: 0.7; line-height: 1.2;">
+                        @TenantName
+                    </MudText>
+                </div>
+            </MudStack>
+            <MudIconButton Icon="@Icons.Material.Filled.Close"
+                           Size="Size.Small"
+                           OnClick="Close"
+                           Style="color: var(--mud-palette-primary-text);"
+                           aria-label="Close chat" />
+        </div>
+
+        @* Messages Area *@
+        <div class="chatbot-messages" @ref="_messagesContainer" role="log" aria-live="polite" aria-label="Chat messages">
+            @if (_messages.Count == 0 && !_isThinking)
+            {
+                @* Welcome state *@
+                <div class="chatbot-welcome">
+                    <MudIcon Icon="@Icons.Material.Filled.WavingHand" Size="Size.Medium" Color="Color.Primary" />
+                    <MudText Typo="Typo.subtitle1" Style="font-weight: 700;" Align="Align.Center">
+                        Hi there!
+                    </MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                        I can help you find available times and book an appointment. What works for you?
+                    </MudText>
+                    <MudStack Spacing="1" Style="width: 100%; margin-top: 8px;">
+                        <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                                   FullWidth="true"
+                                   OnClick="@(() => SendQuickMessage("What's available this week?"))"
+                                   Style="min-height: 44px; text-transform: none; justify-content: flex-start;">
+                            What's available this week?
+                        </MudButton>
+                        <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                                   FullWidth="true"
+                                   OnClick="@(() => SendQuickMessage("I'd like to book an appointment"))"
+                                   Style="min-height: 44px; text-transform: none; justify-content: flex-start;">
+                            I'd like to book an appointment
+                        </MudButton>
+                    </MudStack>
+                </div>
+            }
+
+            @foreach (var msg in _messages)
+            {
+                <div class="chatbot-bubble @(msg.Role == ChatMessage.Roles.User ? "user-bubble" : "assistant-bubble")">
+                    @if (msg.Role == ChatMessage.Roles.Assistant)
+                    {
+                        <MudAvatar Size="Size.Small" Color="Color.Primary"
+                                   Style="width: 24px; height: 24px; font-size: 12px; flex-shrink: 0;">
+                            <MudIcon Icon="@Icons.Material.Filled.SmartToy" Style="font-size: 14px;" />
+                        </MudAvatar>
+                    }
+                    <div class="bubble-content @(msg.Role == ChatMessage.Roles.User ? "user-content" : "assistant-content")">
+                        @((MarkupString)FormatMessage(msg.Content))
+                    </div>
+                </div>
+            }
+
+            @if (_isThinking)
+            {
+                <div class="chatbot-bubble assistant-bubble">
+                    <MudAvatar Size="Size.Small" Color="Color.Primary"
+                               Style="width: 24px; height: 24px; font-size: 12px; flex-shrink: 0;">
+                        <MudIcon Icon="@Icons.Material.Filled.SmartToy" Style="font-size: 14px;" />
+                    </MudAvatar>
+                    <div class="bubble-content assistant-content thinking-bubble">
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Primary"
+                                             Style="width: 18px; height: 18px;" />
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Thinking...</MudText>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @* Input Area *@
+        <div class="chatbot-input">
+            <MudTextField @bind-Value="_inputText"
+                          Placeholder="Type a message..."
+                          Variant="Variant.Outlined"
+                          FullWidth="true"
+                          Disabled="_isThinking"
+                          Adornment="Adornment.End"
+                          AdornmentIcon="@Icons.Material.Filled.Send"
+                          AdornmentColor="Color.Primary"
+                          OnAdornmentClick="SendMessage"
+                          OnKeyDown="HandleKeyDown"
+                          Style="font-size: 16px;"
+                          Margin="Margin.Dense" />
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid TenantId { get; set; }
+    [Parameter] public string TenantSlug { get; set; } = string.Empty;
+    [Parameter] public string TenantName { get; set; } = string.Empty;
+
+    private bool _isOpen;
+    private bool _isClosing;
+    private bool _isThinking;
+    private bool _initialized;
+    private string _inputText = string.Empty;
+    private ElementReference _messagesContainer;
+    private readonly List<ChatMessage> _messages = new();
+
+    public void Open()
+    {
+        _isOpen = true;
+        _isClosing = false;
+        StateHasChanged();
+    }
+
+    public async Task Close()
+    {
+        _isClosing = true;
+        StateHasChanged();
+        await Task.Delay(250); // Match CSS animation duration
+        _isOpen = false;
+        _isClosing = false;
+        StateHasChanged();
+    }
+
+    private async Task EnsureInitialized()
+    {
+        if (!_initialized)
+        {
+            await ChatbotService.InitializeAsync(TenantId, TenantName, TenantSlug);
+            _initialized = true;
+        }
+    }
+
+    private async Task SendQuickMessage(string message)
+    {
+        _inputText = message;
+        await SendMessage();
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+        {
+            await SendMessage();
+        }
+    }
+
+    private async Task SendMessage()
+    {
+        var text = _inputText?.Trim();
+        if (string.IsNullOrEmpty(text) || _isThinking)
+            return;
+
+        _inputText = string.Empty;
+        await EnsureInitialized();
+
+        // Add user message immediately
+        _messages.Add(new ChatMessage
+        {
+            Role = ChatMessage.Roles.User,
+            Content = text
+        });
+
+        _isThinking = true;
+        StateHasChanged();
+
+        try
+        {
+            var response = await ChatbotService.SendMessageAsync(text);
+            _messages.Add(response);
+        }
+        catch (Exception)
+        {
+            _messages.Add(new ChatMessage
+            {
+                Role = ChatMessage.Roles.Assistant,
+                Content = "Sorry, something went wrong. Please try again."
+            });
+        }
+        finally
+        {
+            _isThinking = false;
+            StateHasChanged();
+        }
+    }
+
+    private static string FormatMessage(string content)
+    {
+        // Basic markdown-like formatting: **bold**, newlines → <br>
+        var escaped = System.Net.WebUtility.HtmlEncode(content);
+        escaped = System.Text.RegularExpressions.Regex.Replace(
+            escaped, @"\*\*(.+?)\*\*", "<strong>$1</strong>");
+        escaped = escaped.Replace("\n", "<br />");
+        return escaped;
+    }
+}

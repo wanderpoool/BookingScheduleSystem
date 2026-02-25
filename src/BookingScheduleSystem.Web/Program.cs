@@ -2,6 +2,7 @@ using Amazon.Runtime;
 using BookingScheduleSystem.Web.Components;
 using BookingScheduleSystem.Web.Infrastructure.Telemetry;
 using BookingScheduleSystem.Web.Services;
+using BookingScheduleSystem.Web.Services.Chatbot;
 using MudBlazor.Services;
 using MudBlazor;
 using Microsoft.AspNetCore.Authorization;
@@ -184,6 +185,8 @@ builder.Services.AddScoped<IAdminSubscriptionService, AdminSubscriptionService>(
 builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 builder.Services.AddScoped<IQrCodeService, QrCodeService>();
 builder.Services.AddScoped<ITenantSlugService, TenantSlugService>();
+builder.Services.AddScoped<ChatbotToolExecutor>();
+builder.Services.AddScoped<IChatbotService, ChatbotService>();
 
 // Trust ALB forwarded headers (X-Forwarded-For, X-Forwarded-Proto) so the app
 // knows the original scheme was HTTPS and generates correct redirect URLs.

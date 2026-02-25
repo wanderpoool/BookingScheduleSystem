@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
     <ProjectReference Include="..\BookingScheduleSystem.Contracts\BookingScheduleSystem.Contracts.csproj" />
@@ -26,6 +26,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>aa766960-3cb4-476a-891e-a66bdf3ba8ac</UserSecretsId>
   </PropertyGroup>
 
 </Project>

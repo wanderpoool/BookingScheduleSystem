@@ -88,10 +88,10 @@
 
     protected override void OnInitialized()
     {
-        var registrationPath = string.IsNullOrEmpty(TenantSlug)
+        var landingPath = string.IsNullOrEmpty(TenantSlug)
             ? "/register"
-            : $"/{TenantSlug}/register";
-        _bookingUrl = Navigation.ToAbsoluteUri(registrationPath).ToString();
+            : $"/{TenantSlug}";
+        _bookingUrl = Navigation.ToAbsoluteUri(landingPath).ToString();
         _qrCodeBase64 = QrCodeService.GenerateQrCodeBase64(_bookingUrl, 8);
     }
 

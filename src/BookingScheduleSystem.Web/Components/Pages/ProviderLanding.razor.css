@@ -1,0 +1,99 @@
+/* ===== Provider Landing Page — Scoped CSS ===== */
+/* Uses MudBlazor CSS variables for theme-aware colors */
+
+.provider-landing {
+    min-height: 100vh;
+    background: var(--mud-palette-background);
+    color: var(--mud-palette-text-primary);
+}
+
+/* ===== SIMPLE TEMPLATE ===== */
+.simple-body {
+    padding-top: 48px;
+    padding-bottom: 32px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* ===== PREMIUM TEMPLATE ===== */
+.premium-hero {
+    position: relative;
+    min-height: 220px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    background-size: cover;
+    background-position: center;
+    padding: 40px 20px 32px;
+}
+
+.premium-hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.15) 100%);
+}
+
+.premium-hero-content {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+}
+
+.premium-body {
+    padding-top: 20px;
+    padding-bottom: 32px;
+}
+
+/* ===== SHARED COMPONENTS ===== */
+::deep .landing-card {
+    border: 1px solid var(--mud-palette-divider);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 16px;
+    background: var(--mud-palette-surface);
+}
+
+::deep .hours-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--mud-palette-divider-light);
+}
+
+::deep .hours-row:last-child {
+    border-bottom: none;
+}
+
+::deep .landing-cta-area {
+    margin-top: 24px;
+    margin-bottom: 8px;
+}
+
+::deep .powered-by-footer {
+    padding: 24px 0 16px;
+    text-align: center;
+    border-top: 1px solid var(--mud-palette-divider-light);
+    margin-top: 16px;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 600px) {
+    .simple-body {
+        padding-top: 32px;
+    }
+
+    .premium-hero {
+        min-height: 200px;
+        padding: 32px 16px 24px;
+    }
+}
+
+@media (min-width: 960px) {
+    .premium-hero {
+        min-height: 300px;
+        padding: 60px 40px 48px;
+    }
+}
