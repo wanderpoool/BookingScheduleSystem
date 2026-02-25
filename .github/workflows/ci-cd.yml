@@ -49,8 +49,7 @@ jobs:
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-ve              "HostedZoneId=${{ secrets.HOSTED_ZONE_ID }}" \
-rsion: ${{ env.DOTNET_VERSION }}
+          dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Restore & Build
         run: dotnet build src/BookingScheduleSystem.Web/BookingScheduleSystem.Web.csproj -c Release
