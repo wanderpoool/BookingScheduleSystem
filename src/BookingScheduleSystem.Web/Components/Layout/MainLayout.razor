@@ -7,6 +7,7 @@
 @inject HttpClient HttpClient
 @inject ITenantService TenantService
 @inject ITenantSlugService SlugService
+@inject IJSRuntime JS
 
 <MudThemeProvider @ref="@_mudThemeProvider" IsDarkMode="@_isDarkMode" Theme="@_customTheme" />
 
@@ -230,6 +231,10 @@
                 {
                     customProvider.NotifyAuthenticationStateChanged();
                 }
+
+                // Dismiss branded loading screen if still visible
+                try { await JS.InvokeVoidAsync("brandedLoading.dismiss"); } catch { }
+
                 StateHasChanged();
             }
         }
@@ -275,6 +280,9 @@
                 }
 
                 _contextLoaded = true;
+
+                // Dismiss branded loading screen (shown after login)
+                try { await JS.InvokeVoidAsync("brandedLoading.dismiss"); } catch { }
             }
             catch
             {

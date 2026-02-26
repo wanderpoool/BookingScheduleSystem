@@ -1,6 +1,8 @@
 @page "/login"
 @page "/{Slug}/login"
 @rendermode InteractiveServer
+@attribute [AllowAnonymous]
+@using Microsoft.AspNetCore.Authorization
 @using BookingScheduleSystem.Contracts.Auth
 @using BookingScheduleSystem.Contracts.Tenants
 @using BookingScheduleSystem.Web.Models
@@ -574,6 +576,9 @@
         {
             SlugService.SetSlug(slug);
         }
+
+        // Signal App.razor to show branded loading screen during circuit reconnect
+        await JS.InvokeVoidAsync("localStorage.setItem", "showBrandedLoading", "true");
 
         if (!string.IsNullOrWhiteSpace(ReturnUrl))
         {

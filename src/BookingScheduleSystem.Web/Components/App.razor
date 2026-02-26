@@ -27,35 +27,83 @@
 </head>
 
 <body>
-    @* Inline loading placeholder — paints immediately while SignalR circuit connects.
-       Blazor replaces this content once the interactive circuit is ready. *@
+    @* Generic loading placeholder — paints immediately while SignalR circuit connects *@
     <div id="app-loading" style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#FFF8F0;font-family:'DM Sans',system-ui,sans-serif;">
         <div style="text-align:center;">
             <div id="app-spinner" style="width:40px;height:40px;border:3px solid #E8DFD5;border-top-color:#E85D2A;border-radius:50%;margin:0 auto 16px;animation:app-spin 0.8s linear infinite;"></div>
             <div id="app-loading-text" style="color:#5A6B80;font-size:14px;">Loading...</div>
         </div>
     </div>
+
+    @* Branded loading screen — shown only after login, hidden by default *@
+    <div id="branded-loading" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:99999;align-items:center;justify-content:center;flex-direction:column;background:#FFF8F0;font-family:'DM Sans',system-ui,sans-serif;">
+        <img src="logo.png" alt="Book Me App" id="branded-logo" style="width:140px;height:auto;animation:branded-breathe 2s ease-in-out infinite;" />
+        <div id="branded-shimmer" style="width:120px;height:3px;margin-top:24px;border-radius:2px;background:linear-gradient(90deg,#E8DFD5 0%,#E85D2A 50%,#E8DFD5 100%);background-size:200% 100%;animation:branded-shimmer 1.5s ease-in-out infinite;"></div>
+    </div>
+
     <style>
         @@keyframes app-spin{to{transform:rotate(360deg)}}
+        @@keyframes branded-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+        @@keyframes branded-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+        @@keyframes branded-fadeout{to{opacity:0;transform:translateY(-10px)}}
+        #branded-loading.branded-dismiss{animation:branded-fadeout .5s ease-out forwards;pointer-events:none}
         @@media(prefers-color-scheme:dark){
             #app-loading{background:#1A1612!important}
             #app-spinner{border-color:#3D3328!important;border-top-color:#F28B5F!important}
             #app-loading-text{color:#A89B8C!important}
+            #branded-loading{background:#1A1612!important}
+            #branded-shimmer{background:linear-gradient(90deg,#3D3328 0%,#F28B5F 50%,#3D3328 100%)!important;background-size:200% 100%!important;animation:branded-shimmer 1.5s ease-in-out infinite!important}
+        }
+        @@media(prefers-reduced-motion:reduce){
+            #branded-logo{animation:none!important}
+            #branded-shimmer{animation:none!important;background:#E85D2A!important;background-size:100% 100%!important}
+            #branded-loading.branded-dismiss{animation:none!important;opacity:0}
         }
     </style>
     <Routes />
     <script>
-        // Remove loading placeholder once Blazor renders
-        document.addEventListener('DOMContentLoaded', function() {
-            var observer = new MutationObserver(function() {
-                var appEl = document.getElementById('app-loading');
-                if (appEl && document.querySelector('.mud-layout')) {
-                    appEl.remove();
-                    observer.disconnect();
-                }
+        // Branded loading screen coordination
+        (function() {
+            var showBranded = false;
+            try { showBranded = localStorage.getItem('showBrandedLoading') === 'true'; } catch(e) {}
+
+            if (showBranded) {
+                // Hide generic spinner, show branded screen
+                var generic = document.getElementById('app-loading');
+                if (generic) generic.style.display = 'none';
+                var branded = document.getElementById('branded-loading');
+                if (branded) branded.style.display = 'flex';
+                // Clear flag immediately so refresh doesn't re-show
+                try { localStorage.removeItem('showBrandedLoading'); } catch(e) {}
+
+                // Failsafe: auto-dismiss after 8 seconds
+                setTimeout(function() {
+                    if (typeof window.brandedLoading !== 'undefined') window.brandedLoading.dismiss();
+                }, 8000);
+            }
+
+            // Remove generic loading placeholder once Blazor renders (but not branded)
+            document.addEventListener('DOMContentLoaded', function() {
+                var observer = new MutationObserver(function() {
+                    var appEl = document.getElementById('app-loading');
+                    if (appEl && document.querySelector('.mud-layout')) {
+                        appEl.remove();
+                        observer.disconnect();
+                    }
+                });
+                observer.observe(document.body, { childList: true, subtree: true });
             });
-            observer.observe(document.body, { childList: true, subtree: true });
-        });
+
+            // Global dismiss function callable from Blazor JS interop
+            window.brandedLoading = {
+                dismiss: function() {
+                    var el = document.getElementById('branded-loading');
+                    if (!el || el.style.display === 'none') return;
+                    el.classList.add('branded-dismiss');
+                    setTimeout(function() { el.style.display = 'none'; el.classList.remove('branded-dismiss'); }, 500);
+                }
+            };
+        })();
     </script>
     <div id="components-reconnect-modal" style="display:none;"></div>
     <script src="_framework/blazor.web.js" autostart="false"></script>
