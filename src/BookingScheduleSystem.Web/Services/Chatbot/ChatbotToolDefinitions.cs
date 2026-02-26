@@ -10,7 +10,7 @@ public static class ChatbotToolDefinitions
         [
             {
                 "name": "check_availability",
-                "description": "Check available appointment slots for the business. Returns providers with their available time blocks. Each day includes 'available_slots' (bookable schedule entries with schedule_id) and 'free_time' (open working hours without specific slots). Use this when the user asks about availability, open slots, or wants to see what times are free.",
+                "description": "Check available appointment slots for the business. Returns providers (with provider_id) and their time blocks per day. Each day includes 'available_slots' (existing bookable slots with schedule_id) and 'free_time' (open working hours where new appointments can be created). Use this when the user asks about availability or wants to see what times are free.",
                 "input_schema": {
                     "type": "object",
                     "properties": {
@@ -83,13 +83,13 @@ public static class ChatbotToolDefinitions
             },
             {
                 "name": "create_booking",
-                "description": "Create a booking for a specific schedule/time slot. Must be called after the user is registered and authenticated. The schedule_id comes from check_availability results.",
+                "description": "Book an existing schedule slot. Use this ONLY when check_availability returned 'available_slots' with a schedule_id. Must be called after the user is registered.",
                 "input_schema": {
                     "type": "object",
                     "properties": {
                         "schedule_id": {
                             "type": "string",
-                            "description": "The UUID of the schedule slot to book, from check_availability results."
+                            "description": "The UUID of the schedule slot to book, from check_availability available_slots."
                         },
                         "notes": {
                             "type": "string",
@@ -97,6 +97,36 @@ public static class ChatbotToolDefinitions
                         }
                     },
                     "required": ["schedule_id"]
+                }
+            },
+            {
+                "name": "create_and_book",
+                "description": "Create a new appointment slot during a provider's free time and book it in one step. Use this when check_availability shows 'free_time' windows but no 'available_slots'. The time must fall within the provider's free_time range. Must be called after the user is registered. Default appointment duration is 1 hour unless the user specifies otherwise.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "provider_id": {
+                            "type": "string",
+                            "description": "The UUID of the provider, from check_availability results."
+                        },
+                        "date": {
+                            "type": "string",
+                            "description": "Appointment date in YYYY-MM-DD format."
+                        },
+                        "start_time": {
+                            "type": "string",
+                            "description": "Start time in HH:mm 24-hour format (e.g., '10:00')."
+                        },
+                        "end_time": {
+                            "type": "string",
+                            "description": "End time in HH:mm 24-hour format (e.g., '11:00')."
+                        },
+                        "notes": {
+                            "type": "string",
+                            "description": "Optional notes for the booking."
+                        }
+                    },
+                    "required": ["provider_id", "date", "start_time", "end_time"]
                 }
             }
         ]

@@ -2,6 +2,7 @@ using System.Text.Json;
 using BookingScheduleSystem.Contracts.Auth;
 using BookingScheduleSystem.Contracts.Bookings;
 using BookingScheduleSystem.Contracts.Common;
+using BookingScheduleSystem.Contracts.Schedules;
 
 namespace BookingScheduleSystem.Web.Services.Chatbot;
 
@@ -49,6 +50,7 @@ public sealed class ChatbotToolExecutor
                 "verify_otp" => await VerifyOtpAsync(input),
                 "register_user" => await RegisterUserAsync(input, tenantId),
                 "create_booking" => await CreateBookingAsync(input),
+                "create_and_book" => await CreateAndBookAsync(input),
                 _ => JsonSerializer.Serialize(new { error = $"Unknown tool: {toolName}" })
             };
         }
@@ -91,6 +93,7 @@ public sealed class ChatbotToolExecutor
         // Format for Claude — include both bookable slots (with ScheduleId) and free time windows
         var providers = result.Providers.Select(p => new
         {
+            provider_id = p.ProviderId.Value.ToString(),
             provider_name = p.ProviderName,
             days = p.Days.Select(d => new
             {
@@ -278,5 +281,105 @@ public sealed class ChatbotToolExecutor
             end_time = booking.ScheduleEndTime?.ToString("h:mm tt"),
             message = "Booking confirmed! Share the details with the user."
         });
+    }
+
+    private async Task<string> CreateAndBookAsync(JsonElement input)
+    {
+        if (!_isAuthenticated)
+        {
+            return JsonSerializer.Serialize(new { success = false, error = "User is not authenticated. Complete registration first." });
+        }
+
+        var providerIdStr = input.GetProperty("provider_id").GetString()!;
+        var dateStr = input.GetProperty("date").GetString()!;
+        var startTimeStr = input.GetProperty("start_time").GetString()!;
+        var endTimeStr = input.GetProperty("end_time").GetString()!;
+        var notes = input.TryGetProperty("notes", out var n) ? n.GetString() : null;
+
+        if (!Guid.TryParse(providerIdStr, out var providerGuid))
+        {
+            return JsonSerializer.Serialize(new { success = false, error = "Invalid provider_id format." });
+        }
+
+        if (!DateOnly.TryParse(dateStr, out var date))
+        {
+            return JsonSerializer.Serialize(new { success = false, error = "Invalid date format. Use YYYY-MM-DD." });
+        }
+
+        if (!TimeOnly.TryParse(startTimeStr, out var startTime) ||
+            !TimeOnly.TryParse(endTimeStr, out var endTime))
+        {
+            return JsonSerializer.Serialize(new { success = false, error = "Invalid time format. Use HH:mm (24-hour)." });
+        }
+
+        if (endTime <= startTime)
+        {
+            return JsonSerializer.Serialize(new { success = false, error = "End time must be after start time." });
+        }
+
+        var startDateTime = date.ToDateTime(startTime, DateTimeKind.Utc);
+        var endDateTime = date.ToDateTime(endTime, DateTimeKind.Utc);
+
+        _logger.LogInformation(
+            "Chatbot creating schedule + booking: provider {ProviderId}, {Date} {Start}-{End}",
+            providerGuid, dateStr, startTimeStr, endTimeStr);
+
+        // Step 1: Create schedule slot
+        var scheduleRequest = new CreateScheduleRequest
+        {
+            ProviderId = providerGuid,
+            Title = $"Appointment on {date:MMM d} at {startTime:h:mm tt}",
+            StartTime = startDateTime,
+            EndTime = endDateTime,
+            MaxCapacity = 1
+        };
+
+        ScheduleResponse? schedule;
+        try
+        {
+            schedule = await _scheduleService.CreateScheduleAsync(scheduleRequest);
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogWarning(ex, "Failed to create schedule slot for chatbot booking");
+            return JsonSerializer.Serialize(new { success = false, error = $"Could not create the time slot: {ex.Message}" });
+        }
+
+        if (schedule == null)
+        {
+            return JsonSerializer.Serialize(new { success = false, error = "Failed to create the time slot. Please try a different time." });
+        }
+
+        // Step 2: Book into the new schedule
+        var bookingRequest = new CreateBookingRequest
+        {
+            ScheduleId = schedule.Id.Value,
+            Notes = notes
+        };
+
+        try
+        {
+            var booking = await _bookingService.CreateBookingAsync(bookingRequest);
+
+            if (booking == null)
+            {
+                return JsonSerializer.Serialize(new { success = false, error = "Schedule was created but booking failed. Please try again." });
+            }
+
+            return JsonSerializer.Serialize(new
+            {
+                success = true,
+                booking_id = booking.Id.Value.ToString(),
+                schedule_title = booking.ScheduleTitle,
+                start_time = booking.ScheduleStartTime?.ToString("dddd, MMMM d 'at' h:mm tt"),
+                end_time = booking.ScheduleEndTime?.ToString("h:mm tt"),
+                message = "Booking confirmed! Share the details with the user."
+            });
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogWarning(ex, "Failed to create booking after schedule creation");
+            return JsonSerializer.Serialize(new { success = false, error = $"Schedule was created but booking failed: {ex.Message}" });
+        }
     }
 }
