@@ -10,7 +10,7 @@ public static class ChatbotToolDefinitions
         [
             {
                 "name": "check_availability",
-                "description": "Check available appointment slots for the business. Returns providers with their available time blocks. Use this when the user asks about availability, open slots, or wants to see what times are free.",
+                "description": "Check available appointment slots for the business. Returns providers with their available time blocks. Each day includes 'available_slots' (bookable schedule entries with schedule_id) and 'free_time' (open working hours without specific slots). Use this when the user asks about availability, open slots, or wants to see what times are free.",
                 "input_schema": {
                     "type": "object",
                     "properties": {

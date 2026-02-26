@@ -228,6 +228,10 @@ public sealed class ChatbotService : IChatbotService
 
     private string BuildSystemPrompt()
     {
+        // Use Philippine time (UTC+8) since the app serves PH users
+        var pht = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow,
+            TimeZoneInfo.FindSystemTimeZoneById("Asia/Manila"));
+
         return $"""
             You are a friendly, helpful booking assistant for "{_tenantName}". Your job is to help visitors check availability and book appointments.
 
@@ -240,9 +244,10 @@ public sealed class ChatbotService : IChatbotService
             - If the user already knows what they want, don't over-explain. Just help them book.
             - For the OTP step, tell the user to check their email/phone for a 6-digit code.
             - After booking, share the confirmation details (date, time, provider).
-            - If there are no available slots, suggest the user try different dates.
+            - If check_availability returns "available_slots" as empty but "free_time" windows exist, it means the provider is open during those hours but hasn't created specific bookable slots yet. Tell the user the provider's working hours and suggest they contact the business directly or try again later.
+            - If there are truly no available slots and no free time, suggest the user try different dates.
             - You can only help with booking at "{_tenantName}". For other questions, politely redirect.
-            - Today's date is {DateTime.UtcNow:yyyy-MM-dd} ({DateTime.UtcNow:dddd}).
+            - Today's date is {pht:yyyy-MM-dd} ({pht:dddd}). Use this when calculating dates like "this week", "tomorrow", etc.
             """;
     }
 

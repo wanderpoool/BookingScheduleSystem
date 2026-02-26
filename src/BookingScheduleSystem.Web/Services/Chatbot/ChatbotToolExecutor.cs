@@ -64,22 +64,31 @@ public sealed class ChatbotToolExecutor
         var startDateStr = input.TryGetProperty("start_date", out var sd) ? sd.GetString() : null;
         var endDateStr = input.TryGetProperty("end_date", out var ed) ? ed.GetString() : null;
 
+        // Use Philippine time (UTC+8) for date defaults since the app serves PH users
+        var pht = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow,
+            TimeZoneInfo.FindSystemTimeZoneById("Asia/Manila"));
+        var today = pht.Date;
+
         var startDate = !string.IsNullOrEmpty(startDateStr) && DateTime.TryParse(startDateStr, out var s)
             ? s
-            : DateTime.UtcNow.Date;
+            : today;
 
         var endDate = !string.IsNullOrEmpty(endDateStr) && DateTime.TryParse(endDateStr, out var e)
             ? e
             : startDate.AddDays(7);
 
+        _logger.LogInformation(
+            "Chatbot checking availability for tenant {TenantId}: {StartDate} to {EndDate}",
+            tenantId, startDate.ToString("yyyy-MM-dd"), endDate.ToString("yyyy-MM-dd"));
+
         var result = await _scheduleService.ListPublicSchedulesAsync(tenantId, startDate, endDate);
 
         if (result == null || result.Providers.Count == 0)
         {
-            return JsonSerializer.Serialize(new { message = "No available slots found for the requested dates.", providers = Array.Empty<object>() });
+            return JsonSerializer.Serialize(new { message = "No providers found for this business.", providers = Array.Empty<object>() });
         }
 
-        // Format for Claude — include schedule IDs so it can reference them
+        // Format for Claude — include both bookable slots (with ScheduleId) and free time windows
         var providers = result.Providers.Select(p => new
         {
             provider_name = p.ProviderName,
@@ -97,9 +106,22 @@ public sealed class ChatbotToolExecutor
                         end_time = tb.EndTime.ToString("HH:mm"),
                         title = tb.ScheduleTitle
                     }).ToList(),
+                free_time = d.TimeBlocks
+                    .Where(tb => tb.IsAvailable && !tb.ScheduleId.HasValue)
+                    .Select(tb => new
+                    {
+                        start_time = tb.StartTime.ToString("HH:mm"),
+                        end_time = tb.EndTime.ToString("HH:mm")
+                    }).ToList(),
                 booked_count = d.TimeBlocks.Count(tb => !tb.IsAvailable)
             }).ToList()
         }).ToList();
+
+        _logger.LogInformation(
+            "Chatbot availability result: {ProviderCount} providers, days with bookable slots: {SlotDays}, days with free time: {FreeDays}",
+            providers.Count,
+            providers.Sum(p => p.days.Count(d => d.available_slots.Count > 0)),
+            providers.Sum(p => p.days.Count(d => d.free_time.Count > 0)));
 
         return JsonSerializer.Serialize(new { providers, total_count = result.TotalCount });
     }
