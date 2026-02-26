@@ -397,12 +397,12 @@ Resources:
                 Resource:
                   - !Ref DbPasswordSecret
                   - !Ref JwtSecretKey
-                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/db-connection-string-*'
-                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/bookingactiontoken-*'
-                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-username-*'
-                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-password-*'
-                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/semaphore-api-key-*'
-                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/anthropic-api-key-*'
+                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/db-connection-string*'
+                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/bookingactiontoken*'
+                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-username*'
+                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/smtp-password*'
+                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/semaphore-api-key*'
+                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AppName}/${Environment}/anthropic-api-key*'
                   - !If
                     - HasGlobalAdmin
                     - !Ref GlobalAdminPasswordSecret
