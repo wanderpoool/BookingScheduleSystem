@@ -1,4 +1,5 @@
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using Microsoft.AspNetCore.Authorization
 
 <MudPopoverProvider />
 <MudDialogProvider />
@@ -6,11 +7,18 @@
 
 <Router AppAssembly="typeof(Program).Assembly">
     <Found Context="routeData">
-        <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
-            <NotAuthorized>
-                <BookingScheduleSystem.Web.Components.Shared.RedirectToLogin />
-            </NotAuthorized>
-        </AuthorizeRouteView>
+        @if (IsAllowAnonymous(routeData.PageType))
+        {
+            <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
+        }
+        else
+        {
+            <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+                <NotAuthorized>
+                    <BookingScheduleSystem.Web.Components.Shared.RedirectToLogin />
+                </NotAuthorized>
+            </AuthorizeRouteView>
+        }
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
     </Found>
     <NotFound>
@@ -19,3 +27,10 @@
         </LayoutView>
     </NotFound>
 </Router>
+
+@code {
+    private static bool IsAllowAnonymous(Type pageType)
+    {
+        return Attribute.IsDefined(pageType, typeof(AllowAnonymousAttribute), inherit: true);
+    }
+}

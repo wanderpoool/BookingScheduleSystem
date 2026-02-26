@@ -37,7 +37,10 @@
 
     @* Branded loading screen — shown only after login, hidden by default *@
     <div id="branded-loading" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:99999;align-items:center;justify-content:center;flex-direction:column;background:#FFF8F0;font-family:'DM Sans',system-ui,sans-serif;">
-        <img src="logo.png" alt="Book Me App" id="branded-logo" style="width:140px;height:auto;animation:branded-breathe 2s ease-in-out infinite;" />
+        <div id="branded-logo" style="display:flex;align-items:center;gap:10px;animation:branded-breathe 2s ease-in-out infinite;">
+            <div style="width:42px;height:42px;background:#E85D2A;border-radius:11px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:20px;font-family:'Fraunces',Georgia,serif;">B</div>
+            <span style="font-family:'Fraunces',Georgia,serif;font-weight:700;font-size:22px;color:#1B2D45;">Book Me App!</span>
+        </div>
         <div id="branded-shimmer" style="width:120px;height:3px;margin-top:24px;border-radius:2px;background:linear-gradient(90deg,#E8DFD5 0%,#E85D2A 50%,#E8DFD5 100%);background-size:200% 100%;animation:branded-shimmer 1.5s ease-in-out infinite;"></div>
     </div>
 
@@ -52,6 +55,7 @@
             #app-spinner{border-color:#3D3328!important;border-top-color:#F28B5F!important}
             #app-loading-text{color:#A89B8C!important}
             #branded-loading{background:#1A1612!important}
+            #branded-loading span{color:#F9F5F0!important}
             #branded-shimmer{background:linear-gradient(90deg,#3D3328 0%,#F28B5F 50%,#3D3328 100%)!important;background-size:200% 100%!important;animation:branded-shimmer 1.5s ease-in-out infinite!important}
         }
         @@media(prefers-reduced-motion:reduce){
