@@ -186,6 +186,7 @@ builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 builder.Services.AddScoped<IQrCodeService, QrCodeService>();
 builder.Services.AddScoped<ITenantSlugService, TenantSlugService>();
 builder.Services.AddScoped<ChatbotToolExecutor>();
+builder.Services.AddSingleton<ChatbotUsageTracker>();
 builder.Services.AddScoped<IChatbotService, ChatbotService>();
 
 // Trust ALB forwarded headers (X-Forwarded-For, X-Forwarded-Proto) so the app

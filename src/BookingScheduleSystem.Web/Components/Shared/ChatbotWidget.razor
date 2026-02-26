@@ -43,7 +43,39 @@
 
         @* Messages Area *@
         <div class="chatbot-messages" @ref="_messagesContainer" role="log" aria-live="polite" aria-label="Chat messages">
-            @if (_messages.Count == 0 && !_isThinking)
+            @if (!_privacyAccepted)
+            {
+                @* Data Privacy Consent *@
+                <div class="chatbot-privacy">
+                    <MudIcon Icon="@Icons.Material.Filled.Shield" Size="Size.Large" Color="Color.Primary" />
+                    <MudText Typo="Typo.subtitle1" Style="font-weight: 700;" Align="Align.Center">
+                        Before we start
+                    </MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center" Style="line-height: 1.6;">
+                        This assistant uses AI to help you book appointments.
+                        By continuing, you agree that your messages and contact
+                        information (name, email, or phone) may be collected
+                        to process your booking.
+                    </MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary" Align="Align.Center" Style="line-height: 1.5;">
+                        Your data is only used for booking purposes and is handled
+                        in accordance with our privacy policy.
+                    </MudText>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                               FullWidth="true"
+                               OnClick="AcceptPrivacy"
+                               Style="min-height: 44px; text-transform: none; margin-top: 8px;">
+                        I agree, let's get started
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Secondary"
+                               FullWidth="true"
+                               OnClick="Close"
+                               Style="min-height: 44px; text-transform: none;">
+                        No thanks
+                    </MudButton>
+                </div>
+            }
+            else if (_messages.Count == 0 && !_isThinking)
             {
                 @* Welcome state *@
                 <div class="chatbot-welcome">
@@ -70,54 +102,60 @@
                     </MudStack>
                 </div>
             }
-
-            @foreach (var msg in _messages)
+            else
             {
-                <div class="chatbot-bubble @(msg.Role == ChatMessage.Roles.User ? "user-bubble" : "assistant-bubble")">
-                    @if (msg.Role == ChatMessage.Roles.Assistant)
-                    {
+                @foreach (var msg in _messages)
+                {
+                    <div class="chatbot-bubble @(msg.Role == ChatMessage.Roles.User ? "user-bubble" : "assistant-bubble")">
+                        @if (msg.Role == ChatMessage.Roles.Assistant)
+                        {
+                            <MudAvatar Size="Size.Small" Color="Color.Primary"
+                                       Style="width: 24px; height: 24px; font-size: 12px; flex-shrink: 0;">
+                                <MudIcon Icon="@Icons.Material.Filled.SmartToy" Style="font-size: 14px;" />
+                            </MudAvatar>
+                        }
+                        <div class="bubble-content @(msg.Role == ChatMessage.Roles.User ? "user-content" : "assistant-content")">
+                            @((MarkupString)FormatMessage(msg.Content))
+                        </div>
+                    </div>
+                }
+
+                @if (_isThinking)
+                {
+                    <div class="chatbot-bubble assistant-bubble">
                         <MudAvatar Size="Size.Small" Color="Color.Primary"
                                    Style="width: 24px; height: 24px; font-size: 12px; flex-shrink: 0;">
                             <MudIcon Icon="@Icons.Material.Filled.SmartToy" Style="font-size: 14px;" />
                         </MudAvatar>
-                    }
-                    <div class="bubble-content @(msg.Role == ChatMessage.Roles.User ? "user-content" : "assistant-content")">
-                        @((MarkupString)FormatMessage(msg.Content))
+                        <div class="bubble-content assistant-content thinking-bubble">
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Primary"
+                                                 Style="width: 18px; height: 18px;" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Thinking...</MudText>
+                        </div>
                     </div>
-                </div>
-            }
-
-            @if (_isThinking)
-            {
-                <div class="chatbot-bubble assistant-bubble">
-                    <MudAvatar Size="Size.Small" Color="Color.Primary"
-                               Style="width: 24px; height: 24px; font-size: 12px; flex-shrink: 0;">
-                        <MudIcon Icon="@Icons.Material.Filled.SmartToy" Style="font-size: 14px;" />
-                    </MudAvatar>
-                    <div class="bubble-content assistant-content thinking-bubble">
-                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Primary"
-                                             Style="width: 18px; height: 18px;" />
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">Thinking...</MudText>
-                    </div>
-                </div>
+                }
             }
         </div>
 
-        @* Input Area *@
-        <div class="chatbot-input">
-            <MudTextField @bind-Value="_inputText"
-                          Placeholder="Type a message..."
-                          Variant="Variant.Outlined"
-                          FullWidth="true"
-                          Disabled="_isThinking"
-                          Adornment="Adornment.End"
-                          AdornmentIcon="@Icons.Material.Filled.Send"
-                          AdornmentColor="Color.Primary"
-                          OnAdornmentClick="SendMessage"
-                          OnKeyDown="HandleKeyDown"
-                          Style="font-size: 16px;"
-                          Margin="Margin.Dense" />
-        </div>
+        @* Input Area — only shown after privacy consent *@
+        @if (_privacyAccepted)
+        {
+            <div class="chatbot-input">
+                <MudTextField @bind-Value="_inputText"
+                              Immediate="true"
+                              Placeholder="Type a message..."
+                              Variant="Variant.Outlined"
+                              FullWidth="true"
+                              Disabled="_isThinking"
+                              Adornment="Adornment.End"
+                              AdornmentIcon="@Icons.Material.Filled.Send"
+                              AdornmentColor="Color.Primary"
+                              OnAdornmentClick="SendMessage"
+                              OnKeyDown="HandleKeyDown"
+                              Style="font-size: 16px;"
+                              Margin="Margin.Dense" />
+            </div>
+        }
     </div>
 }
 
@@ -130,6 +168,7 @@
     private bool _isClosing;
     private bool _isThinking;
     private bool _initialized;
+    private bool _privacyAccepted;
     private string _inputText = string.Empty;
     private ElementReference _messagesContainer;
     private readonly List<ChatMessage> _messages = new();
@@ -145,9 +184,15 @@
     {
         _isClosing = true;
         StateHasChanged();
-        await Task.Delay(250); // Match CSS animation duration
+        await Task.Delay(250);
         _isOpen = false;
         _isClosing = false;
+        StateHasChanged();
+    }
+
+    private void AcceptPrivacy()
+    {
+        _privacyAccepted = true;
         StateHasChanged();
     }
 
@@ -183,7 +228,6 @@
         _inputText = string.Empty;
         await EnsureInitialized();
 
-        // Add user message immediately
         _messages.Add(new ChatMessage
         {
             Role = ChatMessage.Roles.User,
@@ -215,7 +259,6 @@
 
     private static string FormatMessage(string content)
     {
-        // Basic markdown-like formatting: **bold**, newlines → <br>
         var escaped = System.Net.WebUtility.HtmlEncode(content);
         escaped = System.Text.RegularExpressions.Regex.Replace(
             escaped, @"\*\*(.+?)\*\*", "<strong>$1</strong>");

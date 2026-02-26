@@ -74,7 +74,11 @@ h1:focus {
     stroke: var(--color-primary);
     stroke-width: 0.6rem;
     transform-origin: 50% 50%;
+    -webkit-animation: loading-progress-spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
     animation: loading-progress-spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    will-change: transform;
 }
 
 .loading-progress-text {
@@ -85,22 +89,44 @@ h1:focus {
     inset: calc(20vh + 3.25rem) 0 auto 0.2rem;
 }
 
+@-webkit-keyframes loading-progress-spin {
+    0% {
+        stroke-dasharray: 1, 200;
+        stroke-dashoffset: 0;
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+    50% {
+        stroke-dasharray: 90, 200;
+        stroke-dashoffset: -35px;
+        -webkit-transform: rotate(450deg);
+        transform: rotate(450deg);
+    }
+    100% {
+        stroke-dasharray: 90, 200;
+        stroke-dashoffset: -125px;
+        -webkit-transform: rotate(1080deg);
+        transform: rotate(1080deg);
+    }
+}
+
 @keyframes loading-progress-spin {
     0% {
         stroke-dasharray: 1, 200;
         stroke-dashoffset: 0;
+        -webkit-transform: rotate(0deg);
         transform: rotate(0deg);
     }
-
     50% {
         stroke-dasharray: 90, 200;
         stroke-dashoffset: -35px;
+        -webkit-transform: rotate(450deg);
         transform: rotate(450deg);
     }
-
     100% {
         stroke-dasharray: 90, 200;
         stroke-dashoffset: -125px;
+        -webkit-transform: rotate(1080deg);
         transform: rotate(1080deg);
     }
 }
@@ -112,6 +138,25 @@ h1:focus {
 /* Skeleton shimmer uses CSS animation — GPU-friendly */
 .mud-skeleton {
     will-change: background-position;
+}
+
+/* MudProgressCircular — GPU acceleration for iOS Safari (fixes frozen spinners) */
+.mud-progress-circular svg,
+.mud-progress-circular circle {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    will-change: transform, stroke-dasharray, stroke-dashoffset;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+}
+
+/* MudProgressLinear — GPU acceleration for iOS Safari */
+.mud-progress-linear .mud-progress-linear-bar {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    will-change: transform;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
 }
 
 /* Ensure MudBlazor components respect our design tokens */

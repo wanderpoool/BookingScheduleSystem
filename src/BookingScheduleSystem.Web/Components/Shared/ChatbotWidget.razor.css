@@ -105,6 +105,17 @@
     -webkit-overflow-scrolling: touch;
 }
 
+/* ===== PRIVACY CONSENT ===== */
+.chatbot-privacy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 24px 16px;
+    flex: 1;
+}
+
 /* ===== WELCOME STATE ===== */
 .chatbot-welcome {
     display: flex;

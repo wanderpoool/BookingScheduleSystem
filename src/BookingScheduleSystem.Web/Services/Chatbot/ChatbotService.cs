@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using BookingScheduleSystem.Web.Models;
@@ -9,6 +10,7 @@ public sealed class ChatbotService : IChatbotService
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IConfiguration _configuration;
     private readonly ChatbotToolExecutor _toolExecutor;
+    private readonly ChatbotUsageTracker _usageTracker;
     private readonly ILogger<ChatbotService> _logger;
 
     private readonly List<ChatMessage> _displayHistory = new();
@@ -17,6 +19,10 @@ public sealed class ChatbotService : IChatbotService
     private string _tenantName = string.Empty;
     private string _tenantSlug = string.Empty;
     private bool _initialized;
+
+    // Per-session rate limiting state
+    private DateTime _lastMessageTime = DateTime.MinValue;
+    private readonly Queue<DateTime> _recentMessageTimestamps = new();
 
     private const int MaxToolIterations = 10;
     private const int MaxMessages = 50;
@@ -27,11 +33,13 @@ public sealed class ChatbotService : IChatbotService
         IHttpClientFactory httpClientFactory,
         IConfiguration configuration,
         ChatbotToolExecutor toolExecutor,
+        ChatbotUsageTracker usageTracker,
         ILogger<ChatbotService> logger)
     {
         _httpClientFactory = httpClientFactory;
         _configuration = configuration;
         _toolExecutor = toolExecutor;
+        _usageTracker = usageTracker;
         _logger = logger;
     }
 
@@ -59,6 +67,27 @@ public sealed class ChatbotService : IChatbotService
                 Content = "This conversation has reached its limit. Please refresh the page to start a new conversation."
             };
         }
+
+        // Layer 1: Per-session rate limiting (before adding to history — blocked messages don't count)
+        var sessionBlock = CheckSessionRateLimit();
+        if (sessionBlock is not null)
+            return sessionBlock;
+
+        // Layer 2: Per-tenant cross-circuit rate limiting
+        var tenantBlock = _usageTracker.CheckTenantLimit(_tenantId);
+        if (tenantBlock is not null)
+        {
+            return new ChatMessage
+            {
+                Role = ChatMessage.Roles.Assistant,
+                Content = tenantBlock
+            };
+        }
+
+        // Record that the user sent a message (for session rate limiting)
+        var now = DateTime.UtcNow;
+        _lastMessageTime = now;
+        _recentMessageTimestamps.Enqueue(now);
 
         // Add user message to display history
         _displayHistory.Add(new ChatMessage
@@ -97,6 +126,66 @@ public sealed class ChatbotService : IChatbotService
         _initialized = false;
     }
 
+    /// <summary>
+    /// Checks per-session rate limits: minimum cooldown, per-minute, and per-hour caps.
+    /// Returns a ChatMessage if blocked, null if allowed.
+    /// </summary>
+    private ChatMessage? CheckSessionRateLimit()
+    {
+        var now = DateTime.UtcNow;
+        var minCooldown = _configuration.GetValue("Anthropic:RateLimiting:MinCooldownSeconds", 3);
+        var maxPerMinute = _configuration.GetValue("Anthropic:RateLimiting:MaxMessagesPerMinute", 10);
+        var maxPerHour = _configuration.GetValue("Anthropic:RateLimiting:MaxMessagesPerHour", 60);
+
+        // Prune timestamps older than 1 hour
+        while (_recentMessageTimestamps.Count > 0 && _recentMessageTimestamps.Peek() < now.AddHours(-1))
+            _recentMessageTimestamps.Dequeue();
+
+        // Check minimum cooldown
+        if (_lastMessageTime != DateTime.MinValue)
+        {
+            var elapsed = (now - _lastMessageTime).TotalSeconds;
+            if (elapsed < minCooldown)
+            {
+                _logger.LogInformation("Session rate limit: cooldown not met ({Elapsed:F1}s < {Cooldown}s)",
+                    elapsed, minCooldown);
+                return new ChatMessage
+                {
+                    Role = ChatMessage.Roles.Assistant,
+                    Content = "Please wait a moment before sending another message."
+                };
+            }
+        }
+
+        // Check per-minute limit
+        var oneMinuteAgo = now.AddMinutes(-1);
+        var messagesLastMinute = _recentMessageTimestamps.Count(t => t >= oneMinuteAgo);
+        if (messagesLastMinute >= maxPerMinute)
+        {
+            _logger.LogInformation("Session rate limit: per-minute cap reached ({Count}/{Limit})",
+                messagesLastMinute, maxPerMinute);
+            return new ChatMessage
+            {
+                Role = ChatMessage.Roles.Assistant,
+                Content = "You're sending messages too quickly. Please wait about a minute before trying again."
+            };
+        }
+
+        // Check per-hour limit
+        if (_recentMessageTimestamps.Count >= maxPerHour)
+        {
+            _logger.LogInformation("Session rate limit: per-hour cap reached ({Count}/{Limit})",
+                _recentMessageTimestamps.Count, maxPerHour);
+            return new ChatMessage
+            {
+                Role = ChatMessage.Roles.Assistant,
+                Content = "You've sent a lot of messages this hour. Please take a short break and try again later."
+            };
+        }
+
+        return null;
+    }
+
     private async Task<string> CallClaudeWithToolLoopAsync()
     {
         var apiKey = _configuration["Anthropic:ApiKey"];
@@ -109,6 +198,7 @@ public sealed class ChatbotService : IChatbotService
         }
 
         var httpClient = _httpClientFactory.CreateClient();
+        var consecutiveRateLimitRetries = 0;
 
         for (var iteration = 0; iteration < MaxToolIterations; iteration++)
         {
@@ -135,9 +225,44 @@ public sealed class ChatbotService : IChatbotService
             if (!response.IsSuccessStatusCode)
             {
                 var errorBody = await response.Content.ReadAsStringAsync();
+
+                // Layer 3: Differentiated error handling for 429/503
+                if (response.StatusCode == HttpStatusCode.TooManyRequests)
+                {
+                    var retryAfter = GetRetryAfterSeconds(response);
+                    _logger.LogWarning("Anthropic API returned 429. Retry-After: {RetryAfter}s. Body: {Body}",
+                        retryAfter, errorBody);
+
+                    if (consecutiveRateLimitRetries < 1 && retryAfter <= 30)
+                    {
+                        consecutiveRateLimitRetries++;
+                        _logger.LogInformation("Auto-retrying after {Seconds}s wait", retryAfter);
+                        await Task.Delay(TimeSpan.FromSeconds(retryAfter));
+                        iteration--; // Don't count this as a tool iteration
+                        continue;
+                    }
+
+                    var waitMessage = retryAfter > 0
+                        ? $"I'm a bit busy right now. Please try again in {FormatWaitTime(retryAfter)}."
+                        : "I'm a bit busy right now. Please try again in a moment.";
+                    return waitMessage;
+                }
+
+                if (response.StatusCode == HttpStatusCode.ServiceUnavailable)
+                {
+                    _logger.LogWarning("Anthropic API returned 503: {Body}", errorBody);
+                    return "The booking assistant is temporarily unavailable. Please try again in a few minutes.";
+                }
+
                 _logger.LogError("Anthropic API returned {StatusCode}: {Body}", response.StatusCode, errorBody);
                 return "I encountered an issue. Please try again.";
             }
+
+            // Reset retry counter on success
+            consecutiveRateLimitRetries = 0;
+
+            // Record successful API call for tenant tracking
+            _usageTracker.RecordApiCall(_tenantId);
 
             var responseJson = await response.Content.ReadFromJsonAsync<JsonElement>();
 
@@ -204,6 +329,26 @@ public sealed class ChatbotService : IChatbotService
         }
 
         return "I've been working on your request but it's taking longer than expected. Could you try rephrasing your question?";
+    }
+
+    private static int GetRetryAfterSeconds(HttpResponseMessage response)
+    {
+        if (response.Headers.TryGetValues("retry-after", out var values))
+        {
+            var value = values.FirstOrDefault();
+            if (int.TryParse(value, out var seconds))
+                return seconds;
+        }
+        // Default to 10s if no header
+        return 10;
+    }
+
+    private static string FormatWaitTime(int seconds)
+    {
+        if (seconds < 60)
+            return $"{seconds} seconds";
+        var minutes = (int)Math.Ceiling(seconds / 60.0);
+        return minutes == 1 ? "about a minute" : $"about {minutes} minutes";
     }
 
     private string BuildApiRequest(string model)
