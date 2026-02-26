@@ -317,8 +317,8 @@ public sealed class ChatbotToolExecutor
             return JsonSerializer.Serialize(new { success = false, error = "End time must be after start time." });
         }
 
-        var startDateTime = date.ToDateTime(startTime, DateTimeKind.Utc);
-        var endDateTime = date.ToDateTime(endTime, DateTimeKind.Utc);
+        var startDateTime = date.ToDateTime(startTime, DateTimeKind.Unspecified);
+        var endDateTime = date.ToDateTime(endTime, DateTimeKind.Unspecified);
 
         _logger.LogInformation(
             "Chatbot creating schedule + booking: provider {ProviderId}, {Date} {Start}-{End}",

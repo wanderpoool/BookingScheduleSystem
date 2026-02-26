@@ -18,6 +18,7 @@ public sealed class ChatbotService : IChatbotService
     private Guid _tenantId;
     private string _tenantName = string.Empty;
     private string _tenantSlug = string.Empty;
+    private string _preferredLanguage = "English";
     private bool _initialized;
 
     // Per-session rate limiting state
@@ -52,6 +53,11 @@ public sealed class ChatbotService : IChatbotService
         _displayHistory.Clear();
         _apiMessages.Clear();
         return Task.CompletedTask;
+    }
+
+    public void SetLanguagePreference(string language)
+    {
+        _preferredLanguage = language;
     }
 
     public async Task<ChatMessage> SendMessageAsync(string userMessage)
@@ -392,6 +398,10 @@ public sealed class ChatbotService : IChatbotService
             - If there are truly no providers or no working hours, suggest the user try different dates.
             - You can only help with booking at "{_tenantName}". For other questions, politely redirect.
             - Today's date is {pht:yyyy-MM-dd} ({pht:dddd}). Use this when calculating dates like "this week", "tomorrow", etc.
+
+            LANGUAGE:
+            - The user's preferred language is {_preferredLanguage}. You MUST respond in {_preferredLanguage} for all messages.
+            - If the language is Tagalog, use natural conversational Tagalog (Taglish is okay for technical terms like dates/times).
 
             BOOKING RULES:
             - If check_availability returns "available_slots" with a schedule_id, use "create_booking" with that schedule_id.

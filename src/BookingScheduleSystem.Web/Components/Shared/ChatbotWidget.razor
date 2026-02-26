@@ -75,29 +75,56 @@
                     </MudButton>
                 </div>
             }
+            else if (!_languageSelected)
+            {
+                @* Language Preference *@
+                <div class="chatbot-privacy">
+                    <MudIcon Icon="@Icons.Material.Filled.Translate" Size="Size.Large" Color="Color.Primary" />
+                    <MudText Typo="Typo.subtitle1" Style="font-weight: 700;" Align="Align.Center">
+                        Choose your language
+                    </MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center" Style="line-height: 1.6;">
+                        Pumili ng wika / Pick a language
+                    </MudText>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                               FullWidth="true"
+                               OnClick="@(() => SelectLanguage("Tagalog"))"
+                               Style="min-height: 44px; text-transform: none; margin-top: 8px;">
+                        Tagalog
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                               FullWidth="true"
+                               OnClick="@(() => SelectLanguage("English"))"
+                               Style="min-height: 44px; text-transform: none;">
+                        English
+                    </MudButton>
+                </div>
+            }
             else if (_messages.Count == 0 && !_isThinking)
             {
                 @* Welcome state *@
                 <div class="chatbot-welcome">
                     <MudIcon Icon="@Icons.Material.Filled.WavingHand" Size="Size.Medium" Color="Color.Primary" />
                     <MudText Typo="Typo.subtitle1" Style="font-weight: 700;" Align="Align.Center">
-                        Hi there!
+                        @(_selectedLanguage == "Tagalog" ? "Kumusta!" : "Hi there!")
                     </MudText>
                     <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
-                        I can help you find available times and book an appointment. What works for you?
+                        @(_selectedLanguage == "Tagalog"
+                            ? "Makakatulong ako sa paghahanap ng available na oras at pag-book ng appointment. Kailan mo gusto?"
+                            : "I can help you find available times and book an appointment. What works for you?")
                     </MudText>
                     <MudStack Spacing="1" Style="width: 100%; margin-top: 8px;">
                         <MudButton Variant="Variant.Outlined" Color="Color.Primary"
                                    FullWidth="true"
-                                   OnClick="@(() => SendQuickMessage("What's available this week?"))"
+                                   OnClick="@(() => SendQuickMessage(_selectedLanguage == "Tagalog" ? "Ano ang available ngayong linggo?" : "What's available this week?"))"
                                    Style="min-height: 44px; text-transform: none; justify-content: flex-start;">
-                            What's available this week?
+                            @(_selectedLanguage == "Tagalog" ? "Ano ang available ngayong linggo?" : "What's available this week?")
                         </MudButton>
                         <MudButton Variant="Variant.Outlined" Color="Color.Primary"
                                    FullWidth="true"
-                                   OnClick="@(() => SendQuickMessage("I'd like to book an appointment"))"
+                                   OnClick="@(() => SendQuickMessage(_selectedLanguage == "Tagalog" ? "Gusto ko mag-book ng appointment" : "I'd like to book an appointment"))"
                                    Style="min-height: 44px; text-transform: none; justify-content: flex-start;">
-                            I'd like to book an appointment
+                            @(_selectedLanguage == "Tagalog" ? "Gusto ko mag-book ng appointment" : "I'd like to book an appointment")
                         </MudButton>
                     </MudStack>
                 </div>
@@ -137,8 +164,8 @@
             }
         </div>
 
-        @* Input Area — only shown after privacy consent *@
-        @if (_privacyAccepted)
+        @* Input Area — only shown after privacy consent and language selection *@
+        @if (_privacyAccepted && _languageSelected)
         {
             <div class="chatbot-input">
                 <MudTextField @bind-Value="_inputText"
@@ -169,6 +196,8 @@
     private bool _isThinking;
     private bool _initialized;
     private bool _privacyAccepted;
+    private bool _languageSelected;
+    private string _selectedLanguage = "English";
     private string _inputText = string.Empty;
     private ElementReference _messagesContainer;
     private readonly List<ChatMessage> _messages = new();
@@ -193,6 +222,14 @@
     private void AcceptPrivacy()
     {
         _privacyAccepted = true;
+        StateHasChanged();
+    }
+
+    private void SelectLanguage(string language)
+    {
+        _selectedLanguage = language;
+        _languageSelected = true;
+        ChatbotService.SetLanguagePreference(language);
         StateHasChanged();
     }
 

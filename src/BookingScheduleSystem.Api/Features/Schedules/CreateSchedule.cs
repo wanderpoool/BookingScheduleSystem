@@ -151,12 +151,12 @@ public sealed class CreateSchedule : Endpoint<CreateScheduleRequest, ScheduleRes
             ProviderId = providerId,
             Title = req.Title,
             Description = req.Description,
-            StartTime = req.StartTime,
-            EndTime = req.EndTime,
+            StartTime = DateTime.SpecifyKind(req.StartTime, DateTimeKind.Unspecified),
+            EndTime = DateTime.SpecifyKind(req.EndTime, DateTimeKind.Unspecified),
             MaxCapacity = req.MaxCapacity,
             CurrentBookings = 0,
             IsActive = true,
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = DateTime.SpecifyKind(DateTimeOffset.UtcNow.DateTime, DateTimeKind.Unspecified),
             CreatedBy = UserId.Parse(userIdClaim)
         };
 
