@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using System.Text.Json;
 using BookingScheduleSystem.Contracts.Auth;
 using BookingScheduleSystem.Contracts.Bookings;
@@ -59,6 +60,15 @@ public sealed class ChatbotToolExecutor
             _logger.LogError(ex, "Error executing chatbot tool {ToolName}", toolName);
             return JsonSerializer.Serialize(new { error = $"Tool execution failed: {ex.Message}" });
         }
+    }
+
+    private void SetAuthHeaders(string token, Guid? tenantId)
+    {
+        _httpClient.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        _httpClient.DefaultRequestHeaders.Remove("X-Tenant-Id");
+        if (tenantId.HasValue)
+            _httpClient.DefaultRequestHeaders.Add("X-Tenant-Id", tenantId.Value.ToString());
     }
 
     private async Task<string> CheckAvailabilityAsync(JsonElement input, Guid tenantId)
@@ -184,17 +194,69 @@ public sealed class ChatbotToolExecutor
 
         var result = await _otpService.VerifyOtpAsync(request);
 
-        if (result.IsVerified && !string.IsNullOrEmpty(result.VerificationToken))
+        if (!result.IsVerified || string.IsNullOrEmpty(result.VerificationToken))
         {
-            _verificationToken = result.VerificationToken;
+            return JsonSerializer.Serialize(new
+            {
+                success = false,
+                message = result.Message ?? "Invalid OTP code. Ask the user to try again."
+            });
+        }
+
+        _verificationToken = result.VerificationToken;
+
+        // Try logging in directly (bypass AuthenticationService to avoid JS interop/localStorage)
+        try
+        {
+            var loginRequest = new LoginWithOtpRequest
+            {
+                ContactMethod = _contactMethod,
+                Email = _contactEmail,
+                PhoneNumber = _contactPhone,
+                OtpVerificationToken = _verificationToken
+            };
+
+            var loginResponse = await _httpClient.PostAsJsonAsync("/api/auth/login-otp", loginRequest);
+
+            if (loginResponse.IsSuccessStatusCode)
+            {
+                var authResponse = await loginResponse.Content.ReadFromJsonAsync<AuthenticationResponse>();
+                if (authResponse != null)
+                {
+                    SetAuthHeaders(authResponse.Token, authResponse.TenantId?.Value);
+                    _isAuthenticated = true;
+
+                    _logger.LogInformation("Chatbot: existing user logged in via OTP — {Name}",
+                        $"{authResponse.FirstName} {authResponse.LastName}");
+
+                    return JsonSerializer.Serialize(new
+                    {
+                        success = true,
+                        existing_user = true,
+                        user_name = $"{authResponse.FirstName} {authResponse.LastName}",
+                        message = $"Welcome back, {authResponse.FirstName}! You're signed in and ready to book."
+                    });
+                }
+            }
+            else if (loginResponse.StatusCode != System.Net.HttpStatusCode.NotFound)
+            {
+                _logger.LogWarning("Chatbot: OTP login attempt returned {StatusCode}", loginResponse.StatusCode);
+            }
+            else
+            {
+                _logger.LogInformation("Chatbot: OTP verified but user not found, registration needed");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Chatbot: OTP login attempt failed");
         }
 
         return JsonSerializer.Serialize(new
         {
-            success = result.IsVerified,
-            message = result.IsVerified
-                ? "OTP verified. Now collect the user's first and last name to complete registration."
-                : result.Message ?? "Invalid OTP code. Ask the user to try again."
+            success = true,
+            existing_user = false,
+            message = "OTP verified. This is a new user — collect their first and last name to complete registration."
         });
     }
 
@@ -222,18 +284,24 @@ public sealed class ChatbotToolExecutor
             OtpVerificationToken = _verificationToken
         };
 
-        var authResponse = await _authService.RegisterAsync(request);
+        // Call API directly (bypass AuthenticationService to avoid JS interop/localStorage)
+        var response = await _httpClient.PostAsJsonAsync("/api/auth/register", request);
 
-        if (authResponse == null)
+        if (!response.IsSuccessStatusCode)
         {
+            var errorBody = await response.Content.ReadAsStringAsync();
+            _logger.LogWarning("Chatbot registration failed: {StatusCode} {Body}", response.StatusCode, errorBody);
             return JsonSerializer.Serialize(new { success = false, error = "Registration failed. The user may already have an account — suggest they sign in instead." });
         }
 
-        // Set auth headers for subsequent booking calls
-        _httpClient.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authResponse.Token);
-        _httpClient.DefaultRequestHeaders.Remove("X-Tenant-Id");
-        _httpClient.DefaultRequestHeaders.Add("X-Tenant-Id", tenantId.ToString());
+        var authResponse = await response.Content.ReadFromJsonAsync<AuthenticationResponse>();
+
+        if (authResponse == null)
+        {
+            return JsonSerializer.Serialize(new { success = false, error = "Registration failed unexpectedly. Please try again." });
+        }
+
+        SetAuthHeaders(authResponse.Token, tenantId);
         _isAuthenticated = true;
 
         return JsonSerializer.Serialize(new

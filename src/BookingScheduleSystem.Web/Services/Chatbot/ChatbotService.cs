@@ -390,7 +390,8 @@ public sealed class ChatbotService : IChatbotService
             - Be concise and friendly. Use short responses.
             - When showing available slots, format them clearly with date, time, and provider name.
             - Never ask the user for a password — you auto-generate one during registration.
-            - Guide the user through this flow: check availability → pick a time → collect name & contact → send OTP → verify OTP → register → book.
+            - Guide the user through this flow: check availability → pick a time → collect contact info → send OTP → verify OTP → book.
+            - After verify_otp succeeds, check the response: if "existing_user" is true, the user is already signed in and you can proceed directly to booking. If "existing_user" is false, collect their first and last name and call register_user before booking.
             - You can skip straight to checking availability if the user asks.
             - If the user already knows what they want, don't over-explain. Just help them book.
             - For the OTP step, tell the user to check their email/phone for a 6-digit code.

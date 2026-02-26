@@ -37,10 +37,14 @@
     animation: chatbot-slide-down 0.25s cubic-bezier(0.55, 0, 1, 0.45) forwards;
 }
 
-/* Mobile: fullscreen */
+/* Mobile: fullscreen — use dvh to resize when keyboard opens */
 @media (max-width: 599px) {
     .chatbot-panel {
-        inset: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        top: 0;
+        height: 100dvh;
         border-radius: 0;
         border: none;
     }

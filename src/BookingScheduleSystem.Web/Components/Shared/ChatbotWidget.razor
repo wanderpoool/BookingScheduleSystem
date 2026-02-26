@@ -1,6 +1,7 @@
 @using BookingScheduleSystem.Web.Models
 @using BookingScheduleSystem.Web.Services.Chatbot
 @inject IChatbotService ChatbotService
+@inject IJSRuntime JS
 
 @* Floating Action Button *@
 @if (!_isOpen)
@@ -202,11 +203,12 @@
     private ElementReference _messagesContainer;
     private readonly List<ChatMessage> _messages = new();
 
-    public void Open()
+    public async Task Open()
     {
         _isOpen = true;
         _isClosing = false;
         StateHasChanged();
+        await AttachKeyboardHandler();
     }
 
     public async Task Close()
@@ -217,6 +219,27 @@
         _isOpen = false;
         _isClosing = false;
         StateHasChanged();
+        await DetachKeyboardHandler();
+    }
+
+    private async Task AttachKeyboardHandler()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("eval",
+                "if(window.visualViewport&&!window._chatbotVvHandler){window._chatbotVvHandler=function(){var p=document.querySelector('.chatbot-panel');if(p)p.style.height=window.visualViewport.height+'px';};window.visualViewport.addEventListener('resize',window._chatbotVvHandler);}");
+        }
+        catch { }
+    }
+
+    private async Task DetachKeyboardHandler()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("eval",
+                "if(window.visualViewport&&window._chatbotVvHandler){window.visualViewport.removeEventListener('resize',window._chatbotVvHandler);window._chatbotVvHandler=null;var p=document.querySelector('.chatbot-panel');if(p)p.style.height='';}");
+        }
+        catch { }
     }
 
     private void AcceptPrivacy()
@@ -273,6 +296,7 @@
 
         _isThinking = true;
         StateHasChanged();
+        await ScrollToBottomAsync();
 
         try
         {
@@ -291,6 +315,21 @@
         {
             _isThinking = false;
             StateHasChanged();
+            await ScrollToBottomAsync();
+        }
+    }
+
+    private async Task ScrollToBottomAsync()
+    {
+        try
+        {
+            await Task.Yield();
+            await JS.InvokeVoidAsync("eval",
+                "document.querySelector('.chatbot-messages')?.scrollTo({top:999999,behavior:'smooth'})");
+        }
+        catch
+        {
+            // JS interop may not be available during prerender
         }
     }
 
