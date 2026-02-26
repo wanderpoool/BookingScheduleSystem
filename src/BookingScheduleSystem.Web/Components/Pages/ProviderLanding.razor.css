@@ -1,5 +1,12 @@
 /* ===== Provider Landing Page — Scoped CSS ===== */
 
+/* Root wrapper — ensures theme background/text covers full viewport */
+.provider-landing-root {
+    min-height: 100dvh;
+    background: var(--mud-palette-background);
+    color: var(--mud-palette-text-primary);
+}
+
 /* ===== PREMIUM TEMPLATE ===== */
 .premium-hero {
     position: relative;

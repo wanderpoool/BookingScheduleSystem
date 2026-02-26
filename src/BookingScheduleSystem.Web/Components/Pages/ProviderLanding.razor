@@ -1,5 +1,5 @@
 @page "/{Slug}"
-@layout EmptyLayout
+@layout BareLayout
 @rendermode InteractiveServer
 @attribute [AllowAnonymous]
 @using BookingScheduleSystem.Contracts.Tenants
@@ -13,6 +13,7 @@
 
 <MudThemeProvider @ref="_themeProvider" IsDarkMode="@_isDarkMode" Theme="@_theme" />
 
+<div class="provider-landing-root">
 @if (_isLoading)
 {
     <div class="provider-landing">
@@ -252,6 +253,7 @@ else
         <ChatbotWidget TenantId="@_tenant.Id.Value" TenantSlug="@Slug" TenantName="@_tenant.Name" @ref="_chatbotWidget" />
     }
 }
+</div>
 
 @code {
     [Parameter] public string Slug { get; set; } = string.Empty;
