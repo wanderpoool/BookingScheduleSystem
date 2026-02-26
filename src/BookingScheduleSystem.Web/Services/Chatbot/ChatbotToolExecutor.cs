@@ -21,6 +21,7 @@ public sealed class ChatbotToolExecutor
     private string? _contactEmail;
     private string? _contactPhone;
     private string? _verificationToken;
+    private string? _authenticatedUserName;
     private int _otpSendCount;
     private bool _isAuthenticated;
 
@@ -225,9 +226,10 @@ public sealed class ChatbotToolExecutor
                 {
                     SetAuthHeaders(authResponse.Token, authResponse.TenantId?.Value);
                     _isAuthenticated = true;
+                    _authenticatedUserName = $"{authResponse.FirstName} {authResponse.LastName}";
 
                     _logger.LogInformation("Chatbot: existing user logged in via OTP — {Name}",
-                        $"{authResponse.FirstName} {authResponse.LastName}");
+                        _authenticatedUserName);
 
                     return JsonSerializer.Serialize(new
                     {
@@ -303,12 +305,13 @@ public sealed class ChatbotToolExecutor
 
         SetAuthHeaders(authResponse.Token, tenantId);
         _isAuthenticated = true;
+        _authenticatedUserName = $"{firstName} {lastName}";
 
         return JsonSerializer.Serialize(new
         {
             success = true,
             message = $"User {firstName} {lastName} registered successfully. They are now authenticated and ready to book.",
-            user_name = $"{firstName} {lastName}"
+            user_name = _authenticatedUserName
         });
     }
 
@@ -396,7 +399,7 @@ public sealed class ChatbotToolExecutor
         var scheduleRequest = new CreateScheduleRequest
         {
             ProviderId = providerGuid,
-            Title = $"Appointment on {date:MMM d} at {startTime:h:mm tt}",
+            Title = $"Appointment for {_authenticatedUserName ?? "Customer"}",
             StartTime = startDateTime,
             EndTime = endDateTime,
             MaxCapacity = 1
