@@ -1,17 +1,4 @@
 /* ===== Provider Landing Page — Scoped CSS ===== */
-/* Uses MudBlazor CSS variables for theme-aware colors */
-
-.provider-landing {
-    min-height: 100vh;
-    background: var(--mud-palette-background);
-    color: var(--mud-palette-text-primary);
-}
-
-/* ===== SIMPLE TEMPLATE ===== */
-.simple-body {
-    padding-top: 48px;
-    padding-bottom: 80px; /* Room for FAB */
-}
 
 /* ===== PREMIUM TEMPLATE ===== */
 .premium-hero {
@@ -43,14 +30,6 @@
 }
 
 /* ===== SHARED COMPONENTS ===== */
-::deep .landing-card {
-    border: 1px solid var(--mud-palette-divider);
-    border-radius: 14px;
-    padding: 20px;
-    margin-bottom: 16px;
-    background: var(--mud-palette-surface);
-}
-
 ::deep .hours-row {
     display: flex;
     align-items: center;
@@ -63,29 +42,8 @@
     border-bottom: none;
 }
 
-::deep .landing-cta-area {
-    margin-top: 24px;
-    margin-bottom: 8px;
-}
-
-::deep .landing-footer {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 20px 0 8px;
-    margin-top: 16px;
-    border-top: 1px solid var(--mud-palette-divider-light);
-}
-
 /* ===== RESPONSIVE ===== */
 @media (max-width: 600px) {
-    .simple-body {
-        padding-top: 48px;
-        padding-left: 16px;
-        padding-right: 16px;
-    }
-
     .premium-hero {
         min-height: 200px;
         padding: 32px 16px 24px;

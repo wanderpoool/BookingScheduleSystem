@@ -155,63 +155,66 @@ else
     else
     {
         @* ====== SIMPLE TEMPLATE (Default) ====== *@
-        <div class="provider-landing simple-template">
-            <MudContainer MaxWidth="MaxWidth.Small" Class="simple-body">
-                @* Avatar / Logo placeholder *@
-                <MudStack AlignItems="AlignItems.Center" Spacing="2" Class="mb-6">
-                    <MudAvatar Size="Size.Large"
-                               Style="width: 72px; height: 72px; font-size: 28px; font-weight: 700;"
-                               Color="Color.Primary">
-                        @GetInitials()
-                    </MudAvatar>
+        <MudContainer MaxWidth="MaxWidth.Small" Class="d-flex align-center justify-center" Style="min-height: 100vh;">
+            <MudPaper Elevation="0" Class="pa-6 pa-sm-10" Style="width: 100%; max-width: 450px; border: 1px solid var(--mud-palette-divider); border-radius: 20px;">
+                <MudStack Spacing="4">
+                    @* Avatar + Name *@
+                    <MudStack AlignItems="AlignItems.Center" Spacing="2">
+                        <MudAvatar Size="Size.Large"
+                                   Style="width: 72px; height: 72px; font-size: 28px; font-weight: 700;"
+                                   Color="Color.Primary">
+                            @GetInitials()
+                        </MudAvatar>
 
-                    <MudText Typo="Typo.h5" Align="Align.Center" Style="font-weight: 800;">
-                        @_tenant.Name
-                    </MudText>
+                        <MudText Typo="Typo.h5" Align="Align.Center" Style="font-weight: 800; letter-spacing: -0.03em;">
+                            @_tenant.Name
+                        </MudText>
 
-                    @if (!string.IsNullOrWhiteSpace(_tenant.Location))
+                        @if (!string.IsNullOrWhiteSpace(_tenant.Location))
+                        {
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Justify="Justify.Center"
+                                       Style="max-width: 100%; text-align: center;">
+                                <MudIcon Icon="@Icons.Material.Filled.LocationOn" Size="Size.Small" Color="Color.Secondary" Style="flex-shrink: 0;" />
+                                <MudText Typo="Typo.body2" Color="Color.Secondary" Style="word-break: break-word;">
+                                    @_tenant.Location
+                                </MudText>
+                            </MudStack>
+                        }
+                    </MudStack>
+
+                    @* Description *@
+                    @if (!string.IsNullOrWhiteSpace(_tenant.Description))
                     {
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Justify="Justify.Center"
-                                   Style="max-width: 100%; text-align: center;">
-                            <MudIcon Icon="@Icons.Material.Filled.LocationOn" Size="Size.Small" Color="Color.Secondary" />
-                            <MudText Typo="Typo.body2" Color="Color.Secondary" Style="word-break: break-word;">
-                                @_tenant.Location
-                            </MudText>
-                        </MudStack>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                            @_tenant.Description
+                        </MudText>
                     }
-                </MudStack>
 
-                @* Description *@
-                @if (!string.IsNullOrWhiteSpace(_tenant.Description))
-                {
-                    <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center" Class="mb-6"
-                             Style="max-width: 400px; margin-left: auto; margin-right: auto;">
-                        @_tenant.Description
-                    </MudText>
-                }
+                    <MudDivider />
 
-                @* Operating Hours *@
-                @if (_operatingHoursList.Count > 0)
-                {
-                    <MudPaper Elevation="0" Class="landing-card">
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-3">
-                            <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Color="Color.Primary" />
-                            <MudText Typo="Typo.subtitle2" Style="font-weight: 700;">Hours</MudText>
-                        </MudStack>
-                        <MudStack Spacing="1">
-                            @foreach (var hours in _operatingHoursList)
-                            {
-                                <div class="hours-row">
-                                    <MudText Typo="Typo.body2" Style="font-weight: 600; min-width: 100px;">@hours.Day</MudText>
-                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@hours.Time</MudText>
-                                </div>
-                            }
-                        </MudStack>
-                    </MudPaper>
-                }
+                    @* Operating Hours *@
+                    @if (_operatingHoursList.Count > 0)
+                    {
+                        <div>
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-2">
+                                <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Color="Color.Primary" />
+                                <MudText Typo="Typo.subtitle2" Style="font-weight: 700;">Hours</MudText>
+                            </MudStack>
+                            <MudStack Spacing="1">
+                                @foreach (var hours in _operatingHoursList)
+                                {
+                                    <div class="hours-row">
+                                        <MudText Typo="Typo.body2" Style="font-weight: 600; min-width: 100px;">@hours.Day</MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@hours.Time</MudText>
+                                    </div>
+                                }
+                            </MudStack>
+                        </div>
 
-                @* CTA *@
-                <div class="landing-cta-area">
+                        <MudDivider />
+                    }
+
+                    @* CTA *@
                     <MudButton Variant="Variant.Filled" Color="Color.Primary"
                                FullWidth="true"
                                StartIcon="@Icons.Material.Filled.CalendarMonth"
@@ -219,7 +222,8 @@ else
                                Style="min-height: 52px; font-size: 16px; font-weight: 600;">
                         Book an Appointment
                     </MudButton>
-                    <MudStack Row="true" Justify="Justify.Center" Spacing="3" Class="mt-3">
+
+                    <MudStack Row="true" Justify="Justify.Center" Spacing="1">
                         <MudLink Href="@($"/{Slug}/login")" Typo="Typo.body2" Color="Color.Primary" Style="font-weight: 500;">
                             Sign In
                         </MudLink>
@@ -228,22 +232,22 @@ else
                             Create Account
                         </MudLink>
                     </MudStack>
-                </div>
 
-                @* Footer area *@
-                <div class="landing-footer">
-                    <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
-                                   Color="Color.Secondary" Size="Size.Small"
-                                   OnClick="ToggleDarkMode" />
-                    @if (ShowPoweredBy())
-                    {
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">
-                            Powered by <MudLink Href="/" Typo="Typo.caption" Color="Color.Primary" Style="font-weight: 600;">BookMeApp</MudLink>
-                        </MudText>
-                    }
-                </div>
-            </MudContainer>
-        </div>
+                    @* Footer *@
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.Center" Spacing="1">
+                        <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                                       Color="Color.Secondary" Size="Size.Small"
+                                       OnClick="ToggleDarkMode" />
+                        @if (ShowPoweredBy())
+                        {
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                Powered by <MudLink Href="/" Typo="Typo.caption" Color="Color.Primary" Style="font-weight: 600;">BookMeApp</MudLink>
+                            </MudText>
+                        }
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+        </MudContainer>
 
         <ChatbotWidget TenantId="@_tenant.Id.Value" TenantSlug="@Slug" TenantName="@_tenant.Name" @ref="_chatbotWidget" />
     }
