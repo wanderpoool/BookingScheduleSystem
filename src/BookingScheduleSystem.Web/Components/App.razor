@@ -87,10 +87,11 @@
             }
 
             // Remove generic loading placeholder once Blazor renders (but not branded)
+            // Uses .mud-popover-provider (from Routes.razor) as signal — works with all layouts
             document.addEventListener('DOMContentLoaded', function() {
                 var observer = new MutationObserver(function() {
                     var appEl = document.getElementById('app-loading');
-                    if (appEl && document.querySelector('.mud-layout')) {
+                    if (appEl && document.querySelector('.mud-popover-provider')) {
                         appEl.remove();
                         observer.disconnect();
                     }

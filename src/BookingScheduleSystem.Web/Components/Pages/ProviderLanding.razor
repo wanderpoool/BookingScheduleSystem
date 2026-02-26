@@ -12,9 +12,6 @@
 <PageTitle>@(_tenant?.Name ?? "Loading...") — Book an Appointment</PageTitle>
 
 <MudThemeProvider @ref="_themeProvider" IsDarkMode="@_isDarkMode" Theme="@_theme" />
-<MudPopoverProvider />
-<MudDialogProvider />
-<MudSnackbarProvider />
 
 @if (_isLoading)
 {
