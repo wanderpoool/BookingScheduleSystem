@@ -135,22 +135,18 @@ else
                     </MudStack>
                 </div>
 
-                @* Dark mode toggle *@
-                <div class="d-flex justify-center mt-2 mb-4">
+                @* Footer area *@
+                <div class="landing-footer">
                     <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
-                                   Color="Color.Secondary" Size="Size.Medium"
+                                   Color="Color.Secondary" Size="Size.Small"
                                    OnClick="ToggleDarkMode" />
-                </div>
-
-                @* Powered by footer *@
-                @if (ShowPoweredBy())
-                {
-                    <div class="powered-by-footer">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary" Align="Align.Center">
+                    @if (ShowPoweredBy())
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
                             Powered by <MudLink Href="/" Typo="Typo.caption" Color="Color.Primary" Style="font-weight: 600;">BookMeApp</MudLink>
                         </MudText>
-                    </div>
-                }
+                    }
+                </div>
             </MudContainer>
 
             <ChatbotWidget TenantId="@_tenant.Id.Value" TenantSlug="@Slug" TenantName="@_tenant.Name" @ref="_chatbotWidget" />
@@ -162,7 +158,7 @@ else
         <div class="provider-landing simple-template">
             <MudContainer MaxWidth="MaxWidth.Small" Class="simple-body">
                 @* Avatar / Logo placeholder *@
-                <MudStack AlignItems="AlignItems.Center" Spacing="2" Class="mb-4">
+                <MudStack AlignItems="AlignItems.Center" Spacing="2" Class="mb-6">
                     <MudAvatar Size="Size.Large"
                                Style="width: 72px; height: 72px; font-size: 28px; font-weight: 700;"
                                Color="Color.Primary">
@@ -175,17 +171,20 @@ else
 
                     @if (!string.IsNullOrWhiteSpace(_tenant.Location))
                     {
-                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Secondary"
-                                 Icon="@Icons.Material.Filled.LocationOn">
-                            @_tenant.Location
-                        </MudChip>
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Justify="Justify.Center"
+                                   Style="max-width: 100%; text-align: center;">
+                            <MudIcon Icon="@Icons.Material.Filled.LocationOn" Size="Size.Small" Color="Color.Secondary" />
+                            <MudText Typo="Typo.body2" Color="Color.Secondary" Style="word-break: break-word;">
+                                @_tenant.Location
+                            </MudText>
+                        </MudStack>
                     }
                 </MudStack>
 
                 @* Description *@
                 @if (!string.IsNullOrWhiteSpace(_tenant.Description))
                 {
-                    <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center" Class="mb-4"
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center" Class="mb-6"
                              Style="max-width: 400px; margin-left: auto; margin-right: auto;">
                         @_tenant.Description
                     </MudText>
@@ -231,26 +230,22 @@ else
                     </MudStack>
                 </div>
 
-                @* Dark mode toggle *@
-                <div class="d-flex justify-center mt-2 mb-4">
+                @* Footer area *@
+                <div class="landing-footer">
                     <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
-                                   Color="Color.Secondary" Size="Size.Medium"
+                                   Color="Color.Secondary" Size="Size.Small"
                                    OnClick="ToggleDarkMode" />
-                </div>
-
-                @* Powered by footer *@
-                @if (ShowPoweredBy())
-                {
-                    <div class="powered-by-footer">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary" Align="Align.Center">
+                    @if (ShowPoweredBy())
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
                             Powered by <MudLink Href="/" Typo="Typo.caption" Color="Color.Primary" Style="font-weight: 600;">BookMeApp</MudLink>
                         </MudText>
-                    </div>
-                }
+                    }
+                </div>
             </MudContainer>
-
-            <ChatbotWidget TenantId="@_tenant.Id.Value" TenantSlug="@Slug" TenantName="@_tenant.Name" @ref="_chatbotWidget" />
         </div>
+
+        <ChatbotWidget TenantId="@_tenant.Id.Value" TenantSlug="@Slug" TenantName="@_tenant.Name" @ref="_chatbotWidget" />
     }
 }
 

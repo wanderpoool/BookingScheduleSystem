@@ -10,11 +10,7 @@
 /* ===== SIMPLE TEMPLATE ===== */
 .simple-body {
     padding-top: 48px;
-    padding-bottom: 32px;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+    padding-bottom: 80px; /* Room for FAB */
 }
 
 /* ===== PREMIUM TEMPLATE ===== */
@@ -43,7 +39,7 @@
 
 .premium-body {
     padding-top: 20px;
-    padding-bottom: 32px;
+    padding-bottom: 80px;
 }
 
 /* ===== SHARED COMPONENTS ===== */
@@ -72,20 +68,22 @@
     margin-bottom: 8px;
 }
 
-::deep .powered-by-footer {
-    padding: 24px 0 16px;
-    text-align: center;
-    border-top: 1px solid var(--mud-palette-divider-light);
+::deep .landing-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 20px 0 8px;
     margin-top: 16px;
+    border-top: 1px solid var(--mud-palette-divider-light);
 }
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 600px) {
     .simple-body {
-        padding-top: 56px;
+        padding-top: 48px;
         padding-left: 16px;
         padding-right: 16px;
-        justify-content: flex-start;
     }
 
     .premium-hero {
