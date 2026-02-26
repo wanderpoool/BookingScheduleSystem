@@ -11,10 +11,11 @@ public sealed class ChatbotToolExecutor
 {
     private readonly IScheduleService _scheduleService;
     private readonly IOtpService _otpService;
-    private readonly IAuthenticationService _authService;
-    private readonly IBookingService _bookingService;
-    private readonly HttpClient _httpClient;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<ChatbotToolExecutor> _logger;
+
+    // Isolated HttpClient for chatbot auth calls — never shares headers with the main app
+    private HttpClient? _chatbotHttpClient;
 
     // Session state for the OTP/registration flow
     private string? _contactMethod;
@@ -28,17 +29,27 @@ public sealed class ChatbotToolExecutor
     public ChatbotToolExecutor(
         IScheduleService scheduleService,
         IOtpService otpService,
-        IAuthenticationService authService,
-        IBookingService bookingService,
-        HttpClient httpClient,
+        IHttpClientFactory httpClientFactory,
         ILogger<ChatbotToolExecutor> logger)
     {
         _scheduleService = scheduleService;
         _otpService = otpService;
-        _authService = authService;
-        _bookingService = bookingService;
-        _httpClient = httpClient;
+        _httpClientFactory = httpClientFactory;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Gets the isolated HttpClient for chatbot-specific authenticated API calls.
+    /// This is separate from the shared HttpClient to avoid leaking customer auth
+    /// headers into the provider's session.
+    /// </summary>
+    private HttpClient GetAuthenticatedClient()
+    {
+        if (_chatbotHttpClient is null)
+        {
+            _chatbotHttpClient = _httpClientFactory.CreateClient("BookingScheduleAPI");
+        }
+        return _chatbotHttpClient;
     }
 
     public async Task<string> ExecuteToolAsync(string toolName, JsonElement input, Guid tenantId)
@@ -65,11 +76,12 @@ public sealed class ChatbotToolExecutor
 
     private void SetAuthHeaders(string token, Guid? tenantId)
     {
-        _httpClient.DefaultRequestHeaders.Authorization =
+        var client = GetAuthenticatedClient();
+        client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-        _httpClient.DefaultRequestHeaders.Remove("X-Tenant-Id");
+        client.DefaultRequestHeaders.Remove("X-Tenant-Id");
         if (tenantId.HasValue)
-            _httpClient.DefaultRequestHeaders.Add("X-Tenant-Id", tenantId.Value.ToString());
+            client.DefaultRequestHeaders.Add("X-Tenant-Id", tenantId.Value.ToString());
     }
 
     private async Task<string> CheckAvailabilityAsync(JsonElement input, Guid tenantId)
@@ -217,7 +229,7 @@ public sealed class ChatbotToolExecutor
                 OtpVerificationToken = _verificationToken
             };
 
-            var loginResponse = await _httpClient.PostAsJsonAsync("/api/auth/login-otp", loginRequest);
+            var loginResponse = await GetAuthenticatedClient().PostAsJsonAsync("/api/auth/login-otp", loginRequest);
 
             if (loginResponse.IsSuccessStatusCode)
             {
@@ -287,7 +299,7 @@ public sealed class ChatbotToolExecutor
         };
 
         // Call API directly (bypass AuthenticationService to avoid JS interop/localStorage)
-        var response = await _httpClient.PostAsJsonAsync("/api/auth/register", request);
+        var response = await GetAuthenticatedClient().PostAsJsonAsync("/api/auth/register", request);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -336,8 +348,28 @@ public sealed class ChatbotToolExecutor
             Notes = notes
         };
 
-        var booking = await _bookingService.CreateBookingAsync(request);
+        var client = GetAuthenticatedClient();
+        var response = await client.PostAsJsonAsync("/api/bookings", request);
 
+        if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+        {
+            _logger.LogWarning("Chatbot booking conflict for schedule {ScheduleId}", scheduleGuid);
+            return JsonSerializer.Serialize(new
+            {
+                success = false,
+                conflict = true,
+                error = "This time slot is no longer available — it may have just been booked by someone else. Please check availability again and choose a different time."
+            });
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync();
+            _logger.LogWarning("Chatbot booking failed for schedule {ScheduleId}: {StatusCode} {Error}", scheduleGuid, response.StatusCode, error);
+            return JsonSerializer.Serialize(new { success = false, error = $"Booking failed: {response.StatusCode}" });
+        }
+
+        var booking = await response.Content.ReadFromJsonAsync<BookingResponse>();
         if (booking == null)
         {
             return JsonSerializer.Serialize(new { success = false, error = "Failed to create booking. The slot may no longer be available." });
@@ -395,6 +427,8 @@ public sealed class ChatbotToolExecutor
             "Chatbot creating schedule + booking: provider {ProviderId}, {Date} {Start}-{End}",
             providerGuid, dateStr, startTimeStr, endTimeStr);
 
+        var client = GetAuthenticatedClient();
+
         // Step 1: Create schedule slot
         var scheduleRequest = new CreateScheduleRequest
         {
@@ -405,17 +439,29 @@ public sealed class ChatbotToolExecutor
             MaxCapacity = 1
         };
 
-        ScheduleResponse? schedule;
-        try
+        var scheduleResponse = await client.PostAsJsonAsync("/api/schedules", scheduleRequest);
+
+        if (scheduleResponse.StatusCode == System.Net.HttpStatusCode.Conflict)
         {
-            schedule = await _scheduleService.CreateScheduleAsync(scheduleRequest);
-        }
-        catch (HttpRequestException ex)
-        {
-            _logger.LogWarning(ex, "Failed to create schedule slot for chatbot booking");
-            return JsonSerializer.Serialize(new { success = false, error = $"Could not create the time slot: {ex.Message}" });
+            _logger.LogWarning("Chatbot schedule conflict: provider {ProviderId} at {Date} {Start}-{End}",
+                providerGuid, dateStr, startTimeStr, endTimeStr);
+            return JsonSerializer.Serialize(new
+            {
+                success = false,
+                conflict = true,
+                error = "This time slot overlaps with an existing appointment for this provider. Please choose a different time."
+            });
         }
 
+        if (!scheduleResponse.IsSuccessStatusCode)
+        {
+            var error = await scheduleResponse.Content.ReadAsStringAsync();
+            _logger.LogWarning("Failed to create schedule slot for chatbot booking: {StatusCode} {Error}",
+                scheduleResponse.StatusCode, error);
+            return JsonSerializer.Serialize(new { success = false, error = "Could not create the time slot. Please try a different time." });
+        }
+
+        var schedule = await scheduleResponse.Content.ReadFromJsonAsync<ScheduleResponse>();
         if (schedule == null)
         {
             return JsonSerializer.Serialize(new { success = false, error = "Failed to create the time slot. Please try a different time." });
@@ -428,29 +474,60 @@ public sealed class ChatbotToolExecutor
             Notes = notes
         };
 
-        try
+        var bookingResponse = await client.PostAsJsonAsync("/api/bookings", bookingRequest);
+
+        if (bookingResponse.StatusCode == System.Net.HttpStatusCode.Conflict)
         {
-            var booking = await _bookingService.CreateBookingAsync(bookingRequest);
-
-            if (booking == null)
-            {
-                return JsonSerializer.Serialize(new { success = false, error = "Schedule was created but booking failed. Please try again." });
-            }
-
+            _logger.LogWarning("Chatbot booking conflict after schedule creation");
+            await CleanupScheduleAsync(schedule.Id.Value);
             return JsonSerializer.Serialize(new
             {
-                success = true,
-                booking_id = booking.Id.Value.ToString(),
-                schedule_title = booking.ScheduleTitle,
-                start_time = booking.ScheduleStartTime?.ToString("dddd, MMMM d 'at' h:mm tt"),
-                end_time = booking.ScheduleEndTime?.ToString("h:mm tt"),
-                message = "Booking confirmed! Share the details with the user."
+                success = false,
+                conflict = true,
+                error = "Booking failed due to a conflict. Please choose a different time."
             });
         }
-        catch (HttpRequestException ex)
+
+        if (!bookingResponse.IsSuccessStatusCode)
         {
-            _logger.LogWarning(ex, "Failed to create booking after schedule creation");
-            return JsonSerializer.Serialize(new { success = false, error = $"Schedule was created but booking failed: {ex.Message}" });
+            var error = await bookingResponse.Content.ReadAsStringAsync();
+            _logger.LogWarning("Failed to create booking after schedule creation: {StatusCode} {Error}",
+                bookingResponse.StatusCode, error);
+            await CleanupScheduleAsync(schedule.Id.Value);
+            return JsonSerializer.Serialize(new { success = false, error = "Booking failed. Please try again." });
+        }
+
+        var booking = await bookingResponse.Content.ReadFromJsonAsync<BookingResponse>();
+        if (booking == null)
+        {
+            await CleanupScheduleAsync(schedule.Id.Value);
+            return JsonSerializer.Serialize(new { success = false, error = "Booking failed. Please try again." });
+        }
+
+        return JsonSerializer.Serialize(new
+        {
+            success = true,
+            booking_id = booking.Id.Value.ToString(),
+            schedule_title = booking.ScheduleTitle,
+            start_time = booking.ScheduleStartTime?.ToString("dddd, MMMM d 'at' h:mm tt"),
+            end_time = booking.ScheduleEndTime?.ToString("h:mm tt"),
+            message = "Booking confirmed! Share the details with the user."
+        });
+    }
+
+    private async Task CleanupScheduleAsync(Guid scheduleId)
+    {
+        try
+        {
+            var response = await GetAuthenticatedClient().DeleteAsync($"/api/schedules/{scheduleId}");
+            if (response.IsSuccessStatusCode)
+                _logger.LogInformation("Cleaned up orphaned schedule {ScheduleId}", scheduleId);
+            else
+                _logger.LogWarning("Cleanup of orphaned schedule {ScheduleId} returned {StatusCode}", scheduleId, response.StatusCode);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to cleanup orphaned schedule {ScheduleId}", scheduleId);
         }
     }
 }
