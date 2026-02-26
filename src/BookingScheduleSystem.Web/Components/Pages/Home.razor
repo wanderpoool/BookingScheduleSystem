@@ -1,6 +1,8 @@
 @page "/"
 @rendermode InteractiveServer
 @layout EmptyLayout
+@attribute [AllowAnonymous]
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation

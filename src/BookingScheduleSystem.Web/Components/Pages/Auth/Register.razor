@@ -1,6 +1,8 @@
 @page "/register"
 @page "/{Slug}/register"
 @rendermode InteractiveServer
+@attribute [AllowAnonymous]
+@using Microsoft.AspNetCore.Authorization
 @using BookingScheduleSystem.Contracts.Auth
 @using BookingScheduleSystem.Contracts.Tenants
 @using BookingScheduleSystem.Web.Services

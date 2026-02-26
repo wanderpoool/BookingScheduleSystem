@@ -1,8 +1,10 @@
 @page "/{Slug}"
 @layout EmptyLayout
 @rendermode InteractiveServer
+@attribute [AllowAnonymous]
 @using BookingScheduleSystem.Contracts.Tenants
 @using System.Text.Json
+@using Microsoft.AspNetCore.Authorization
 @inject ITenantService TenantService
 @inject IScheduleService ScheduleService
 @inject NavigationManager Navigation
