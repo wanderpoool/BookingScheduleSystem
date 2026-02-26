@@ -62,6 +62,8 @@
     cursor: pointer;
     transition: background var(--transition-duration-fast) var(--transition-timing);
     flex-shrink: 0;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
 .day-cell {
@@ -80,6 +82,9 @@
     transition: background var(--transition-duration-fast) var(--transition-timing);
     position: relative;
     gap: 2px;
+    -webkit-appearance: none;
+    appearance: none;
+    color: inherit;
 }
 
 .day-name {
@@ -131,12 +136,13 @@
     padding-bottom: var(--space-4);
 }
 
-.appointment-card {
+button.appointment-card,
+div.appointment-card {
     display: flex;
     align-items: center;
     width: 100%;
     min-height: 68px;
-    background: var(--color-surface);
+    background-color: var(--color-surface);
     border: 1px solid var(--color-border-light);
     border-radius: var(--radius-lg);
     overflow: hidden;
@@ -146,6 +152,9 @@
     text-align: left;
     padding: 0;
     font-family: var(--font-family-base);
+    color: inherit;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
 .card-accent {

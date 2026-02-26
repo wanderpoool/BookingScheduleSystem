@@ -64,7 +64,8 @@ public sealed class ListTenants : Endpoint<ListTenantsRequest, ListTenantsRespon
                 OwnerId = t.OwnerId,
                 OperatingHours = t.OperatingHours,
                 BannerUrl = t.BannerUrl,
-                Location = t.Location
+                Location = t.Location,
+                LandingPageTemplate = t.LandingPageTemplate
             }).ToList(),
             TotalCount = (int)totalCount,
             PageNumber = pageNumber,

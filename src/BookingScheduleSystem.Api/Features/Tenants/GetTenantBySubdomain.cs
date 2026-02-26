@@ -50,7 +50,8 @@ public sealed class GetTenantBySubdomain : Endpoint<GetTenantBySubdomainRequest,
             OwnerId = tenant.OwnerId,
             OperatingHours = tenant.OperatingHours,
             BannerUrl = tenant.BannerUrl,
-            Location = tenant.Location
+            Location = tenant.Location,
+            LandingPageTemplate = tenant.LandingPageTemplate
         };
     }
 }

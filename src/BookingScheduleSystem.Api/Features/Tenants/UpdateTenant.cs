@@ -16,6 +16,7 @@ public sealed class UpdateTenantEndpointRequest
     public string? OperatingHours { get; set; }
     public string? BannerUrl { get; set; }
     public string? Location { get; set; }
+    public string? LandingPageTemplate { get; set; }
 }
 
 public sealed class UpdateTenant : Endpoint<UpdateTenantEndpointRequest, TenantResponse>
@@ -96,6 +97,7 @@ public sealed class UpdateTenant : Endpoint<UpdateTenantEndpointRequest, TenantR
         tenant.OperatingHours = req.OperatingHours;
         tenant.BannerUrl = req.BannerUrl;
         tenant.Location = req.Location;
+        tenant.LandingPageTemplate = req.LandingPageTemplate;
 
         session.Update(tenant);
         await session.SaveChangesAsync(ct);
@@ -114,7 +116,8 @@ public sealed class UpdateTenant : Endpoint<UpdateTenantEndpointRequest, TenantR
             OwnerId = tenant.OwnerId,
             OperatingHours = tenant.OperatingHours,
             BannerUrl = tenant.BannerUrl,
-            Location = tenant.Location
+            Location = tenant.Location,
+            LandingPageTemplate = tenant.LandingPageTemplate
         };
     }
 }

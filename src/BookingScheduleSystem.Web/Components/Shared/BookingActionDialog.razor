@@ -3,8 +3,12 @@
 
 <MudDialog>
     <DialogContent>
-        <MudStack Spacing="3">
-            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Justify="Justify.FlexEnd">
+        <MudStack Spacing="3" Style="padding-top: 8px;">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Justify="Justify.SpaceBetween">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudIcon Icon="@Icons.Material.Filled.EventNote" Color="Color.Primary" />
+                    <MudText Typo="Typo.h6" Style="font-weight: 700; letter-spacing: -0.02em;">Booking Details</MudText>
+                </MudStack>
                 <MudChip T="string" Size="Size.Small"
                          Color="@GetStatusColor()"
                          Variant="Variant.Filled"
@@ -13,37 +17,40 @@
                 </MudChip>
             </MudStack>
 
-            @if (!string.IsNullOrWhiteSpace(Item.TimeBlock.CustomerName))
-            {
-                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                    <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Color="Color.Secondary" />
-                    <MudText Typo="Typo.body1">@Item.TimeBlock.CustomerName</MudText>
+            <MudDivider />
+
+            <MudStack Spacing="2">
+                @if (!string.IsNullOrWhiteSpace(Item.TimeBlock.CustomerName))
+                {
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Color="Color.Secondary" Style="width: 20px; flex-shrink: 0;" />
+                        <MudText Typo="Typo.body2" Style="font-weight: 600;">@Item.TimeBlock.CustomerName</MudText>
+                    </MudStack>
+                }
+
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudIcon Icon="@Icons.Material.Filled.Category" Size="Size.Small" Color="Color.Primary" Style="width: 20px; flex-shrink: 0;" />
+                    <MudText Typo="Typo.body2">@(Item.TimeBlock.ScheduleTitle ?? "Schedule")</MudText>
                 </MudStack>
-            }
 
-            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                <MudIcon Icon="@Icons.Material.Filled.Category" Size="Size.Small" Color="Color.Primary" />
-                <MudText Typo="Typo.body2">@(Item.TimeBlock.ScheduleTitle ?? "Schedule")</MudText>
-            </MudStack>
-
-            <MudStack Spacing="1">
-                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                    <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Size="Size.Small" Color="Color.Primary" />
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Size="Size.Small" Color="Color.Primary" Style="width: 20px; flex-shrink: 0;" />
                     <MudText Typo="Typo.body2">@Item.Start.ToString("dddd, MMM dd, yyyy")</MudText>
                 </MudStack>
-                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                    <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Color="Color.Primary" />
+
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Color="Color.Primary" Style="width: 20px; flex-shrink: 0;" />
                     <MudText Typo="Typo.body2">@Item.Start.ToString("h:mm tt") - @(Item.End?.ToString("h:mm tt") ?? "")</MudText>
                 </MudStack>
-            </MudStack>
 
-            @if (!string.IsNullOrWhiteSpace(Item.TimeBlock.BookingNotes))
-            {
-                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                    <MudIcon Icon="@Icons.Material.Filled.Notes" Size="Size.Small" Color="Color.Default" />
-                    <MudText Typo="Typo.body2" Color="Color.Default">@Item.TimeBlock.BookingNotes</MudText>
-                </MudStack>
-            }
+                @if (!string.IsNullOrWhiteSpace(Item.TimeBlock.BookingNotes))
+                {
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="@Icons.Material.Filled.Notes" Size="Size.Small" Color="Color.Default" Style="width: 20px; flex-shrink: 0;" />
+                        <MudText Typo="Typo.body2" Color="Color.Default">@Item.TimeBlock.BookingNotes</MudText>
+                    </MudStack>
+                }
+            </MudStack>
 
             @if (_isPending && _showRejectReason)
             {
@@ -51,6 +58,7 @@
                               Label="Rejection reason (optional)"
                               Variant="Variant.Outlined"
                               Lines="2"
+                              FullWidth="true"
                               Placeholder="Let the customer know why..." />
             }
             <MudDivider />

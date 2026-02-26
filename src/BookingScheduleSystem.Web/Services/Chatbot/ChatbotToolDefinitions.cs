@@ -83,7 +83,7 @@ public static class ChatbotToolDefinitions
             },
             {
                 "name": "create_booking",
-                "description": "Book an existing schedule slot. Use this ONLY when check_availability returned 'available_slots' with a schedule_id. Must be called after the user is registered.",
+                "description": "Book an existing schedule slot. Use this ONLY when check_availability returned 'available_slots' with a schedule_id. Must be called after the user is registered. IMPORTANT: Always ask the user for special instructions or notes BEFORE calling this tool.",
                 "input_schema": {
                     "type": "object",
                     "properties": {
@@ -93,7 +93,7 @@ public static class ChatbotToolDefinitions
                         },
                         "notes": {
                             "type": "string",
-                            "description": "Optional notes for the booking."
+                            "description": "Customer's special instructions, concerns, or notes for the appointment. Ask the user before calling this tool."
                         }
                     },
                     "required": ["schedule_id"]
@@ -101,7 +101,7 @@ public static class ChatbotToolDefinitions
             },
             {
                 "name": "create_and_book",
-                "description": "Create a new appointment slot during a provider's free time and book it in one step. Use this when check_availability shows 'free_time' windows but no 'available_slots'. The time must fall within the provider's free_time range. Must be called after the user is registered. Default appointment duration is 1 hour unless the user specifies otherwise.",
+                "description": "Create a new appointment slot during a provider's free time and book it in one step. Use this when check_availability shows 'free_time' windows but no 'available_slots'. The time must fall within the provider's free_time range. Must be called after the user is registered. Default appointment duration is 1 hour unless the user specifies otherwise. IMPORTANT: Always ask the user for special instructions or notes BEFORE calling this tool.",
                 "input_schema": {
                     "type": "object",
                     "properties": {
@@ -123,7 +123,7 @@ public static class ChatbotToolDefinitions
                         },
                         "notes": {
                             "type": "string",
-                            "description": "Optional notes for the booking."
+                            "description": "Customer's special instructions, concerns, or notes for the appointment. Ask the user before calling this tool."
                         }
                     },
                     "required": ["provider_id", "date", "start_time", "end_time"]

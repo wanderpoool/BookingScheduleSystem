@@ -68,8 +68,8 @@
                             @* Current user's booking — show details *@
                             <div style="width: 100%; height: 100%; border: 2px solid @(GetBookingStatusColor(calItem.TimeBlock.BookingStatus)); background: @(GetBookingStatusBg(calItem.TimeBlock.BookingStatus)); display: flex; flex-direction: column; border-radius: 6px;">
                                 <div style="background: @(GetBookingStatusColor(calItem.TimeBlock.BookingStatus)); padding: 2px 8px; display: flex; align-items: center; justify-content: space-between; border-radius: 4px 4px 0 0;">
-                                    <span style="color: #fff; font-size: 12px; font-weight: 700; letter-spacing: 0.5px;">YOUR BOOKING</span>
-                                    <span style="color: #fff; font-size: 12px; font-weight: 700; background: rgba(0,0,0,0.15); border-radius: 4px; padding: 1px 6px;">@(GetBookingStatusLabel(calItem.TimeBlock.BookingStatus))</span>
+                                    <span style="color: var(--color-primary-contrast); font-size: 12px; font-weight: 700; letter-spacing: 0.5px;">YOUR BOOKING</span>
+                                    <span style="color: var(--color-primary-contrast); font-size: 12px; font-weight: 700; background: rgba(0,0,0,0.2); border-radius: 4px; padding: 1px 6px;">@(GetBookingStatusLabel(calItem.TimeBlock.BookingStatus))</span>
                                 </div>
                                 <div style="padding: 4px 8px; flex: 1; display: flex; flex-direction: column; gap: 2px;">
                                     @if (!string.IsNullOrWhiteSpace(calItem.TimeBlock.ScheduleTitle))
@@ -482,7 +482,7 @@
             FullWidth = true
         };
 
-        var dialog = await DialogService.ShowAsync<BookingActionDialog>("Booking Details", parameters, options);
+        var dialog = await DialogService.ShowAsync<BookingActionDialog>(string.Empty, parameters, options);
         var result = await dialog.Result;
 
         if (result is { Canceled: false } && _lastDateRange is not null)

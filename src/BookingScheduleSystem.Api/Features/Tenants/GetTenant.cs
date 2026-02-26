@@ -51,7 +51,8 @@ public sealed class GetTenant : Endpoint<GetTenantRequest, TenantResponse>
             OwnerId = tenant.OwnerId,
             OperatingHours = tenant.OperatingHours,
             BannerUrl = tenant.BannerUrl,
-            Location = tenant.Location
+            Location = tenant.Location,
+            LandingPageTemplate = tenant.LandingPageTemplate
         };
     }
 }

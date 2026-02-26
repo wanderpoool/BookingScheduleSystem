@@ -24,4 +24,5 @@ public sealed class Tenant
     public string? OperatingHours { get; set; }
     public string? BannerUrl { get; set; }
     public string? Location { get; set; }
+    public string? LandingPageTemplate { get; set; }
 }

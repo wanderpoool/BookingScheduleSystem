@@ -112,7 +112,8 @@ public sealed class CreateOrganization : Endpoint<CreateOrganizationRequest, Ten
             OwnerId = tenant.OwnerId,
             OperatingHours = tenant.OperatingHours,
             BannerUrl = tenant.BannerUrl,
-            Location = tenant.Location
+            Location = tenant.Location,
+            LandingPageTemplate = tenant.LandingPageTemplate
         };
     }
 }
