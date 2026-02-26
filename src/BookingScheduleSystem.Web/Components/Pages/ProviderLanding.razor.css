@@ -82,7 +82,10 @@
 /* ===== RESPONSIVE ===== */
 @media (max-width: 600px) {
     .simple-body {
-        padding-top: 32px;
+        padding-top: 56px;
+        padding-left: 16px;
+        padding-right: 16px;
+        justify-content: flex-start;
     }
 
     .premium-hero {

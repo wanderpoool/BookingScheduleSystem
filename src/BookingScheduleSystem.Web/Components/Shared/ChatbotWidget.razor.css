@@ -2,11 +2,8 @@
 /* Uses MudBlazor CSS variables for full theme compatibility (light + dark mode) */
 
 /* ===== FAB ===== */
+/* Position is set via inline Style on MudFab for reliable CSS isolation */
 ::deep .chatbot-fab {
-    position: fixed !important;
-    bottom: 24px;
-    right: 24px;
-    z-index: 1200;
     width: 56px;
     height: 56px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
