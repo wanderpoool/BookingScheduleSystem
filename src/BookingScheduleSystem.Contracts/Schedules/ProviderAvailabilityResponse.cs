@@ -21,6 +21,9 @@ public sealed record TimeBlock
     public required DateTime StartTime { get; init; }
     public required DateTime EndTime { get; init; }
     public required bool IsAvailable { get; init; }
+    public bool IsActive { get; init; }
+    public int MaxCapacity { get; init; }
+    public int CurrentBookings { get; init; }
     public ScheduleId? ScheduleId { get; init; }
     public string? ScheduleTitle { get; init; }
     public string? CustomerName { get; init; }

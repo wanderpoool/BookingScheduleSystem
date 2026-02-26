@@ -266,9 +266,9 @@
                         Title = tb.ScheduleTitle ?? "Untitled",
                         StartTime = tb.StartTime,
                         EndTime = tb.EndTime,
-                        IsActive = tb.IsAvailable,
-                        MaxCapacity = 1,
-                        CurrentBookings = tb.IsAvailable ? 0 : 1
+                        IsActive = tb.IsActive,
+                        MaxCapacity = tb.MaxCapacity,
+                        CurrentBookings = tb.CurrentBookings
                     })
                     .DistinctBy(s => s.Id)
                     .OrderBy(s => s.StartTime)
