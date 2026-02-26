@@ -409,6 +409,10 @@ public sealed class ChatbotService : IChatbotService
             - If check_availability returns only "free_time" windows (no available_slots), the provider is open but no specific slots exist yet. Use "create_and_book" with the provider_id, date, and the user's chosen time within the free_time range. Default to a 1-hour appointment unless the user says otherwise.
             - Always present free_time windows as available times the user CAN book — e.g., "Dennis is available 9:00 AM - 5:00 PM. What time works for you?"
             - Both booking tools require the user to be registered first.
+
+            CONFLICT HANDLING:
+            - If a booking or create_and_book returns "conflict": true, the time slot is taken. Apologize briefly, then call check_availability again to get fresh data and show the user updated available times.
+            - Never ask the user to "try again" without showing them what IS available.
             """;
     }
 

@@ -27,7 +27,7 @@ public class BookingNotificationService
     public void NotifyBookingCreated(IDocumentSession session, Booking booking, Schedule schedule)
     {
         var isAutoConfirmed = booking.Status == BookingStatus.Confirmed && schedule.ProviderId.HasValue;
-        var dateFormatted = schedule.StartTime.ToString("MMM dd, yyyy");
+        var dateFormatted = schedule.StartTime.ToString("MMM dd, yyyy 'at' h:mm tt");
 
         if (schedule.ProviderId.HasValue)
         {
@@ -110,7 +110,7 @@ public class BookingNotificationService
         _logger.LogInformation("Schedule: {Title} on {StartTime}", schedule.Title, schedule.StartTime);
         _logger.LogInformation("============================");
 
-        var dateFormatted = schedule.StartTime.ToString("MMM dd, yyyy");
+        var dateFormatted = schedule.StartTime.ToString("MMM dd, yyyy 'at' h:mm tt");
         _ = SendBookingSmsAsync(
             booking.UserId.Value,
             booking.TenantId,
@@ -144,7 +144,7 @@ public class BookingNotificationService
         _logger.LogInformation("Reason: {Reason}", reason ?? "No reason provided");
         _logger.LogInformation("============================");
 
-        var dateFormatted = schedule.StartTime.ToString("MMM dd, yyyy");
+        var dateFormatted = schedule.StartTime.ToString("MMM dd, yyyy 'at' h:mm tt");
         _ = SendBookingSmsAsync(
             booking.UserId.Value,
             booking.TenantId,
@@ -176,7 +176,7 @@ public class BookingNotificationService
             _logger.LogInformation("Schedule: {Title} on {StartTime}", schedule.Title, schedule.StartTime);
             _logger.LogInformation("============================");
 
-            var dateFormatted = schedule.StartTime.ToString("MMM dd, yyyy");
+            var dateFormatted = schedule.StartTime.ToString("MMM dd, yyyy 'at' h:mm tt");
             _ = SendBookingSmsAsync(
                 schedule.ProviderId.Value.Value,
                 booking.TenantId,
