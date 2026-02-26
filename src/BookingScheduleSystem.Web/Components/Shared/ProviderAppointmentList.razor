@@ -1,0 +1,192 @@
+@using BookingScheduleSystem.Web.Models
+
+<div class="provider-appointments">
+    @* ── Header ── *@
+    <div class="header">
+        <h2 class="header-title">@GetHeaderTitle()</h2>
+        <span class="date-badge">@_selectedDay.ToString("MMM dd, yyyy")</span>
+    </div>
+
+    @* ── Week Strip ── *@
+    <div class="week-strip">
+        <button class="week-nav" @onclick="GoToPreviousWeek" aria-label="Previous week">
+            <MudIcon Icon="@Icons.Material.Filled.ChevronLeft" Size="Size.Small" />
+        </button>
+
+        @foreach (var day in _weekDays)
+        {
+            var isSelected = day.Date == _selectedDay.Date;
+            var hasDot = _daysWithAppointments.Contains(day.Date);
+
+            <button class="day-cell @(isSelected ? "day-cell--selected" : "")"
+                    @onclick="() => SelectDay(day)"
+                    aria-label="@day.ToString("dddd, MMMM dd")"
+                    aria-pressed="@isSelected">
+                <span class="day-name">@day.ToString("ddd").ToUpperInvariant()[..3]</span>
+                <span class="day-number">@day.Day</span>
+                @if (hasDot && !isSelected)
+                {
+                    <span class="day-dot"></span>
+                }
+            </button>
+        }
+
+        <button class="week-nav" @onclick="GoToNextWeek" aria-label="Next week">
+            <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" />
+        </button>
+    </div>
+
+    @* ── Appointment List ── *@
+    <div class="appointment-list">
+        @if (IsLoading)
+        {
+            @for (var i = 0; i < 3; i++)
+            {
+                <div class="appointment-card skeleton-card">
+                    <div class="card-accent" style="background: var(--color-divider);"></div>
+                    <div class="card-body">
+                        <MudSkeleton Width="60px" Height="20px" />
+                        <MudSkeleton Width="140px" Height="16px" Class="mt-1" />
+                    </div>
+                    <div class="card-end">
+                        <MudSkeleton Width="70px" Height="16px" />
+                    </div>
+                </div>
+            }
+        }
+        else if (_selectedDayItems.Count == 0)
+        {
+            <div class="empty-state">
+                <MudIcon Icon="@Icons.Material.Outlined.CalendarMonth"
+                         Style="font-size: 48px; color: var(--color-text-disabled);" />
+                <span class="empty-text">No appointments for this day</span>
+            </div>
+        }
+        else
+        {
+            @foreach (var (item, index) in _selectedDayItems.Select((it, idx) => (it, idx)))
+            {
+                var accentColor = AccentColors[index % AccentColors.Length];
+
+                <button class="appointment-card" @onclick="() => ItemClicked.InvokeAsync(item)">
+                    <div class="card-accent" style="background: @accentColor;"></div>
+                    <div class="card-body">
+                        <span class="card-time">@item.Start.ToString("h:mm tt")</span>
+                        <span class="card-service">@(item.TimeBlock.ScheduleTitle ?? "Appointment")</span>
+                        @if (item.TimeBlock.BookingStatus is not null)
+                        {
+                            <span class="card-status card-status--@item.TimeBlock.BookingStatus.ToString()!.ToLowerInvariant()">
+                                @item.TimeBlock.BookingStatus
+                            </span>
+                        }
+                    </div>
+                    <div class="card-end">
+                        <span class="card-customer">@AbbreviateCustomerName(item.TimeBlock.CustomerName)</span>
+                        <MudIcon Icon="@Icons.Material.Filled.ChevronRight"
+                                 Size="Size.Small"
+                                 Style="color: var(--color-text-disabled);" />
+                    </div>
+                </button>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<ScheduleCalendarItem> Items { get; set; } = new();
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public EventCallback<DateRange> DateRangeChanged { get; set; }
+    [Parameter] public EventCallback<ScheduleCalendarItem> ItemClicked { get; set; }
+
+    private DateTime _selectedDay = DateTime.Today;
+    private List<DateTime> _weekDays = new();
+    private HashSet<DateTime> _daysWithAppointments = new();
+    private List<ScheduleCalendarItem> _selectedDayItems = new();
+
+    private static readonly string[] AccentColors =
+    {
+        "#5B8DEF", // blue
+        "#F2945E", // peach
+        "#4ECDC4", // teal
+        "#A78BFA", // purple
+        "#F87171", // coral
+        "#10B981", // green
+        "#FBBF24", // amber
+        "#84CC16"  // lime
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        ComputeWeekDays(_selectedDay);
+        await FireDateRangeChanged();
+    }
+
+    protected override void OnParametersSet()
+    {
+        // Recompute which days have appointments and filter for selected day
+        _daysWithAppointments = Items
+            .Select(i => i.Start.Date)
+            .ToHashSet();
+
+        _selectedDayItems = Items
+            .Where(i => i.Start.Date == _selectedDay.Date)
+            .OrderBy(i => i.Start)
+            .ToList();
+    }
+
+    private void ComputeWeekDays(DateTime referenceDay)
+    {
+        // Find Monday of this week
+        var diff = ((int)referenceDay.DayOfWeek - (int)DayOfWeek.Monday + 7) % 7;
+        var monday = referenceDay.AddDays(-diff).Date;
+        _weekDays = Enumerable.Range(0, 7).Select(i => monday.AddDays(i)).ToList();
+    }
+
+    private void SelectDay(DateTime day)
+    {
+        _selectedDay = day;
+        _selectedDayItems = Items
+            .Where(i => i.Start.Date == _selectedDay.Date)
+            .OrderBy(i => i.Start)
+            .ToList();
+    }
+
+    private async Task GoToPreviousWeek()
+    {
+        _selectedDay = _selectedDay.AddDays(-7);
+        ComputeWeekDays(_selectedDay);
+        await FireDateRangeChanged();
+    }
+
+    private async Task GoToNextWeek()
+    {
+        _selectedDay = _selectedDay.AddDays(7);
+        ComputeWeekDays(_selectedDay);
+        await FireDateRangeChanged();
+    }
+
+    private async Task FireDateRangeChanged()
+    {
+        var monday = _weekDays[0];
+        var sunday = _weekDays[6].AddDays(1); // End is exclusive
+        await DateRangeChanged.InvokeAsync(new DateRange(monday, sunday));
+    }
+
+    private string GetHeaderTitle()
+    {
+        if (_selectedDay.Date == DateTime.Today)
+            return "Today's Appointments";
+
+        return $"{_selectedDay:dddd}'s Appointments";
+    }
+
+    private static string AbbreviateCustomerName(string? fullName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName)) return "";
+
+        var parts = fullName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) return parts[0];
+
+        return $"{parts[0]} {parts[^1][0]}.";
+    }
+}

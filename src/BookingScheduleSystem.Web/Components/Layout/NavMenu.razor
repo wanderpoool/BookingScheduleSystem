@@ -4,8 +4,15 @@
 
 <MudNavMenu Class="px-2 pt-2">
     <MudNavLink Href="@SlugService.BuildUrl("/dashboard")" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
-    <MudNavLink Href="@SlugService.BuildUrl("/browse-schedules")" Icon="@Icons.Material.Filled.BookOnline">Book a Schedule</MudNavLink>
-    <MudNavLink Href="@SlugService.BuildUrl("/my-bookings")" Icon="@Icons.Material.Filled.EventNote">My Bookings</MudNavLink>
+    <AuthorizeView Roles="Provider,GlobalAdmin">
+        <Authorized>
+            <MudNavLink Href="@SlugService.BuildUrl("/browse-schedules")" Icon="@Icons.Material.Filled.CalendarToday">Browse Schedules</MudNavLink>
+        </Authorized>
+        <NotAuthorized>
+            <MudNavLink Href="@SlugService.BuildUrl("/browse-schedules")" Icon="@Icons.Material.Filled.BookOnline">Book a Schedule</MudNavLink>
+            <MudNavLink Href="@SlugService.BuildUrl("/my-bookings")" Icon="@Icons.Material.Filled.EventNote">My Bookings</MudNavLink>
+        </NotAuthorized>
+    </AuthorizeView>
 
     <AuthorizeView Roles="Provider,GlobalAdmin">
         <Authorized>

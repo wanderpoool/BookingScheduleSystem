@@ -1,0 +1,266 @@
+/* ProviderAppointmentList — Mobile-first scoped styles */
+
+.provider-appointments {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 160px);
+    min-height: 300px;
+    padding: var(--space-4);
+}
+
+/* ── Header ── */
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-5);
+}
+
+.header-title {
+    font-family: var(--font-family-display);
+    font-size: var(--font-size-title-large);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    letter-spacing: var(--letter-spacing-headline);
+    line-height: var(--line-height-headline);
+    margin: 0;
+}
+
+.date-badge {
+    font-family: var(--font-family-base);
+    font-size: var(--font-size-label-medium);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-primary);
+    border: 1.5px solid var(--color-primary);
+    border-radius: var(--radius-pill);
+    padding: var(--space-1) var(--space-3);
+    white-space: nowrap;
+}
+
+/* ── Week Strip ── */
+
+.week-strip {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    margin-bottom: var(--space-5);
+    padding: var(--space-2) 0;
+}
+
+.week-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--size-touch-target);
+    height: var(--size-touch-target);
+    min-width: var(--size-touch-target);
+    border: none;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: background var(--transition-duration-fast) var(--transition-timing);
+    flex-shrink: 0;
+}
+
+.day-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    min-width: 0;
+    min-height: var(--size-touch-target);
+    padding: var(--space-1) var(--space-1);
+    border: none;
+    border-radius: var(--radius-md);
+    background: transparent;
+    cursor: pointer;
+    transition: background var(--transition-duration-fast) var(--transition-timing);
+    position: relative;
+    gap: 2px;
+}
+
+.day-name {
+    font-family: var(--font-family-base);
+    font-size: var(--font-size-label-small);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-secondary);
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wide);
+}
+
+.day-number {
+    font-family: var(--font-family-base);
+    font-size: var(--font-size-body-medium);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    line-height: 1;
+}
+
+.day-cell--selected {
+    background: var(--color-primary);
+    border-radius: var(--radius-md);
+}
+
+.day-cell--selected .day-name,
+.day-cell--selected .day-number {
+    color: var(--color-primary-contrast);
+}
+
+.day-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: var(--radius-full);
+    background: var(--color-primary);
+    position: absolute;
+    bottom: 4px;
+}
+
+/* ── Appointment List ── */
+
+.appointment-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: var(--space-4);
+}
+
+.appointment-card {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 68px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    cursor: pointer;
+    transition: box-shadow var(--transition-duration-fast) var(--transition-timing),
+                border-color var(--transition-duration-fast) var(--transition-timing);
+    text-align: left;
+    padding: 0;
+    font-family: var(--font-family-base);
+}
+
+.card-accent {
+    width: 4px;
+    align-self: stretch;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.card-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    padding: var(--space-3) var(--space-4);
+    gap: 2px;
+}
+
+.card-time {
+    font-size: var(--font-size-body-medium);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-primary);
+    line-height: var(--line-height-tight);
+}
+
+.card-service {
+    font-size: var(--font-size-body-small);
+    color: var(--color-text-secondary);
+    line-height: var(--line-height-body);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-status {
+    font-size: var(--font-size-label-small);
+    font-weight: var(--font-weight-semibold);
+    line-height: 1;
+    border-radius: var(--radius-sm);
+    padding: 2px 6px;
+    width: fit-content;
+    margin-top: 2px;
+}
+
+.card-status--pending {
+    color: var(--color-warning);
+    background: var(--color-warning-light);
+}
+
+.card-status--confirmed {
+    color: var(--color-success);
+    background: var(--color-success-light);
+}
+
+.card-status--cancelled {
+    color: var(--color-error);
+    background: var(--color-error-light);
+}
+
+.card-status--completed {
+    color: var(--color-info);
+    background: var(--color-info-light);
+}
+
+.card-end {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding-right: var(--space-3);
+    flex-shrink: 0;
+}
+
+.card-customer {
+    font-size: var(--font-size-body-small);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+}
+
+/* ── Empty State ── */
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-12) var(--space-4);
+    gap: var(--space-3);
+}
+
+.empty-text {
+    font-family: var(--font-family-base);
+    font-size: var(--font-size-body-medium);
+    color: var(--color-text-disabled);
+}
+
+/* ── Skeleton ── */
+
+.skeleton-card {
+    cursor: default;
+}
+
+/* ── Desktop hover effects ── */
+
+@media (min-width: 960px) {
+    .week-nav:hover {
+        background: var(--color-action-hover);
+    }
+
+    .day-cell:not(.day-cell--selected):hover {
+        background: var(--color-action-hover);
+    }
+
+    .appointment-card:not(.skeleton-card):hover {
+        border-color: var(--color-primary);
+        box-shadow: var(--elevation-2);
+    }
+}

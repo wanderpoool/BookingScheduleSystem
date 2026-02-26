@@ -286,3 +286,32 @@
   --elevation-6: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
   --elevation-8: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
 }
+
+/* ========================================
+   GLOBAL MUDBLAZOR BUTTON OVERRIDES
+   Semi-rounded buttons matching bookmeapp style
+   ======================================== */
+
+.mud-button-root {
+  border-radius: 12px !important;
+  text-transform: none !important;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.mud-button-root.mud-button-filled {
+  font-weight: 600;
+}
+
+/* Secondary button: outlined with neutral border, primary on hover/focus */
+.dialog-btn-secondary.mud-button-outlined {
+  border-color: var(--color-border) !important;
+  color: var(--color-text-secondary) !important;
+}
+
+.dialog-btn-secondary.mud-button-outlined:hover,
+.dialog-btn-secondary.mud-button-outlined:focus-visible {
+  border-color: var(--color-primary) !important;
+  color: var(--color-primary) !important;
+  background: var(--color-action-hover) !important;
+}

@@ -4,12 +4,14 @@
 <MudDialog>
     <DialogContent>
         <MudStack Spacing="3">
-            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                <MudIcon Icon="@Icons.Material.Filled.EventNote" Color="Color.Primary" />
-                <MudText Typo="Typo.h6" Style="font-weight: 700; letter-spacing: -0.02em;">Booking Details</MudText>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Justify="Justify.FlexEnd">
+                <MudChip T="string" Size="Size.Small"
+                         Color="@GetStatusColor()"
+                         Variant="Variant.Filled"
+                         Style="margin: 0;">
+                    @GetStatusText()
+                </MudChip>
             </MudStack>
-
-            <MudDivider />
 
             @if (!string.IsNullOrWhiteSpace(Item.TimeBlock.CustomerName))
             {
@@ -43,12 +45,6 @@
                 </MudStack>
             }
 
-            <MudChip T="string" Size="Size.Small"
-                     Color="@GetStatusColor()"
-                     Variant="Variant.Filled">
-                @GetStatusText()
-            </MudChip>
-
             @if (_isPending && _showRejectReason)
             {
                 <MudTextField @bind-Value="_rejectReason"
@@ -57,38 +53,44 @@
                               Lines="2"
                               Placeholder="Let the customer know why..." />
             }
+            <MudDivider />
         </MudStack>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Close">Close</MudButton>
-        @if (_isPending)
+        @if (_isPending && _showRejectReason)
         {
-            @if (_showRejectReason)
-            {
-                <MudButton Variant="Variant.Outlined" Color="Color.Error"
-                           OnClick="ConfirmReject"
-                           Disabled="_isProcessing"
-                           StartIcon="@Icons.Material.Filled.Close">
-                    @if (_isProcessing)
-                    {
-                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-                        <text>Rejecting...</text>
-                    }
-                    else
-                    {
-                        <text>Confirm Reject</text>
-                    }
-                </MudButton>
-            }
-            else
-            {
-                <MudButton Variant="Variant.Outlined" Color="Color.Error"
-                           OnClick="ShowRejectReason"
-                           Disabled="_isProcessing"
-                           StartIcon="@Icons.Material.Filled.Close">
-                    Reject
-                </MudButton>
-            }
+            <MudButton OnClick="CancelReject" Variant="Variant.Outlined"
+                       Class="dialog-btn-secondary">
+                Back
+            </MudButton>
+            <MudSpacer />
+            <MudButton Variant="Variant.Filled" Color="Color.Error"
+                       OnClick="ConfirmReject"
+                       Disabled="_isProcessing"
+                       StartIcon="@Icons.Material.Filled.Close">
+                @if (_isProcessing)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    <text>Rejecting...</text>
+                }
+                else
+                {
+                    <text>Confirm Reject</text>
+                }
+            </MudButton>
+        }
+        else if (_isPending)
+        {
+            <MudButton OnClick="ShowRejectReason"
+                       Variant="Variant.Outlined" Color="Color.Error"
+                       Disabled="_isProcessing">
+                Reject
+            </MudButton>
+            <MudSpacer />
+            <MudButton OnClick="Close" Variant="Variant.Outlined"
+                       Class="dialog-btn-secondary">
+                Close
+            </MudButton>
             <MudButton Variant="Variant.Filled" Color="Color.Success"
                        OnClick="Approve"
                        Disabled="_isProcessing"
@@ -102,6 +104,13 @@
                 {
                     <text>Approve</text>
                 }
+            </MudButton>
+        }
+        else
+        {
+            <MudButton OnClick="Close" Variant="Variant.Outlined"
+                       Class="dialog-btn-secondary">
+                Close
             </MudButton>
         }
     </DialogActions>
@@ -150,6 +159,12 @@
     private void ShowRejectReason()
     {
         _showRejectReason = true;
+    }
+
+    private void CancelReject()
+    {
+        _showRejectReason = false;
+        _rejectReason = null;
     }
 
     private async Task Approve()

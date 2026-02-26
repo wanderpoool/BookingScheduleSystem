@@ -106,13 +106,20 @@
                 </BookMeCalendar>
             </MudPaper>
         }
+        else if (_isProvider)
+        {
+            @* Provider view: appointment list *@
+            <ProviderAppointmentList Items="@_calendarItems"
+                                     IsLoading="@_isLoading"
+                                     DateRangeChanged="@OnDateRangeChanged"
+                                     ItemClicked="@OnProviderItemClicked" />
+        }
         else
         {
-            @* Provider/Admin view: clean calendar *@
+            @* Admin view: clean calendar *@
             <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden; position: relative;">
-                @* Minimal header *@
                 <div class="d-flex align-center pa-4 px-5" style="border-bottom: 1px solid var(--mud-palette-divider);">
-                    <MudText Typo="Typo.h6" Style="font-weight: 700;" Class="mr-auto">@(_isProvider ? "My Schedule" : "All Schedules")</MudText>
+                    <MudText Typo="Typo.h6" Style="font-weight: 700;" Class="mr-auto">All Schedules</MudText>
                     <MudStack Row="true" Spacing="3" AlignItems="AlignItems.Center" Class="d-none d-sm-flex">
                         <span class="d-flex align-center gap-1">
                             <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--mud-palette-warning); display: inline-block;"></span>
@@ -319,11 +326,12 @@
             }
             else if (_isProvider && Guid.TryParse(_userId, out var providerGuid))
             {
-                // Provider view: only show time blocks with an actual booking
+                // Provider view: only show active bookings (exclude cancelled/rejected)
                 _calendarItems = items
                     .Where(i => i.ProviderId.Value == providerGuid
                                 && !i.TimeBlock.IsAvailable
-                                && i.TimeBlock.BookingId is not null)
+                                && i.TimeBlock.BookingId is not null
+                                && i.TimeBlock.BookingStatus is not BookingStatus.Cancelled)
                     .ToList();
 
                 // Fallback: fetch pending bookings to map ScheduleId → BookingId
