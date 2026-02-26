@@ -38,8 +38,10 @@ public sealed class LoginWithOtp : Endpoint<LoginWithOtpRequest, AuthenticationR
             return;
         }
 
-        // Validate the OTP verification token
-        var isValid = await OtpService.ValidateVerificationTokenAsync(identifier, req.OtpVerificationToken, "login", ct);
+        // Validate the OTP verification token — try "login" purpose first,
+        // then fall back to "registration" (chatbot flow uses registration purpose for auto-login)
+        var isValid = await OtpService.ValidateVerificationTokenAsync(identifier, req.OtpVerificationToken, "login", ct)
+                   || await OtpService.ValidateVerificationTokenAsync(identifier, req.OtpVerificationToken, "registration", ct);
         if (!isValid)
         {
             ThrowError("Invalid or expired OTP verification token", 401);
