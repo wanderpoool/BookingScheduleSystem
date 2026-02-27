@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using BookingScheduleSystem.Api.Infrastructure.Auth;
 using BookingScheduleSystem.Api.Infrastructure.Bookings;
 using BookingScheduleSystem.Api.Infrastructure.MultiTenancy;
 using BookingScheduleSystem.Api.Infrastructure.Notifications;
@@ -20,6 +21,7 @@ public sealed class ApproveBooking : Endpoint<ApproveBookingRequest, BookingResp
     public required IDocumentStore DocumentStore { get; init; }
     public required ITenantContext TenantContext { get; init; }
     public required BookingNotificationService NotificationService { get; init; }
+    public required BookingEmailNotificationService EmailNotificationService { get; init; }
 
     public override void Configure()
     {
@@ -87,6 +89,27 @@ public sealed class ApproveBooking : Endpoint<ApproveBookingRequest, BookingResp
         NotificationService.NotifyBookingConfirmed(session, booking, schedule);
 
         await session.SaveChangesAsync(ct);
+
+        // Send confirmation email to customer (fire-and-forget)
+        var customer = await session.LoadAsync<User>(booking.UserId, ct);
+        if (customer is not null)
+        {
+            User? provider = schedule.ProviderId.HasValue
+                ? await session.LoadAsync<User>(schedule.ProviderId.Value, ct)
+                : null;
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await EmailNotificationService.SendBookingApprovedToCustomerEmailAsync(
+                        customer, booking, schedule, provider?.FirstName);
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, "Failed to send booking confirmation email to customer for {BookingId}", booking.Id);
+                }
+            });
+        }
 
         Logger.LogInformation(
             "Approved booking {BookingId} for schedule {ScheduleId} by user {UserId}",
