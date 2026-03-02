@@ -9,6 +9,7 @@ public sealed class Booking
     public required UserId UserId { get; set; }
     public required TenantId TenantId { get; set; }
     public BookingStatus Status { get; set; }
+    public string? ReferenceNumber { get; set; }
     public string? Notes { get; set; }
     public DateTime BookedAt { get; set; }
     public DateTime? CancelledAt { get; set; }

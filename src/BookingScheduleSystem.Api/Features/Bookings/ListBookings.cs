@@ -166,6 +166,7 @@ public sealed class ListBookings : Endpoint<ListBookingsRequest, ListBookingsRes
                     UserId = b.UserId,
                     TenantId = b.TenantId,
                     Status = b.Status,
+                    ReferenceNumber = b.ReferenceNumber,
                     Notes = b.Notes,
                     BookedAt = b.BookedAt,
                     CancelledAt = b.CancelledAt,

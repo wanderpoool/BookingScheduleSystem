@@ -151,6 +151,9 @@ builder.Services.AddMarten(options =>
     // Configure InAppNotification document
     options.Schema.For<InAppNotification>().Identity(n => n.Id);
 
+    // Configure BookingReferenceCounter document (one per tenant for sequential booking numbers)
+    options.Schema.For<BookingReferenceCounter>().Identity(c => c.Id);
+
     // Configure OtpRecord document for distributed OTP storage
     options.Schema.For<OtpRecord>().Identity(o => o.Id);
 
@@ -190,6 +193,7 @@ builder.Services.Configure<BookingActionTokenOptions>(
     builder.Configuration.GetSection(BookingActionTokenOptions.SectionName));
 builder.Services.AddSingleton<BookingActionTokenService>();
 builder.Services.AddScoped<BookingEmailNotificationService>();
+builder.Services.AddScoped<BookingReferenceNumberService>();
 
 // Register background jobs
 builder.Services.Configure<BackgroundJobOptions>(
@@ -197,6 +201,7 @@ builder.Services.Configure<BackgroundJobOptions>(
 builder.Services.AddHostedService<SubscriptionExpiryJob>();
 builder.Services.AddHostedService<UsageStatisticsResetJob>();
 builder.Services.AddHostedService<MigrateUserTenantRecords>();
+builder.Services.AddHostedService<MigrateBookingReferenceNumbers>();
 
 // Configure JWT authentication
 var jwtSecretKey = builder.Configuration["Jwt:SecretKey"]

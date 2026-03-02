@@ -81,6 +81,7 @@ public sealed class UpdateBookingNotes : Endpoint<UpdateBookingNotesEndpointRequ
             UserId = booking.UserId,
             TenantId = booking.TenantId,
             Status = booking.Status,
+            ReferenceNumber = booking.ReferenceNumber,
             Notes = booking.Notes,
             BookedAt = booking.BookedAt,
             CancelledAt = booking.CancelledAt,

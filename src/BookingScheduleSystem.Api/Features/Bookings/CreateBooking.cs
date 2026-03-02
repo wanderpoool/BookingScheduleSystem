@@ -18,6 +18,7 @@ public sealed class CreateBooking : Endpoint<CreateBookingRequest, BookingRespon
     public required ITenantContext TenantContext { get; init; }
     public required BookingNotificationService NotificationService { get; init; }
     public required BookingEmailNotificationService EmailNotificationService { get; init; }
+    public required BookingReferenceNumberService ReferenceNumberService { get; init; }
 
     public override void Configure()
     {
@@ -176,6 +177,8 @@ public sealed class CreateBooking : Endpoint<CreateBookingRequest, BookingRespon
             BookedAt = DateTime.SpecifyKind(DateTimeOffset.UtcNow.DateTime, DateTimeKind.Unspecified)
         };
 
+        booking.ReferenceNumber = await ReferenceNumberService.GetNextReferenceNumberAsync(tenantId.Value, ct);
+
         schedule.CurrentBookings++;
 
         session.Store(booking);
@@ -229,6 +232,7 @@ public sealed class CreateBooking : Endpoint<CreateBookingRequest, BookingRespon
             UserId = booking.UserId,
             TenantId = booking.TenantId,
             Status = booking.Status,
+            ReferenceNumber = booking.ReferenceNumber,
             Notes = booking.Notes,
             BookedAt = booking.BookedAt,
             CancelledAt = booking.CancelledAt,

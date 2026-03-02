@@ -395,10 +395,11 @@ public sealed class ChatbotToolExecutor
         {
             success = true,
             booking_id = booking.Id.Value.ToString(),
+            reference_number = booking.ReferenceNumber,
             schedule_title = booking.ScheduleTitle,
             start_time = booking.ScheduleStartTime?.ToString("dddd, MMMM d 'at' h:mm tt"),
             end_time = booking.ScheduleEndTime?.ToString("h:mm tt"),
-            message = "Booking confirmed! Share the details with the user."
+            message = "Booking confirmed! Share the details with the user including the reference number."
         });
     }
 
@@ -524,10 +525,11 @@ public sealed class ChatbotToolExecutor
         {
             success = true,
             booking_id = booking.Id.Value.ToString(),
+            reference_number = booking.ReferenceNumber,
             schedule_title = booking.ScheduleTitle,
             start_time = booking.ScheduleStartTime?.ToString("dddd, MMMM d 'at' h:mm tt"),
             end_time = booking.ScheduleEndTime?.ToString("h:mm tt"),
-            message = "Booking confirmed! Share the details with the user."
+            message = "Booking confirmed! Share the details with the user including the reference number."
         });
     }
 
@@ -570,6 +572,7 @@ public sealed class ChatbotToolExecutor
         var bookings = result.Bookings.Select(b => new
         {
             booking_id = b.Id.Value.ToString(),
+            reference_number = b.ReferenceNumber,
             title = b.ScheduleTitle ?? "Appointment",
             date = b.ScheduleStartTime?.ToString("yyyy-MM-dd"),
             start_time = b.ScheduleStartTime?.ToString("h:mm tt"),
@@ -622,6 +625,7 @@ public sealed class ChatbotToolExecutor
         {
             success = true,
             booking_id = bookingGuid.ToString(),
+            reference_number = booking?.ReferenceNumber,
             title = booking?.ScheduleTitle ?? "Appointment",
             message = "Booking has been cancelled successfully."
         });

@@ -66,9 +66,17 @@
                                 <MudPaper Elevation="0" Class="pa-4" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px;">
                                     <MudStack Spacing="2">
                                         <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-                                            <MudText Typo="Typo.body1" Style="font-weight: 700;">
-                                                @(booking.ScheduleTitle ?? "Schedule")
-                                            </MudText>
+                                            <MudStack Spacing="0">
+                                                <MudText Typo="Typo.body1" Style="font-weight: 700;">
+                                                    @(booking.ScheduleTitle ?? "Schedule")
+                                                </MudText>
+                                                @if (!string.IsNullOrEmpty(booking.ReferenceNumber))
+                                                {
+                                                    <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary); font-family: monospace;">
+                                                        @booking.ReferenceNumber
+                                                    </MudText>
+                                                }
+                                            </MudStack>
                                             <MudChip T="string" Size="Size.Small"
                                                      Color="@GetStatusColor(booking.Status)"
                                                      Variant="Variant.Filled">

@@ -112,6 +112,7 @@ public sealed class CancelBooking : Endpoint<CancelBookingRequestWithId, Booking
             UserId = booking.UserId,
             TenantId = booking.TenantId,
             Status = booking.Status,
+            ReferenceNumber = booking.ReferenceNumber,
             Notes = booking.Notes,
             BookedAt = booking.BookedAt,
             CancelledAt = booking.CancelledAt,

@@ -55,10 +55,12 @@ public sealed class BookingEmailNotificationService
             schedule.StartTime,
             schedule.EndTime,
             booking.Notes,
+            booking.ReferenceNumber,
             approveUrl,
             rejectUrl);
 
-        var textBody = $"New booking request from {customer.FirstName} {customer.LastName} for \"{schedule.Title}\" on {schedule.StartTime:MMM dd, yyyy 'at' h:mm tt}. Approve: {approveUrl} Reject: {rejectUrl}";
+        var refLabel = !string.IsNullOrEmpty(booking.ReferenceNumber) ? $" (Ref: {booking.ReferenceNumber})" : "";
+        var textBody = $"New booking request{refLabel} from {customer.FirstName} {customer.LastName} for \"{schedule.Title}\" on {schedule.StartTime:MMM dd, yyyy 'at' h:mm tt}. Approve: {approveUrl} Reject: {rejectUrl}";
 
         await SendEmailAsync(provider.Email, subject, htmlBody, textBody);
     }
@@ -81,9 +83,11 @@ public sealed class BookingEmailNotificationService
             schedule.Title,
             schedule.StartTime,
             schedule.EndTime,
-            booking.Notes);
+            booking.Notes,
+            booking.ReferenceNumber);
 
-        var textBody = $"Booking auto-confirmed for {customer.FirstName} {customer.LastName} - \"{schedule.Title}\" on {schedule.StartTime:MMM dd, yyyy 'at' h:mm tt}.";
+        var refLabel = !string.IsNullOrEmpty(booking.ReferenceNumber) ? $" (Ref: {booking.ReferenceNumber})" : "";
+        var textBody = $"Booking auto-confirmed{refLabel} for {customer.FirstName} {customer.LastName} - \"{schedule.Title}\" on {schedule.StartTime:MMM dd, yyyy 'at' h:mm tt}.";
 
         await SendEmailAsync(provider.Email, subject, htmlBody, textBody);
     }
@@ -155,12 +159,17 @@ public sealed class BookingEmailNotificationService
         DateTime startTime,
         DateTime endTime,
         string? notes,
+        string? referenceNumber,
         string approveUrl,
         string rejectUrl)
     {
         var notesSection = string.IsNullOrWhiteSpace(notes)
             ? ""
             : $@"<tr><td style=""padding: 8px 12px; color: #6b7280;"">Notes</td><td style=""padding: 8px 12px;"">{System.Net.WebUtility.HtmlEncode(notes)}</td></tr>";
+
+        var refSection = string.IsNullOrEmpty(referenceNumber)
+            ? ""
+            : $@"<tr style=""background: #f9fafb;""><td style=""padding: 8px 12px; color: #6b7280;"">Booking Ref</td><td style=""padding: 8px 12px; font-family: monospace; font-weight: bold;"">{System.Net.WebUtility.HtmlEncode(referenceNumber)}</td></tr>";
 
         return $@"<!DOCTYPE html>
 <html>
@@ -174,6 +183,7 @@ public sealed class BookingEmailNotificationService
             <p>Hi {System.Net.WebUtility.HtmlEncode(providerFirstName)},</p>
             <p>You have a new booking request that needs your attention:</p>
             <table style=""width: 100%; border-collapse: collapse; margin: 20px 0; background: white; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb;"">
+                {refSection}
                 <tr><td style=""padding: 8px 12px; color: #6b7280;"">Customer</td><td style=""padding: 8px 12px; font-weight: bold;"">{System.Net.WebUtility.HtmlEncode(customerFirstName)} {System.Net.WebUtility.HtmlEncode(customerLastName)}</td></tr>
                 <tr style=""background: #f9fafb;""><td style=""padding: 8px 12px; color: #6b7280;"">{contactLabel}</td><td style=""padding: 8px 12px;"">{System.Net.WebUtility.HtmlEncode(contactValue)}</td></tr>
                 <tr><td style=""padding: 8px 12px; color: #6b7280;"">Service</td><td style=""padding: 8px 12px;"">{System.Net.WebUtility.HtmlEncode(scheduleTitle)}</td></tr>
@@ -202,11 +212,16 @@ public sealed class BookingEmailNotificationService
         string scheduleTitle,
         DateTime startTime,
         DateTime endTime,
-        string? notes)
+        string? notes,
+        string? referenceNumber)
     {
         var notesSection = string.IsNullOrWhiteSpace(notes)
             ? ""
             : $@"<tr><td style=""padding: 8px 12px; color: #6b7280;"">Notes</td><td style=""padding: 8px 12px;"">{System.Net.WebUtility.HtmlEncode(notes)}</td></tr>";
+
+        var refSection = string.IsNullOrEmpty(referenceNumber)
+            ? ""
+            : $@"<tr style=""background: #f9fafb;""><td style=""padding: 8px 12px; color: #6b7280;"">Booking Ref</td><td style=""padding: 8px 12px; font-family: monospace; font-weight: bold;"">{System.Net.WebUtility.HtmlEncode(referenceNumber)}</td></tr>";
 
         return $@"<!DOCTYPE html>
 <html>
@@ -220,6 +235,7 @@ public sealed class BookingEmailNotificationService
             <p>Hi {System.Net.WebUtility.HtmlEncode(providerFirstName)},</p>
             <p>A new booking has been automatically confirmed based on your auto-accept setting:</p>
             <table style=""width: 100%; border-collapse: collapse; margin: 20px 0; background: white; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb;"">
+                {refSection}
                 <tr><td style=""padding: 8px 12px; color: #6b7280;"">Customer</td><td style=""padding: 8px 12px; font-weight: bold;"">{System.Net.WebUtility.HtmlEncode(customerFirstName)} {System.Net.WebUtility.HtmlEncode(customerLastName)}</td></tr>
                 <tr style=""background: #f9fafb;""><td style=""padding: 8px 12px; color: #6b7280;"">{contactLabel}</td><td style=""padding: 8px 12px;"">{System.Net.WebUtility.HtmlEncode(contactValue)}</td></tr>
                 <tr><td style=""padding: 8px 12px; color: #6b7280;"">Service</td><td style=""padding: 8px 12px;"">{System.Net.WebUtility.HtmlEncode(scheduleTitle)}</td></tr>

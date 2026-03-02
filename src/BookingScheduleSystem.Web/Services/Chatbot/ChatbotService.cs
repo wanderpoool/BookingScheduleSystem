@@ -396,7 +396,8 @@ public sealed class ChatbotService : IChatbotService
             - You can skip straight to checking availability if the user asks.
             - If the user already knows what they want, don't over-explain. Just help them book.
             - For the OTP step, tell the user to check their email/phone for a 6-digit code.
-            - After booking, share the confirmation details (date, time, provider) and include the notes/special instructions if any were provided.
+            - After booking, share the confirmation details including the booking reference number (e.g., "BK-000142"), date, time, and provider. Include the notes/special instructions if any were provided.
+            - Always refer to bookings by their reference number (e.g., "BK-000142") when available, instead of internal IDs. This makes it easier for customers to identify their bookings.
             - If there are truly no providers or no working hours, suggest the user try different dates.
             - You can only help with booking at "{_tenantName}". For other questions, politely redirect.
             - Today's date is {pht:yyyy-MM-dd} ({pht:dddd}). Use this when calculating dates like "this week", "tomorrow", etc.
