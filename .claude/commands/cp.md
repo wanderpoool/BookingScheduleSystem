@@ -1,0 +1,1 @@
+Commit all staged and unstaged changes, then push to the remote repository. Follow the standard git commit flow: check status, review changes, draft a descriptive commit message, stage relevant files, commit, verify, and push.

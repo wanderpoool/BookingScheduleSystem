@@ -102,7 +102,8 @@ public class BookingService : IBookingService
     {
         try
         {
-            var request = new CancelBookingRequest { CancellationReason = reason };
+            // API expects nested { cancellation: { cancellationReason: "..." } }
+            var request = new { cancellation = new CancelBookingRequest { CancellationReason = reason } };
             var response = await _httpClient.PostAsJsonAsync($"/api/bookings/{bookingId}/cancel", request);
             if (response.IsSuccessStatusCode)
             {

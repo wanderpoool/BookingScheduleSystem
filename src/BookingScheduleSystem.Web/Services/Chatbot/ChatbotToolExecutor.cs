@@ -604,8 +604,9 @@ public sealed class ChatbotToolExecutor
         }
 
         var client = GetAuthenticatedClient();
-        var cancelRequest = new CancelBookingRequest { CancellationReason = reason };
-        var response = await client.PostAsJsonAsync($"/api/bookings/{bookingGuid}/cancel", cancelRequest);
+        // API expects nested { cancellation: { cancellationReason: "..." } }
+        var cancelPayload = new { cancellation = new CancelBookingRequest { CancellationReason = reason } };
+        var response = await client.PostAsJsonAsync($"/api/bookings/{bookingGuid}/cancel", cancelPayload);
 
         if (!response.IsSuccessStatusCode)
         {
