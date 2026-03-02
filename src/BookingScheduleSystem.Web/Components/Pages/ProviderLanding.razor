@@ -11,7 +11,7 @@
 
 <PageTitle>@(_tenant?.Name ?? "Loading...") — Book an Appointment</PageTitle>
 
-<MudThemeProvider @ref="_themeProvider" IsDarkMode="@_isDarkMode" Theme="@_theme" />
+<MudThemeProvider @ref="_themeProvider" IsDarkMode="false" Theme="@_theme" />
 
 <div class="provider-landing-root">
 @if (_isLoading)
@@ -138,9 +138,6 @@ else
 
                 @* Footer area *@
                 <div class="landing-footer">
-                    <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
-                                   Color="Color.Secondary" Size="Size.Small"
-                                   OnClick="ToggleDarkMode" />
                     @if (ShowPoweredBy())
                     {
                         <MudText Typo="Typo.caption" Color="Color.Secondary">
@@ -236,9 +233,6 @@ else
 
                     @* Footer *@
                     <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.Center" Spacing="1">
-                        <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
-                                       Color="Color.Secondary" Size="Size.Small"
-                                       OnClick="ToggleDarkMode" />
                         @if (ShowPoweredBy())
                         {
                             <MudText Typo="Typo.caption" Color="Color.Secondary">
@@ -260,7 +254,6 @@ else
 
     private TenantResponse? _tenant;
     private bool _isLoading = true;
-    private bool _isDarkMode;
     private MudThemeProvider? _themeProvider;
     private ChatbotWidget? _chatbotWidget;
     private List<OperatingHoursEntry> _operatingHoursList = new();
@@ -290,30 +283,6 @@ else
             ActionDefault = "#5A6B80",
             HoverOpacity = 0.04,
             RippleOpacity = 0.08
-        },
-        PaletteDark = new PaletteDark()
-        {
-            Primary = "#F28B5F",
-            PrimaryContrastText = "#1A1612",
-            PrimaryDarken = "#E85D2A",
-            PrimaryLighten = "#F5A880",
-            Secondary = "#8BA4C4",
-            SecondaryContrastText = "#1A1612",
-            Tertiary = "#FFD97A",
-            Success = "#34D399",
-            Info = "#60A5FA",
-            Warning = "#FBBF24",
-            Error = "#F87171",
-            Background = "#1A1612",
-            Surface = "#262018",
-            TextPrimary = "#F9F5F0",
-            TextSecondary = "#A89B8C",
-            TextDisabled = "#6B6050",
-            Divider = "#3D3328",
-            DividerLight = "#332B20",
-            ActionDefault = "#A89B8C",
-            HoverOpacity = 0.12,
-            RippleOpacity = 0.2
         },
         LayoutProperties = new LayoutProperties()
         {
@@ -392,11 +361,6 @@ else
     private void OpenChatbot()
     {
         _chatbotWidget?.Open();
-    }
-
-    private void ToggleDarkMode()
-    {
-        _isDarkMode = !_isDarkMode;
     }
 
     private sealed record OperatingHoursEntry(string Day, string Time);
