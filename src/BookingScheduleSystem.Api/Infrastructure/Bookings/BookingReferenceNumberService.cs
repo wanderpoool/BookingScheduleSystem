@@ -1,5 +1,6 @@
 using BookingScheduleSystem.Contracts.Common;
 using Npgsql;
+using NpgsqlTypes;
 
 namespace BookingScheduleSystem.Api.Infrastructure.Bookings;
 
@@ -37,7 +38,7 @@ public sealed class BookingReferenceNumberService
 
         await using var cmd = new NpgsqlCommand(sql, connection);
         cmd.Parameters.AddWithValue("id", tenantId.Value);
-        cmd.Parameters.AddWithValue("initialData", System.Text.Json.JsonSerializer.Serialize(new { CurrentValue = 1 }));
+        cmd.Parameters.AddWithValue("initialData", NpgsqlDbType.Jsonb, System.Text.Json.JsonSerializer.Serialize(new { CurrentValue = 1 }));
         cmd.Parameters.AddWithValue("version", Guid.NewGuid());
 
         var result = await cmd.ExecuteScalarAsync(ct);

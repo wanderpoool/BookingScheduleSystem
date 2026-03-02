@@ -22,44 +22,51 @@ public sealed class MigrateBookingReferenceNumbers : IHostedService
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        await using var scope = _services.CreateAsyncScope();
-        var store = scope.ServiceProvider.GetRequiredService<IDocumentStore>();
-        var referenceService = scope.ServiceProvider.GetRequiredService<BookingReferenceNumberService>();
-
-        await using var session = store.LightweightSession();
-
-        var bookingsWithoutRef = await session.Query<Booking>()
-            .Where(b => b.ReferenceNumber == null)
-            .OrderBy(b => b.BookedAt)
-            .ToListAsync(cancellationToken);
-
-        if (bookingsWithoutRef.Count == 0)
+        try
         {
-            _logger.LogInformation("Booking reference migration: all bookings already have reference numbers");
-            return;
-        }
+            await using var scope = _services.CreateAsyncScope();
+            var store = scope.ServiceProvider.GetRequiredService<IDocumentStore>();
+            var referenceService = scope.ServiceProvider.GetRequiredService<BookingReferenceNumberService>();
 
-        // Group by tenant so each tenant gets independent sequential numbers
-        var grouped = bookingsWithoutRef.GroupBy(b => b.TenantId);
-        var migrated = 0;
+            await using var session = store.LightweightSession();
 
-        foreach (var tenantGroup in grouped)
-        {
-            foreach (var booking in tenantGroup.OrderBy(b => b.BookedAt))
+            var bookingsWithoutRef = await session.Query<Booking>()
+                .Where(b => b.ReferenceNumber == null)
+                .OrderBy(b => b.BookedAt)
+                .ToListAsync(cancellationToken);
+
+            if (bookingsWithoutRef.Count == 0)
             {
-                booking.ReferenceNumber = await referenceService.GetNextReferenceNumberAsync(
-                    tenantGroup.Key, cancellationToken);
-                session.Update(booking);
-                migrated++;
+                _logger.LogInformation("Booking reference migration: all bookings already have reference numbers");
+                return;
             }
-        }
 
-        if (migrated > 0)
+            // Group by tenant so each tenant gets independent sequential numbers
+            var grouped = bookingsWithoutRef.GroupBy(b => b.TenantId);
+            var migrated = 0;
+
+            foreach (var tenantGroup in grouped)
+            {
+                foreach (var booking in tenantGroup.OrderBy(b => b.BookedAt))
+                {
+                    booking.ReferenceNumber = await referenceService.GetNextReferenceNumberAsync(
+                        tenantGroup.Key, cancellationToken);
+                    session.Update(booking);
+                    migrated++;
+                }
+            }
+
+            if (migrated > 0)
+            {
+                await session.SaveChangesAsync(cancellationToken);
+            }
+
+            _logger.LogInformation("Booking reference migration: migrated {Count} bookings with reference numbers", migrated);
+        }
+        catch (Exception ex)
         {
-            await session.SaveChangesAsync(cancellationToken);
+            _logger.LogError(ex, "Booking reference migration failed — will retry on next startup");
         }
-
-        _logger.LogInformation("Booking reference migration: migrated {Count} bookings with reference numbers", migrated);
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
