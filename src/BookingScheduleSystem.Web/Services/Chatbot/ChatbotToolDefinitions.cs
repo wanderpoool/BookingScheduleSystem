@@ -128,6 +128,39 @@ public static class ChatbotToolDefinitions
                     },
                     "required": ["provider_id", "date", "start_time", "end_time"]
                 }
+            },
+            {
+                "name": "list_my_bookings",
+                "description": "List the authenticated user's bookings. Requires the user to be registered/signed in first. Returns booking details including status, date/time, and whether the booking is in the future (can be cancelled or rescheduled).",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "status_filter": {
+                            "type": "string",
+                            "enum": ["all", "pending", "confirmed", "cancelled"],
+                            "description": "Filter bookings by status. Defaults to 'all' if not specified."
+                        }
+                    },
+                    "required": []
+                }
+            },
+            {
+                "name": "cancel_booking",
+                "description": "Cancel a specific booking by its ID. Requires the user to be registered/signed in. Always confirm with the user before calling this tool.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "booking_id": {
+                            "type": "string",
+                            "description": "The UUID of the booking to cancel."
+                        },
+                        "reason": {
+                            "type": "string",
+                            "description": "Optional reason for cancellation."
+                        }
+                    },
+                    "required": ["booking_id"]
+                }
             }
         ]
         """;

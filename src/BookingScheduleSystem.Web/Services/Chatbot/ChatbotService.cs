@@ -414,6 +414,25 @@ public sealed class ChatbotService : IChatbotService
             CONFLICT HANDLING:
             - If a booking or create_and_book returns "conflict": true, the time slot is taken. Apologize briefly, then call check_availability again to get fresh data and show the user updated available times.
             - Never ask the user to "try again" without showing them what IS available.
+
+            MANAGING BOOKINGS:
+            - Use list_my_bookings to show the user their appointments. Only works after the user is authenticated (via OTP).
+            - Show bookings in a clear format: title, date, time, status. Highlight future bookings that can be cancelled or rescheduled.
+            - If the user asks "show my bookings" or similar before authenticating, guide them through OTP verification first.
+
+            CANCELLATION RULES:
+            - ALWAYS confirm with the user before cancelling a booking. Say something like "I'll cancel your [title] on [date] at [time]. Are you sure?"
+            - Only cancel after explicit user confirmation (e.g., "yes", "go ahead", "confirm").
+            - If the user provides a reason, pass it in the "reason" parameter. If not, that's fine — it's optional.
+            - After cancelling, confirm it's done and offer to help book a new appointment if they want.
+
+            RESCHEDULE FLOW:
+            - There is no single reschedule tool. To reschedule, orchestrate these steps:
+              1. list_my_bookings — show the user their bookings so they can pick which one to reschedule
+              2. cancel_booking — cancel the selected booking (with reason "Rescheduled by customer")
+              3. check_availability — show fresh available times
+              4. create_booking or create_and_book — book the new time
+            - Guide the user through each step naturally. Confirm before cancelling the old booking.
             """;
     }
 

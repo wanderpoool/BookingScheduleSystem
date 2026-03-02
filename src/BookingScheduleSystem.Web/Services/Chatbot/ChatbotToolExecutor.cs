@@ -64,6 +64,8 @@ public sealed class ChatbotToolExecutor
                 "register_user" => await RegisterUserAsync(input, tenantId),
                 "create_booking" => await CreateBookingAsync(input),
                 "create_and_book" => await CreateAndBookAsync(input),
+                "list_my_bookings" => await ListMyBookingsAsync(input),
+                "cancel_booking" => await CancelBookingChatbotAsync(input),
                 _ => JsonSerializer.Serialize(new { error = $"Unknown tool: {toolName}" })
             };
         }
@@ -512,6 +514,101 @@ public sealed class ChatbotToolExecutor
             start_time = booking.ScheduleStartTime?.ToString("dddd, MMMM d 'at' h:mm tt"),
             end_time = booking.ScheduleEndTime?.ToString("h:mm tt"),
             message = "Booking confirmed! Share the details with the user."
+        });
+    }
+
+    private async Task<string> ListMyBookingsAsync(JsonElement input)
+    {
+        if (!_isAuthenticated)
+        {
+            return JsonSerializer.Serialize(new { success = false, error = "User is not authenticated. Complete OTP verification or registration first." });
+        }
+
+        var statusFilter = input.TryGetProperty("status_filter", out var sf) ? sf.GetString() : "all";
+
+        var client = GetAuthenticatedClient();
+
+        var url = "/api/bookings";
+        if (statusFilter != null && statusFilter != "all")
+        {
+            url += $"?status={statusFilter}";
+        }
+
+        var response = await client.GetAsync(url);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync();
+            _logger.LogWarning("Chatbot list bookings failed: {StatusCode} {Error}", response.StatusCode, error);
+            return JsonSerializer.Serialize(new { success = false, error = "Could not retrieve bookings." });
+        }
+
+        var result = await response.Content.ReadFromJsonAsync<ListBookingsResponse>();
+        if (result == null || result.Bookings.Count == 0)
+        {
+            return JsonSerializer.Serialize(new { success = true, message = "No bookings found.", bookings = Array.Empty<object>() });
+        }
+
+        var pht = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow,
+            TimeZoneInfo.FindSystemTimeZoneById("Asia/Manila"));
+        var now = pht;
+
+        var bookings = result.Bookings.Select(b => new
+        {
+            booking_id = b.Id.Value.ToString(),
+            title = b.ScheduleTitle ?? "Appointment",
+            date = b.ScheduleStartTime?.ToString("yyyy-MM-dd"),
+            start_time = b.ScheduleStartTime?.ToString("h:mm tt"),
+            end_time = b.ScheduleEndTime?.ToString("h:mm tt"),
+            status = b.Status.ToString().ToLowerInvariant(),
+            is_future = b.ScheduleStartTime.HasValue && b.ScheduleStartTime.Value > now,
+            booked_at = b.BookedAt.ToString("yyyy-MM-dd"),
+            notes = b.Notes
+        }).ToList();
+
+        return JsonSerializer.Serialize(new
+        {
+            success = true,
+            total_count = result.TotalCount,
+            bookings
+        });
+    }
+
+    private async Task<string> CancelBookingChatbotAsync(JsonElement input)
+    {
+        if (!_isAuthenticated)
+        {
+            return JsonSerializer.Serialize(new { success = false, error = "User is not authenticated. Complete OTP verification or registration first." });
+        }
+
+        var bookingIdStr = input.GetProperty("booking_id").GetString()!;
+        var reason = input.TryGetProperty("reason", out var r) ? r.GetString() : null;
+
+        if (!Guid.TryParse(bookingIdStr, out var bookingGuid))
+        {
+            return JsonSerializer.Serialize(new { success = false, error = "Invalid booking_id format." });
+        }
+
+        var client = GetAuthenticatedClient();
+        var cancelRequest = new CancelBookingRequest { CancellationReason = reason };
+        var response = await client.PostAsJsonAsync($"/api/bookings/{bookingGuid}/cancel", cancelRequest);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync();
+            _logger.LogWarning("Chatbot cancel booking failed for {BookingId}: {StatusCode} {Error}",
+                bookingGuid, response.StatusCode, error);
+            return JsonSerializer.Serialize(new { success = false, error = $"Could not cancel booking: {response.StatusCode}" });
+        }
+
+        var booking = await response.Content.ReadFromJsonAsync<BookingResponse>();
+
+        return JsonSerializer.Serialize(new
+        {
+            success = true,
+            booking_id = bookingGuid.ToString(),
+            title = booking?.ScheduleTitle ?? "Appointment",
+            message = "Booking has been cancelled successfully."
         });
     }
 

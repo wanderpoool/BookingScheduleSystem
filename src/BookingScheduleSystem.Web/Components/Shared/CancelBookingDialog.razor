@@ -1,0 +1,64 @@
+@using BookingScheduleSystem.Contracts.Bookings
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudText Typo="Typo.body1">
+                @if (IsReschedule)
+                {
+                    @:Your current booking will be cancelled. You'll then pick a new time.
+                }
+                else
+                {
+                    @:Are you sure you want to cancel this booking?
+                }
+            </MudText>
+
+            @if (!string.IsNullOrWhiteSpace(ScheduleTitle) || StartTime.HasValue)
+            {
+                <MudPaper Elevation="0" Class="pa-3" Style="border: 1px solid var(--mud-palette-divider); border-radius: 10px;">
+                    <MudStack Spacing="1">
+                        @if (!string.IsNullOrWhiteSpace(ScheduleTitle))
+                        {
+                            <MudText Typo="Typo.body2" Style="font-weight: 600;">@ScheduleTitle</MudText>
+                        }
+                        @if (StartTime.HasValue)
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                @StartTime.Value.ToString("ddd, MMM dd, yyyy") &mdash; @StartTime.Value.ToString("h:mm tt")@(EndTime.HasValue ? $" - {EndTime.Value:h:mm tt}" : "")
+                            </MudText>
+                        }
+                    </MudStack>
+                </MudPaper>
+            }
+
+            @if (!IsReschedule)
+            {
+                <MudTextField T="string" @bind-Value="_reason"
+                              Label="Reason (optional)" Variant="Variant.Outlined"
+                              Placeholder="Why are you cancelling?" Lines="2" />
+            }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Go Back</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="Confirm">
+            @(IsReschedule ? "Cancel & Pick New Time" : "Confirm Cancel")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public string? ScheduleTitle { get; set; }
+    [Parameter] public DateTime? StartTime { get; set; }
+    [Parameter] public DateTime? EndTime { get; set; }
+    [Parameter] public bool IsReschedule { get; set; }
+
+    private string? _reason;
+
+    private void Cancel() => MudDialog.Cancel();
+    private void Confirm() => MudDialog.Close(DialogResult.Ok(_reason ?? string.Empty));
+}

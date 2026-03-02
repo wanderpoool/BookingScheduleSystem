@@ -7,6 +7,8 @@
 @inject IBookingService BookingService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject NavigationManager NavigationManager
 
 <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden;">
             @* Header bar *@
@@ -139,12 +141,23 @@
 
                                         @if (booking.Status != BookingStatus.Cancelled)
                                         {
-                                            <MudButton Variant="Variant.Text" Color="Color.Error" Size="Size.Small"
-                                                       OnClick="@(() => CancelBooking(booking))"
-                                                       Disabled="@_isCancelling"
-                                                       StartIcon="@Icons.Material.Filled.Cancel">
-                                                Cancel Booking
-                                            </MudButton>
+                                            <MudStack Row="true" Spacing="2" Class="flex-wrap">
+                                                @if (booking.ScheduleStartTime.HasValue && booking.ScheduleStartTime.Value > DateTime.Now)
+                                                {
+                                                    <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small"
+                                                               OnClick="@(() => RescheduleBooking(booking))"
+                                                               Disabled="@_isCancelling"
+                                                               StartIcon="@Icons.Material.Filled.EventRepeat">
+                                                        Reschedule
+                                                    </MudButton>
+                                                }
+                                                <MudButton Variant="Variant.Text" Color="Color.Error" Size="Size.Small"
+                                                           OnClick="@(() => CancelBooking(booking))"
+                                                           Disabled="@_isCancelling"
+                                                           StartIcon="@Icons.Material.Filled.Cancel">
+                                                    Cancel Booking
+                                                </MudButton>
+                                            </MudStack>
                                         }
                                     </MudStack>
                                 </MudPaper>
@@ -217,16 +230,74 @@
 
     private async Task CancelBooking(BookingResponse booking)
     {
+        var parameters = new DialogParameters<CancelBookingDialog>
+        {
+            { x => x.ScheduleTitle, booking.ScheduleTitle },
+            { x => x.StartTime, booking.ScheduleStartTime },
+            { x => x.EndTime, booking.ScheduleEndTime },
+            { x => x.IsReschedule, false }
+        };
+
+        var dialog = await DialogService.ShowAsync<CancelBookingDialog>("Cancel Booking", parameters,
+            new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true });
+        var result = await dialog.Result;
+
+        if (result is null || result.Canceled)
+            return;
+
+        var reason = result.Data as string;
+
         _isCancelling = true;
         StateHasChanged();
 
         try
         {
-            var result = await BookingService.CancelBookingAsync(booking.Id.Value);
-            if (result != null)
+            var cancelResult = await BookingService.CancelBookingAsync(booking.Id.Value,
+                string.IsNullOrWhiteSpace(reason) ? null : reason);
+            if (cancelResult != null)
             {
                 Snackbar.Add("Booking cancelled successfully.", Severity.Success);
                 await LoadBookings();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isCancelling = false;
+        }
+    }
+
+    private async Task RescheduleBooking(BookingResponse booking)
+    {
+        var parameters = new DialogParameters<CancelBookingDialog>
+        {
+            { x => x.ScheduleTitle, booking.ScheduleTitle },
+            { x => x.StartTime, booking.ScheduleStartTime },
+            { x => x.EndTime, booking.ScheduleEndTime },
+            { x => x.IsReschedule, true }
+        };
+
+        var dialog = await DialogService.ShowAsync<CancelBookingDialog>("Reschedule Booking", parameters,
+            new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true });
+        var result = await dialog.Result;
+
+        if (result is null || result.Canceled)
+            return;
+
+        _isCancelling = true;
+        StateHasChanged();
+
+        try
+        {
+            var cancelResult = await BookingService.CancelBookingAsync(booking.Id.Value, "Rescheduled by customer");
+            if (cancelResult != null)
+            {
+                Snackbar.Add("Booking cancelled. Pick a new time below.", Severity.Info);
+                var basePath = string.IsNullOrEmpty(Slug) ? "/browse-schedules" : $"/{Slug}/browse-schedules";
+                NavigationManager.NavigateTo(basePath);
             }
         }
         catch (Exception ex)
