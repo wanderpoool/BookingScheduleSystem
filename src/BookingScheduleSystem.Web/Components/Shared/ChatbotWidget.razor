@@ -127,6 +127,12 @@
                                    Style="min-height: 44px; text-transform: none; justify-content: flex-start;">
                             @(_selectedLanguage == "Tagalog" ? "Gusto ko mag-book ng appointment" : "I'd like to book an appointment")
                         </MudButton>
+                        <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                                   FullWidth="true"
+                                   OnClick="@(() => SendQuickMessage(_selectedLanguage == "Tagalog" ? "Tingnan o baguhin ang aking mga booking" : "View or manage my bookings"))"
+                                   Style="min-height: 44px; text-transform: none; justify-content: flex-start;">
+                            @(_selectedLanguage == "Tagalog" ? "Tingnan o baguhin ang aking mga booking" : "View or manage my bookings")
+                        </MudButton>
                     </MudStack>
                 </div>
             }
