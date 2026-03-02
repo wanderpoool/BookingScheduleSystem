@@ -60,7 +60,7 @@ public sealed class ChatbotToolExecutor
             {
                 "check_availability" => await CheckAvailabilityAsync(input, tenantId),
                 "send_otp" => await SendOtpAsync(input),
-                "verify_otp" => await VerifyOtpAsync(input),
+                "verify_otp" => await VerifyOtpAsync(input, tenantId),
                 "register_user" => await RegisterUserAsync(input, tenantId),
                 "create_booking" => await CreateBookingAsync(input),
                 "create_and_book" => await CreateAndBookAsync(input),
@@ -189,7 +189,7 @@ public sealed class ChatbotToolExecutor
         });
     }
 
-    private async Task<string> VerifyOtpAsync(JsonElement input)
+    private async Task<string> VerifyOtpAsync(JsonElement input, Guid tenantId)
     {
         if (string.IsNullOrEmpty(_contactMethod))
         {
@@ -231,7 +231,12 @@ public sealed class ChatbotToolExecutor
                 OtpVerificationToken = _verificationToken
             };
 
-            var loginResponse = await GetAuthenticatedClient().PostAsJsonAsync("/api/auth/login-otp", loginRequest);
+            // Set tenant header so the API can perform lazy enrollment
+            var client = GetAuthenticatedClient();
+            client.DefaultRequestHeaders.Remove("X-Tenant-Id");
+            client.DefaultRequestHeaders.Add("X-Tenant-Id", tenantId.ToString());
+
+            var loginResponse = await client.PostAsJsonAsync("/api/auth/login-otp", loginRequest);
 
             if (loginResponse.IsSuccessStatusCode)
             {
@@ -253,6 +258,15 @@ public sealed class ChatbotToolExecutor
                         message = $"Welcome back, {authResponse.FirstName}! You're signed in and ready to book."
                     });
                 }
+            }
+            else if (loginResponse.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            {
+                _logger.LogWarning("Chatbot: OTP login returned 403 — user cannot access this tenant");
+                return JsonSerializer.Serialize(new
+                {
+                    success = false,
+                    error = "This account cannot be used to book at this business."
+                });
             }
             else if (loginResponse.StatusCode != System.Net.HttpStatusCode.NotFound)
             {

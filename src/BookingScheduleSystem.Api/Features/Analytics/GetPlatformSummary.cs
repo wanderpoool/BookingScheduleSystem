@@ -27,7 +27,7 @@ public sealed class GetPlatformSummary : EndpointWithoutRequest<PlatformSummaryR
         await using var session = DocumentStore.LightweightSession();
 
         var allTenants = await session.Query<Tenant>().ToListAsync(ct);
-        var allUsers = await session.Query<User>().ToListAsync(ct);
+        var allUserTenants = await session.Query<UserTenant>().Where(ut => ut.IsActive).ToListAsync(ct);
         var allBookings = await session.Query<Booking>()
             .Where(b => b.Status != BookingStatus.Cancelled)
             .ToListAsync(ct);
@@ -37,10 +37,9 @@ public sealed class GetPlatformSummary : EndpointWithoutRequest<PlatformSummaryR
         var firstDayOfMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Unspecified);
         var firstDayOfNextMonth = firstDayOfMonth.AddMonths(1);
 
-        // Group users by tenant
-        var usersByTenant = allUsers
-            .Where(u => u.TenantId.HasValue && !u.IsGlobalAdmin)
-            .GroupBy(u => u.TenantId!.Value)
+        // Group UserTenant memberships by tenant
+        var membershipsByTenant = allUserTenants
+            .GroupBy(ut => ut.TenantId)
             .ToDictionary(g => g.Key, g => g.ToList());
 
         // Group bookings by tenant
@@ -50,30 +49,28 @@ public sealed class GetPlatformSummary : EndpointWithoutRequest<PlatformSummaryR
 
         var tenantStats = allTenants.Select(t =>
         {
-            var users = usersByTenant.GetValueOrDefault(t.Id, []);
+            var memberships = membershipsByTenant.GetValueOrDefault(t.Id, []);
             var bookings = bookingsByTenant.GetValueOrDefault(t.Id, []);
 
             return new TenantStatsDto
             {
                 TenantId = t.Id,
                 TenantName = t.Name,
-                CustomerCount = users.Count(u => !u.IsProvider),
-                ProviderCount = users.Count(u => u.IsProvider),
+                CustomerCount = memberships.Count(m => m.Role == "Customer"),
+                ProviderCount = memberships.Count(m => m.Role == "Provider"),
                 BookingCount = bookings.Count,
                 IsInTrial = t.IsInTrial,
                 IsActive = t.IsActive
             };
         }).ToList();
 
-        var totalNonAdminUsers = allUsers.Count(u => u.TenantId.HasValue && !u.IsGlobalAdmin);
-
         Response = new PlatformSummaryResponse
         {
             TotalTenants = allTenants.Count,
             ActiveTenants = allTenants.Count(t => t.IsActive),
             TrialTenants = allTenants.Count(t => t.IsInTrial),
-            TotalCustomers = allUsers.Count(u => u.TenantId.HasValue && !u.IsGlobalAdmin && !u.IsProvider),
-            TotalProviders = allUsers.Count(u => u.TenantId.HasValue && u.IsProvider),
+            TotalCustomers = allUserTenants.Count(ut => ut.Role == "Customer"),
+            TotalProviders = allUserTenants.Count(ut => ut.Role == "Provider"),
             TotalBookings = allBookings.Count,
             BookingsThisMonth = allBookings.Count(b => b.BookedAt >= firstDayOfMonth && b.BookedAt < firstDayOfNextMonth),
             BookingsToday = allBookings.Count(b => b.BookedAt >= today && b.BookedAt < tomorrow),

@@ -219,6 +219,12 @@ public class AuthenticationService : IAuthenticationService
         throw new HttpRequestException(message, null, response.StatusCode);
     }
 
+    public void SetTenantContext(Guid tenantId)
+    {
+        _httpClient.DefaultRequestHeaders.Remove("X-Tenant-Id");
+        _httpClient.DefaultRequestHeaders.Add("X-Tenant-Id", tenantId.ToString());
+    }
+
     private void SetTenantHeader(AuthenticationResponse authResponse)
     {
         _httpClient.DefaultRequestHeaders.Remove("X-Tenant-Id");

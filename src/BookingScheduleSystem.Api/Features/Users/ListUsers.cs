@@ -46,13 +46,54 @@ public sealed class ListUsers : Endpoint<ListUsersRequest, ListUsersResponse>
         var pageNumber = Math.Max(1, req.PageNumber);
         var pageSize = Math.Clamp(req.PageSize, 1, 100);
 
-        IQueryable<User> query = session.Query<User>();
-
-        // Filter by tenant unless GlobalAdmin (who can see all)
+        // If tenant-scoped, resolve member UserIds via UserTenant then filter in-memory
         if (tenantId is not null)
         {
-            query = query.Where(u => u.TenantId == tenantId);
+            var memberships = await session.Query<UserTenant>()
+                .Where(ut => ut.TenantId == tenantId && ut.IsActive)
+                .ToListAsync(ct);
+            var memberUserIds = memberships.Select(ut => ut.UserId).ToHashSet();
+
+            var allUsers = await session.Query<User>()
+                .ToListAsync(ct);
+            var tenantUsers = allUsers.Where(u => memberUserIds.Contains(u.Id)).AsEnumerable();
+
+            if (req.IsProvider.HasValue)
+                tenantUsers = tenantUsers.Where(u => u.IsProvider == req.IsProvider.Value);
+
+            if (req.IsActive.HasValue)
+                tenantUsers = tenantUsers.Where(u => u.IsActive == req.IsActive.Value);
+
+            var filteredList = tenantUsers.OrderBy(u => u.LastName).ThenBy(u => u.FirstName).ToList();
+            var totalCount = filteredList.Count;
+            var pagedUsers = filteredList.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
+
+            Response = new ListUsersResponse
+            {
+                Users = pagedUsers.Select(u => new UserResponse
+                {
+                    Id = u.Id,
+                    Email = u.Email,
+                    PhoneNumber = u.PhoneNumber,
+                    FirstName = u.FirstName,
+                    LastName = u.LastName,
+                    TenantId = tenantId,
+                    IsGlobalAdmin = u.IsGlobalAdmin,
+                    IsProvider = u.IsProvider,
+                    CreatedAt = u.CreatedAt,
+                    IsActive = u.IsActive,
+                    WorkingHours = u.WorkingHours,
+                    AutoAcceptBookings = u.AutoAcceptBookings
+                }).ToList(),
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+            return;
         }
+
+        // GlobalAdmin: show all users
+        IQueryable<User> query = session.Query<User>();
 
         if (req.IsProvider.HasValue)
         {
@@ -64,7 +105,7 @@ public sealed class ListUsers : Endpoint<ListUsersRequest, ListUsersResponse>
             query = query.Where(u => u.IsActive == req.IsActive.Value);
         }
 
-        var totalCount = await query.CountAsync(ct);
+        var totalGlobalCount = await query.CountAsync(ct);
 
         var users = await query
             .OrderBy(u => u.LastName)
@@ -90,7 +131,7 @@ public sealed class ListUsers : Endpoint<ListUsersRequest, ListUsersResponse>
                 WorkingHours = u.WorkingHours,
                 AutoAcceptBookings = u.AutoAcceptBookings
             }).ToList(),
-            TotalCount = (int)totalCount,
+            TotalCount = (int)totalGlobalCount,
             PageNumber = pageNumber,
             PageSize = pageSize
         };

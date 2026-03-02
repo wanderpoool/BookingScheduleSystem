@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using BookingScheduleSystem.Contracts.Common;
 using Microsoft.IdentityModel.Tokens;
 
 namespace BookingScheduleSystem.Api.Infrastructure.Auth;
@@ -21,6 +22,16 @@ public sealed class JwtTokenService : IJwtTokenService
 
     public string GenerateToken(User user)
     {
+        return GenerateTokenInternal(user, user.TenantId);
+    }
+
+    public string GenerateToken(User user, TenantId activeTenantId)
+    {
+        return GenerateTokenInternal(user, activeTenantId);
+    }
+
+    private string GenerateTokenInternal(User user, TenantId? tenantId)
+    {
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
@@ -30,9 +41,9 @@ public sealed class JwtTokenService : IJwtTokenService
             new("IsActive", user.IsActive.ToString())
         };
 
-        if (user.TenantId.HasValue)
+        if (tenantId.HasValue)
         {
-            claims.Add(new Claim("TenantId", user.TenantId.Value.ToString()));
+            claims.Add(new Claim("TenantId", tenantId.Value.ToString()));
         }
 
         if (user.IsGlobalAdmin)
@@ -55,7 +66,7 @@ public sealed class JwtTokenService : IJwtTokenService
 
         var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
 
-        _logger.LogInformation("Generated JWT token for user {UserId}", user.Id);
+        _logger.LogInformation("Generated JWT token for user {UserId} with tenant {TenantId}", user.Id, tenantId);
 
         return tokenString;
     }

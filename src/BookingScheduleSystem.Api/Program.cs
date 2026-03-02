@@ -153,6 +153,12 @@ builder.Services.AddMarten(options =>
 
     // Configure OtpRecord document for distributed OTP storage
     options.Schema.For<OtpRecord>().Identity(o => o.Id);
+
+    // Configure UserTenant document (cross-tenant: maps users to tenants)
+    options.Schema.For<UserTenant>()
+        .Identity(ut => ut.Id)
+        .Index(ut => ut.UserId)
+        .Index(ut => ut.TenantId);
 }).UseLightweightSessions();
 
 // Register multi-tenancy services
@@ -177,6 +183,7 @@ builder.Services.AddSingleton<IJwtTokenService, JwtTokenService>();
 builder.Services.AddSingleton<OtpService>();
 builder.Services.AddScoped<OtpNotificationService>();
 builder.Services.AddScoped<BookingNotificationService>();
+builder.Services.AddScoped<LazyEnrollmentService>();
 
 // Register booking action token and email notification services
 builder.Services.Configure<BookingActionTokenOptions>(
@@ -189,6 +196,7 @@ builder.Services.Configure<BackgroundJobOptions>(
     builder.Configuration.GetSection(BackgroundJobOptions.SectionName));
 builder.Services.AddHostedService<SubscriptionExpiryJob>();
 builder.Services.AddHostedService<UsageStatisticsResetJob>();
+builder.Services.AddHostedService<MigrateUserTenantRecords>();
 
 // Configure JWT authentication
 var jwtSecretKey = builder.Configuration["Jwt:SecretKey"]

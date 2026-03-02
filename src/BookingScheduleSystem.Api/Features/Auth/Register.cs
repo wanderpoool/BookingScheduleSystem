@@ -128,8 +128,8 @@ public sealed class Register : Endpoint<RegisterUserRequest, AuthenticationRespo
 
                 if (planLimits is not null)
                 {
-                    var activeUserCount = await session.Query<User>()
-                        .CountAsync(u => u.TenantId == tenantId && u.IsActive, ct);
+                    var activeUserCount = await session.Query<UserTenant>()
+                        .CountAsync(ut => ut.TenantId == tenantId && ut.IsActive, ct);
 
                     if (activeUserCount >= planLimits.MaxUsers)
                     {
@@ -138,8 +138,8 @@ public sealed class Register : Endpoint<RegisterUserRequest, AuthenticationRespo
 
                     if (isProvider)
                     {
-                        var activeProviderCount = await session.Query<User>()
-                            .CountAsync(u => u.TenantId == tenantId && u.IsProvider && u.IsActive, ct);
+                        var activeProviderCount = await session.Query<UserTenant>()
+                            .CountAsync(ut => ut.TenantId == tenantId && ut.Role == "Provider" && ut.IsActive, ct);
 
                         if (activeProviderCount >= planLimits.MaxProviders)
                         {
@@ -197,6 +197,21 @@ public sealed class Register : Endpoint<RegisterUserRequest, AuthenticationRespo
         };
 
         session.Store(user);
+
+        // Create UserTenant record if user belongs to a tenant
+        if (tenantId.HasValue)
+        {
+            var userTenant = new UserTenant
+            {
+                Id = UserTenantId.New(),
+                UserId = user.Id,
+                TenantId = tenantId.Value,
+                Role = isProvider ? "Provider" : "Customer",
+                JoinedAt = DateTime.UtcNow,
+                IsActive = true
+            };
+            session.Store(userTenant);
+        }
 
         // Update subscription usage stats if not in trial
         if (subscription is not null)

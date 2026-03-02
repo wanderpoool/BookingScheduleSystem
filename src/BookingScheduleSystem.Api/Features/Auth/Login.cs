@@ -1,5 +1,7 @@
 using BookingScheduleSystem.Api.Infrastructure.Auth;
+using BookingScheduleSystem.Api.Infrastructure.MultiTenancy;
 using BookingScheduleSystem.Contracts.Auth;
+using BookingScheduleSystem.Contracts.Common;
 using FastEndpoints;
 using Marten;
 
@@ -10,6 +12,8 @@ public sealed class Login : Endpoint<LoginRequest, AuthenticationResponse>
     public required IDocumentStore DocumentStore { get; init; }
     public required IPasswordHasher PasswordHasher { get; init; }
     public required IJwtTokenService JwtTokenService { get; init; }
+    public required ITenantContext TenantContext { get; init; }
+    public required LazyEnrollmentService LazyEnrollment { get; init; }
 
     public override void Configure()
     {
@@ -92,9 +96,27 @@ public sealed class Login : Endpoint<LoginRequest, AuthenticationResponse>
             await session.SaveChangesAsync(ct);
         }
 
-        Logger.LogInformation("User {UserId} logged in successfully", user.Id);
+        // Determine the active tenant for this session
+        var requestedTenantId = TenantContext.CurrentTenantId;
+        TenantId? activeTenantId = user.TenantId;
 
-        var token = JwtTokenService.GenerateToken(user);
+        if (requestedTenantId.HasValue)
+        {
+            var membership = await LazyEnrollment.EnsureEnrollmentAsync(session, user, requestedTenantId.Value, ct);
+            if (membership is null)
+            {
+                ThrowError("You do not have access to this organization", 403);
+                return;
+            }
+            activeTenantId = requestedTenantId;
+            await session.SaveChangesAsync(ct);
+        }
+
+        Logger.LogInformation("User {UserId} logged in successfully for tenant {TenantId}", user.Id, activeTenantId);
+
+        var token = activeTenantId.HasValue
+            ? JwtTokenService.GenerateToken(user, activeTenantId.Value)
+            : JwtTokenService.GenerateToken(user);
 
         Response = new AuthenticationResponse
         {
@@ -104,7 +126,7 @@ public sealed class Login : Endpoint<LoginRequest, AuthenticationResponse>
             Email = user.Email,
             FirstName = user.FirstName,
             LastName = user.LastName,
-            TenantId = user.TenantId,
+            TenantId = activeTenantId,
             IsGlobalAdmin = user.IsGlobalAdmin,
             IsProvider = user.IsProvider
         };

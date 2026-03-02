@@ -95,16 +95,16 @@ public sealed class AddProvider : Endpoint<AddProviderRequest, UserResponse>
 
             if (planLimits is not null)
             {
-                var activeUserCount = await session.Query<User>()
-                    .CountAsync(u => u.TenantId == tenantId && u.IsActive, ct);
+                var activeUserCount = await session.Query<UserTenant>()
+                    .CountAsync(ut => ut.TenantId == tenantId && ut.IsActive, ct);
 
                 if (activeUserCount >= planLimits.MaxUsers)
                 {
                     ThrowError($"User limit ({planLimits.MaxUsers}) reached for this plan.", 403);
                 }
 
-                var activeProviderCount = await session.Query<User>()
-                    .CountAsync(u => u.TenantId == tenantId && u.IsProvider && u.IsActive, ct);
+                var activeProviderCount = await session.Query<UserTenant>()
+                    .CountAsync(ut => ut.TenantId == tenantId && ut.Role == "Provider" && ut.IsActive, ct);
 
                 if (activeProviderCount >= planLimits.MaxProviders)
                 {
@@ -137,6 +137,18 @@ public sealed class AddProvider : Endpoint<AddProviderRequest, UserResponse>
         };
 
         session.Store(user);
+
+        // Create UserTenant record for the new provider
+        var userTenant = new UserTenant
+        {
+            Id = UserTenantId.New(),
+            UserId = user.Id,
+            TenantId = tenantId.Value,
+            Role = "Provider",
+            JoinedAt = DateTime.UtcNow,
+            IsActive = true
+        };
+        session.Store(userTenant);
 
         // Update subscription usage stats
         if (subscription is not null)

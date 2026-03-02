@@ -91,6 +91,18 @@ public sealed class CreateOrganization : Endpoint<CreateOrganizationRequest, Ten
         user.TenantId = tenant.Id;
         session.Update(user);
 
+        // Create UserTenant record for the provider-owner
+        var userTenant = new UserTenant
+        {
+            Id = UserTenantId.New(),
+            UserId = userId,
+            TenantId = tenant.Id,
+            Role = "Provider",
+            JoinedAt = DateTime.UtcNow,
+            IsActive = true
+        };
+        session.Store(userTenant);
+
         await session.SaveChangesAsync(ct);
 
         Logger.LogInformation(

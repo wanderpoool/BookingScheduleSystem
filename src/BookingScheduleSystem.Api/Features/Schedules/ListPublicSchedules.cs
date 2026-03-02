@@ -52,24 +52,30 @@ public sealed class ListPublicSchedules : Endpoint<ListPublicSchedulesRequest, L
         // Load tenant for fallback operating hours
         var tenant = await session.LoadAsync<Tenant>(tenantId, ct);
 
-        // Query providers for this tenant
-        var providersQuery = session.Query<User>()
-            .Where(u => u.TenantId == tenantId && u.IsProvider && u.IsActive);
+        // Query providers for this tenant via UserTenant membership
+        var providerMemberships = await session.Query<UserTenant>()
+            .Where(ut => ut.TenantId == tenantId && ut.Role == "Provider" && ut.IsActive)
+            .ToListAsync(ct);
+        var providerUserIds = providerMemberships.Select(ut => ut.UserId).ToHashSet();
+
+        var allProviders = (await session.Query<User>()
+            .Where(u => u.IsProvider && u.IsActive)
+            .ToListAsync(ct))
+            .Where(u => providerUserIds.Contains(u.Id));
 
         if (req.ProviderId.HasValue)
         {
             var providerId = new UserId(req.ProviderId.Value);
-            providersQuery = providersQuery.Where(u => u.Id == providerId);
+            allProviders = allProviders.Where(u => u.Id == providerId);
         }
 
-        var totalProviders = await providersQuery.CountAsync(ct);
+        var providersList = allProviders.OrderBy(u => u.LastName).ThenBy(u => u.FirstName).ToList();
+        var totalProviders = providersList.Count;
 
-        var providers = await providersQuery
-            .OrderBy(u => u.LastName)
-            .ThenBy(u => u.FirstName)
+        var providers = providersList
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
-            .ToListAsync(ct);
+            .ToList();
 
         // Load all active schedules for this tenant in the date range
         var allSchedules = await session.Query<Schedule>()
@@ -96,14 +102,11 @@ public sealed class ListPublicSchedules : Endpoint<ListPublicSchedulesRequest, L
             .Where(b => scheduleIdSet.Contains(b.ScheduleId))
             .ToList();
 
-        // Load customer names for the bookings
+        // Load customer names for the bookings (users may belong to multiple tenants)
         var bookingUserIdSet = allBookings.Select(b => b.UserId).ToHashSet();
-        var allTenantUsers = providers.ToList<User>(); // reuse already-loaded providers
-        // Load any additional users not in the providers list
         var missingUserIds = bookingUserIdSet.Except(providers.Select(p => p.Id)).ToHashSet();
         var additionalUsers = missingUserIds.Count > 0
             ? (await session.Query<User>()
-                .Where(u => u.TenantId == tenantId)
                 .ToListAsync(ct))
                 .Where(u => missingUserIds.Contains(u.Id))
                 .ToList()

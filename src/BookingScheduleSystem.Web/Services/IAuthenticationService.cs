@@ -17,4 +17,5 @@ public interface IAuthenticationService
     Task<string?> GetTokenAsync();
     Task<AuthenticationResponse?> GetCurrentUserAsync();
     Task<bool> ResetPasswordAsync(ResetPasswordRequest request);
+    void SetTenantContext(Guid tenantId);
 }

@@ -1,3 +1,5 @@
+using BookingScheduleSystem.Contracts.Common;
+
 namespace BookingScheduleSystem.Api.Infrastructure.Auth;
 
 /// <summary>
@@ -6,5 +8,6 @@ namespace BookingScheduleSystem.Api.Infrastructure.Auth;
 public interface IJwtTokenService
 {
     string GenerateToken(User user);
+    string GenerateToken(User user, TenantId activeTenantId);
     DateTime GetTokenExpiration();
 }

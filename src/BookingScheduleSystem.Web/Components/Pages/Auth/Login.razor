@@ -420,6 +420,12 @@
 
         try
         {
+            // Set tenant context for lazy enrollment
+            if (_companyInfo != null)
+            {
+                AuthService.SetTenantContext(_companyInfo.Id.Value);
+            }
+
             var loginRequest = new LoginRequest
             {
                 Email = _loginModel.ContactMethod == "email" ? _loginModel.Email : null,
@@ -517,6 +523,12 @@
             {
                 Snackbar.Add(verifyResult.Message ?? "The code you entered is incorrect. Please try again.", Severity.Error);
                 return;
+            }
+
+            // Set tenant context for lazy enrollment
+            if (_companyInfo != null)
+            {
+                AuthService.SetTenantContext(_companyInfo.Id.Value);
             }
 
             var loginRequest = new LoginWithOtpRequest

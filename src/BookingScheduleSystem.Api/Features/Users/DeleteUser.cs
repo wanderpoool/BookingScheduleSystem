@@ -50,8 +50,17 @@ public sealed class DeleteUser : Endpoint<DeleteUserRequest>
             ThrowError("User not found", 404);
         }
 
-        // Enforce tenant isolation
-        if (!isGlobalAdmin && targetUser.TenantId != tenantId)
+        // Enforce tenant isolation via UserTenant membership
+        if (!isGlobalAdmin && tenantId.HasValue)
+        {
+            var membership = await session.Query<UserTenant>()
+                .FirstOrDefaultAsync(ut => ut.UserId == targetUserId && ut.TenantId == tenantId && ut.IsActive, token: ct);
+            if (membership is null)
+            {
+                ThrowError("User not found", 404);
+            }
+        }
+        else if (!isGlobalAdmin)
         {
             ThrowError("User not found", 404);
         }
