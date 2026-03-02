@@ -42,12 +42,15 @@ public sealed class BookingEmailNotificationService
         var approveUrl = $"{_baseUrl}/api/bookings/action?token={approveToken}";
         var rejectUrl = $"{_baseUrl}/api/bookings/action?token={rejectToken}";
 
+        var (contactLabel, contactValue) = GetCustomerContact(customer);
+
         var subject = $"New Booking Request: {schedule.Title}";
         var htmlBody = GetApprovalEmailTemplate(
             provider.FirstName,
             customer.FirstName,
             customer.LastName,
-            customer.Email,
+            contactLabel,
+            contactValue,
             schedule.Title,
             schedule.StartTime,
             schedule.EndTime,
@@ -66,12 +69,15 @@ public sealed class BookingEmailNotificationService
         Schedule schedule,
         User customer)
     {
+        var (contactLabel, contactValue) = GetCustomerContact(customer);
+
         var subject = $"Booking Auto-Confirmed: {schedule.Title}";
         var htmlBody = GetConfirmedEmailTemplate(
             provider.FirstName,
             customer.FirstName,
             customer.LastName,
-            customer.Email,
+            contactLabel,
+            contactValue,
             schedule.Title,
             schedule.StartTime,
             schedule.EndTime,
@@ -125,11 +131,26 @@ public sealed class BookingEmailNotificationService
         }
     }
 
+    private static (string Label, string Value) GetCustomerContact(User customer)
+    {
+        if (!string.IsNullOrWhiteSpace(customer.PhoneNumber))
+        {
+            // If user has a real email (not a phone stored in email field), prefer email
+            var hasRealEmail = !string.IsNullOrWhiteSpace(customer.Email)
+                && customer.Email.Contains('@');
+            return hasRealEmail
+                ? ("Email", customer.Email)
+                : ("Phone", customer.PhoneNumber);
+        }
+        return ("Email", customer.Email);
+    }
+
     private static string GetApprovalEmailTemplate(
         string providerFirstName,
         string customerFirstName,
         string customerLastName,
-        string customerEmail,
+        string contactLabel,
+        string contactValue,
         string scheduleTitle,
         DateTime startTime,
         DateTime endTime,
@@ -154,7 +175,7 @@ public sealed class BookingEmailNotificationService
             <p>You have a new booking request that needs your attention:</p>
             <table style=""width: 100%; border-collapse: collapse; margin: 20px 0; background: white; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb;"">
                 <tr><td style=""padding: 8px 12px; color: #6b7280;"">Customer</td><td style=""padding: 8px 12px; font-weight: bold;"">{System.Net.WebUtility.HtmlEncode(customerFirstName)} {System.Net.WebUtility.HtmlEncode(customerLastName)}</td></tr>
-                <tr style=""background: #f9fafb;""><td style=""padding: 8px 12px; color: #6b7280;"">Email</td><td style=""padding: 8px 12px;"">{System.Net.WebUtility.HtmlEncode(customerEmail)}</td></tr>
+                <tr style=""background: #f9fafb;""><td style=""padding: 8px 12px; color: #6b7280;"">{contactLabel}</td><td style=""padding: 8px 12px;"">{System.Net.WebUtility.HtmlEncode(contactValue)}</td></tr>
                 <tr><td style=""padding: 8px 12px; color: #6b7280;"">Service</td><td style=""padding: 8px 12px;"">{System.Net.WebUtility.HtmlEncode(scheduleTitle)}</td></tr>
                 <tr style=""background: #f9fafb;""><td style=""padding: 8px 12px; color: #6b7280;"">Date</td><td style=""padding: 8px 12px;"">{startTime:MMM dd, yyyy}</td></tr>
                 <tr><td style=""padding: 8px 12px; color: #6b7280;"">Time</td><td style=""padding: 8px 12px;"">{startTime:h:mm tt} - {endTime:h:mm tt}</td></tr>
@@ -176,7 +197,8 @@ public sealed class BookingEmailNotificationService
         string providerFirstName,
         string customerFirstName,
         string customerLastName,
-        string customerEmail,
+        string contactLabel,
+        string contactValue,
         string scheduleTitle,
         DateTime startTime,
         DateTime endTime,
@@ -199,7 +221,7 @@ public sealed class BookingEmailNotificationService
             <p>A new booking has been automatically confirmed based on your auto-accept setting:</p>
             <table style=""width: 100%; border-collapse: collapse; margin: 20px 0; background: white; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb;"">
                 <tr><td style=""padding: 8px 12px; color: #6b7280;"">Customer</td><td style=""padding: 8px 12px; font-weight: bold;"">{System.Net.WebUtility.HtmlEncode(customerFirstName)} {System.Net.WebUtility.HtmlEncode(customerLastName)}</td></tr>
-                <tr style=""background: #f9fafb;""><td style=""padding: 8px 12px; color: #6b7280;"">Email</td><td style=""padding: 8px 12px;"">{System.Net.WebUtility.HtmlEncode(customerEmail)}</td></tr>
+                <tr style=""background: #f9fafb;""><td style=""padding: 8px 12px; color: #6b7280;"">{contactLabel}</td><td style=""padding: 8px 12px;"">{System.Net.WebUtility.HtmlEncode(contactValue)}</td></tr>
                 <tr><td style=""padding: 8px 12px; color: #6b7280;"">Service</td><td style=""padding: 8px 12px;"">{System.Net.WebUtility.HtmlEncode(scheduleTitle)}</td></tr>
                 <tr style=""background: #f9fafb;""><td style=""padding: 8px 12px; color: #6b7280;"">Date</td><td style=""padding: 8px 12px;"">{startTime:MMM dd, yyyy}</td></tr>
                 <tr><td style=""padding: 8px 12px; color: #6b7280;"">Time</td><td style=""padding: 8px 12px;"">{startTime:h:mm tt} - {endTime:h:mm tt}</td></tr>
