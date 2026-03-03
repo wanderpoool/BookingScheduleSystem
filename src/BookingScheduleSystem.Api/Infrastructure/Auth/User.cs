@@ -21,6 +21,7 @@ public sealed class User
     public bool IsActive { get; set; }
     public int FailedLoginAttempts { get; set; }
     public DateTime? LockedUntil { get; set; }
+    public bool IsPasswordTemporary { get; set; }
 
     /// <summary>
     /// Provider working hours (must be within organization operating hours)

@@ -61,6 +61,21 @@ public sealed class Login : Endpoint<LoginRequest, AuthenticationResponse>
             return;
         }
 
+        // Chatbot-registered users have a system-generated password they never saw.
+        // Redirect them to the OTP → set-password flow instead of failing with "Invalid credentials."
+        if (user is not null && user.IsPasswordTemporary)
+        {
+            var maskedContact = MaskContact(user);
+            var response = new PasswordSetupRequiredResponse
+            {
+                ContactMethod = !string.IsNullOrEmpty(user.PhoneNumber) ? "phone" : "email",
+                MaskedContact = maskedContact
+            };
+            HttpContext.Response.StatusCode = 428;
+            await HttpContext.Response.WriteAsJsonAsync(response, ct);
+            return;
+        }
+
         if (user is null || !PasswordHasher.VerifyPassword(req.Password, user.PasswordHash))
         {
             // Track failed attempts if user exists
@@ -130,5 +145,24 @@ public sealed class Login : Endpoint<LoginRequest, AuthenticationResponse>
             IsGlobalAdmin = user.IsGlobalAdmin,
             IsProvider = user.IsProvider
         };
+    }
+
+    private static string MaskContact(User user)
+    {
+        if (!string.IsNullOrEmpty(user.PhoneNumber))
+        {
+            // Show only last 4 digits: ***-***-1234
+            var last4 = user.PhoneNumber.Length >= 4
+                ? user.PhoneNumber[^4..]
+                : user.PhoneNumber;
+            return $"***-***-{last4}";
+        }
+
+        // Mask email: first char + *** + last char before @ + domain
+        var atIndex = user.Email.IndexOf('@');
+        if (atIndex <= 1)
+            return $"***{user.Email[atIndex..]}";
+
+        return $"{user.Email[0]}***{user.Email[atIndex - 1]}{user.Email[atIndex..]}";
     }
 }

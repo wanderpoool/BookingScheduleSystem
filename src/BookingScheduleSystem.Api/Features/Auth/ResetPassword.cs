@@ -103,6 +103,7 @@ public sealed class ResetPassword : Endpoint<ResetPasswordRequest>
         }
 
         user.PasswordHash = PasswordHasher.HashPassword(req.NewPassword);
+        user.IsPasswordTemporary = false;
         session.Update(user);
         await session.SaveChangesAsync(ct);
 

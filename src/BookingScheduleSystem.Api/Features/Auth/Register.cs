@@ -193,7 +193,8 @@ public sealed class Register : Endpoint<RegisterUserRequest, AuthenticationRespo
             IsProvider = isProvider,
             CreatedAt = DateTime.UtcNow,
             IsActive = true,
-            WorkingHours = providerWorkingHours
+            WorkingHours = providerWorkingHours,
+            IsPasswordTemporary = req.IsPasswordTemporary
         };
 
         session.Store(user);

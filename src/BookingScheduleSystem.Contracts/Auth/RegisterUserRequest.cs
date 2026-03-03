@@ -29,4 +29,10 @@ public sealed record RegisterUserRequest
     /// OTP verification token (must be verified before registration)
     /// </summary>
     public string? OtpVerificationToken { get; init; }
+
+    /// <summary>
+    /// When true, indicates the password was system-generated and the user must set their own password on first login.
+    /// Used by chatbot registration flow.
+    /// </summary>
+    public bool IsPasswordTemporary { get; init; }
 }
