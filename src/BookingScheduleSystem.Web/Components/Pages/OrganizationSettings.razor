@@ -2,11 +2,6 @@
 @page "/{Slug}/organization"
 @rendermode InteractiveServer
 @attribute [Authorize]
-@using System.Security.Claims
-@using Microsoft.AspNetCore.Components.Authorization
-@inject ITenantService TenantService
-@inject AuthenticationStateProvider AuthStateProvider
-@inject ISnackbar Snackbar
 
 <AuthorizeView Roles="Provider,GlobalAdmin">
     <Authorized>
@@ -143,110 +138,120 @@
                 }
             </div>
         </MudPaper>
+        @if (_tenant != null && !_isLoading)
+        {
+            <MudPaper Elevation="0" Class="mt-4" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden;">
+                <div class="d-flex align-center pa-4 px-5" style="border-bottom: 1px solid var(--mud-palette-divider);">
+                    <div class="mr-auto">
+                        <MudText Typo="Typo.h6" Style="font-weight: 700;">Operating Hours</MudText>
+                        <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);">Set when your business is open for bookings</MudText>
+                    </div>
+                </div>
+
+                <div class="pa-5">
+                    @if (!_isEditingHours)
+                    {
+                        @* View mode *@
+                        <MudStack Spacing="2">
+                            @foreach (var day in _daysOfWeek)
+                            {
+                                var schedule = _operatingHours.GetValueOrDefault(day);
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween"
+                                           Style="min-height: 40px;">
+                                    <MudText Typo="Typo.body2" Style="font-weight: 600; min-width: 100px;">
+                                        @day.ToString()
+                                    </MudText>
+                                    @if (schedule is { IsOpen: true })
+                                    {
+                                        <MudText Typo="Typo.body2" Color="Color.Default">
+                                            @FormatTime(schedule.OpenTime) &ndash; @FormatTime(schedule.CloseTime)
+                                        </MudText>
+                                    }
+                                    else
+                                    {
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">Closed</MudText>
+                                    }
+                                </MudStack>
+                                @if (day != DayOfWeek.Sunday)
+                                {
+                                    <MudDivider />
+                                }
+                            }
+
+                            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.Edit"
+                                       OnClick="StartEditingHours" Class="mt-2">
+                                Edit Hours
+                            </MudButton>
+                        </MudStack>
+                    }
+                    else
+                    {
+                        @* Edit mode *@
+                        <MudStack Spacing="3">
+                            @foreach (var day in _daysOfWeek)
+                            {
+                                <div>
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+                                        <MudText Typo="Typo.body2" Style="font-weight: 600; min-width: 100px;">
+                                            @day.ToString()
+                                        </MudText>
+                                        <MudSwitch T="bool" Value="_editHours[day].IsOpen"
+                                                   ValueChanged="@(v => ToggleDay(day, v))"
+                                                   Color="Color.Primary" />
+                                        <MudText Typo="Typo.body2" Color="@(_editHours[day].IsOpen ? Color.Success : Color.Secondary)">
+                                            @(_editHours[day].IsOpen ? "Open" : "Closed")
+                                        </MudText>
+                                    </MudStack>
+
+                                    @if (_editHours[day].IsOpen)
+                                    {
+                                        <MudGrid Spacing="2" Class="mt-2 ml-sm-13">
+                                            <MudItem xs="12" sm="6">
+                                                <MudTimePicker @bind-Time="_editHours[day].OpenTimeSpan"
+                                                               Label="Opens"
+                                                               Variant="Variant.Outlined"
+                                                               AmPm="true" />
+                                            </MudItem>
+                                            <MudItem xs="12" sm="6">
+                                                <MudTimePicker @bind-Time="_editHours[day].CloseTimeSpan"
+                                                               Label="Closes"
+                                                               Variant="Variant.Outlined"
+                                                               AmPm="true" />
+                                            </MudItem>
+                                        </MudGrid>
+                                    }
+                                </div>
+                                @if (day != DayOfWeek.Sunday)
+                                {
+                                    <MudDivider />
+                                }
+                            }
+
+                            <MudStack Row="true" Spacing="2" Justify="Justify.FlexEnd" Class="mt-2">
+                                <MudButton Variant="Variant.Text" OnClick="CancelEditingHours">Cancel</MudButton>
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                           OnClick="SaveOperatingHours"
+                                           Disabled="_isSavingHours">
+                                    @if (_isSavingHours)
+                                    {
+                                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                                        <text>Saving...</text>
+                                    }
+                                    else
+                                    {
+                                        <text>Save Hours</text>
+                                    }
+                                </MudButton>
+                            </MudStack>
+                        </MudStack>
+                    }
+                </div>
+            </MudPaper>
+        }
     </Authorized>
     <NotAuthorized>
         <MudAlert Severity="Severity.Warning">You need Provider or Admin access to view organization settings.</MudAlert>
     </NotAuthorized>
 </AuthorizeView>
 
-@code {
-    [Parameter] public string? Slug { get; set; }
-
-    private TenantResponse? _tenant;
-    private bool _isLoading = true;
-    private bool _isEditing;
-    private bool _isSaving;
-    private string? _tenantId;
-    private string _editName = string.Empty;
-    private string? _editDescription;
-    private string? _editLocation;
-    private string _editLandingPageTemplate = "simple";
-
-    protected override async Task OnInitializedAsync()
-    {
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        _tenantId = authState.User.FindFirst("TenantId")?.Value;
-
-        if (!string.IsNullOrEmpty(_tenantId))
-        {
-            await LoadTenant();
-        }
-        else
-        {
-            _isLoading = false;
-        }
-    }
-
-    private async Task LoadTenant()
-    {
-        _isLoading = true;
-        try
-        {
-            _tenant = await TenantService.GetTenantAsync(Guid.Parse(_tenantId!));
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add(ex.Message, Severity.Error);
-        }
-        finally
-        {
-            _isLoading = false;
-        }
-    }
-
-    private void StartEditing()
-    {
-        if (_tenant == null) return;
-        _editName = _tenant.Name;
-        _editDescription = _tenant.Description;
-        _editLocation = _tenant.Location;
-        _editLandingPageTemplate = _tenant.LandingPageTemplate ?? "simple";
-        _isEditing = true;
-    }
-
-    private void CancelEditing()
-    {
-        _isEditing = false;
-    }
-
-    private async Task SaveChanges()
-    {
-        if (string.IsNullOrWhiteSpace(_editName))
-        {
-            Snackbar.Add("Organization name is required.", Severity.Warning);
-            return;
-        }
-
-        _isSaving = true;
-        StateHasChanged();
-
-        try
-        {
-            var request = new UpdateTenantRequest
-            {
-                Name = _editName.Trim(),
-                Description = string.IsNullOrWhiteSpace(_editDescription) ? null : _editDescription.Trim(),
-                Location = string.IsNullOrWhiteSpace(_editLocation) ? null : _editLocation.Trim(),
-                OperatingHours = _tenant?.OperatingHours,
-                BannerUrl = _tenant?.BannerUrl,
-                LandingPageTemplate = _editLandingPageTemplate
-            };
-
-            var updated = await TenantService.UpdateTenantAsync(Guid.Parse(_tenantId!), request);
-            if (updated != null)
-            {
-                _tenant = updated;
-                _isEditing = false;
-                Snackbar.Add("Organization updated successfully!", Severity.Success);
-            }
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add(ex.Message, Severity.Error);
-        }
-        finally
-        {
-            _isSaving = false;
-        }
-    }
-}
