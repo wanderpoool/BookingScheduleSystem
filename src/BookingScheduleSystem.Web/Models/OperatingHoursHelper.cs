@@ -92,6 +92,38 @@ public static class OperatingHoursHelper
         return timeOfDay >= openTime && timeOfDay < closeTime;
     }
 
+    private static readonly Dictionary<DayOfWeek, string> DayOfWeekNameMap = new()
+    {
+        [DayOfWeek.Monday] = "Monday",
+        [DayOfWeek.Tuesday] = "Tuesday",
+        [DayOfWeek.Wednesday] = "Wednesday",
+        [DayOfWeek.Thursday] = "Thursday",
+        [DayOfWeek.Friday] = "Friday",
+        [DayOfWeek.Saturday] = "Saturday",
+        [DayOfWeek.Sunday] = "Sunday"
+    };
+
+    /// <summary>
+    /// Serializes operating hours dictionary back to the JSON string format the API expects.
+    /// </summary>
+    public static string Serialize(Dictionary<DayOfWeek, DayScheduleModel> hours)
+    {
+        var raw = new Dictionary<string, DayScheduleModel>();
+        foreach (var (day, schedule) in hours)
+        {
+            if (DayOfWeekNameMap.TryGetValue(day, out var name))
+            {
+                raw[name] = schedule;
+            }
+        }
+
+        return JsonSerializer.Serialize(raw, new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            WriteIndented = false
+        });
+    }
+
     /// <summary>
     /// Returns default Mon-Fri 9:00-17:00 operating hours when tenant has none configured.
     /// </summary>
