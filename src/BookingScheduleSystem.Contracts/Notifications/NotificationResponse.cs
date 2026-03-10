@@ -5,7 +5,8 @@ public enum NotificationType
     BookingCreated,
     BookingConfirmed,
     BookingCancelled,
-    BookingRejected
+    BookingRejected,
+    BookingReminder
 }
 
 public sealed record NotificationResponse
