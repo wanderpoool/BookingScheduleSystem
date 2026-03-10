@@ -191,11 +191,31 @@ public sealed class BookingEmailNotificationService
                 <tr><td style=""padding: 8px 12px; color: #6b7280;"">Time</td><td style=""padding: 8px 12px;"">{startTime:h:mm tt} - {endTime:h:mm tt}</td></tr>
                 {notesSection}
             </table>
-            <div style=""text-align: center; margin: 30px 0;"">
-                <a href=""{approveUrl}"" style=""display: block; background-color: #16a34a; color: white; padding: 14px 32px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 0 auto 12px auto; max-width: 220px;"">Accept Booking</a>
-                <a href=""{rejectUrl}"" style=""display: block; background-color: #dc2626; color: white; padding: 14px 32px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 0 auto; max-width: 220px;"">Decline Booking</a>
-            </div>
-            <p style=""color: #9ca3af; font-size: 13px; text-align: center;"">These links expire in 3 hours. After expiration, use the app to manage this booking.</p>
+            <table cellpadding=""0"" cellspacing=""0"" border=""0"" width=""100%"" style=""margin: 30px 0;"">
+                <tr>
+                    <td align=""center"" style=""padding-bottom: 12px;"">
+                        <table cellpadding=""0"" cellspacing=""0"" border=""0"">
+                            <tr>
+                                <td align=""center"" bgcolor=""#16a34a"" style=""border-radius: 6px;"">
+                                    <a href=""{approveUrl}"" target=""_blank"" style=""display: inline-block; padding: 14px 32px; font-family: Arial, sans-serif; font-size: 16px; color: #ffffff; text-decoration: none; font-weight: bold; border-radius: 6px;"">Accept Booking</a>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                <tr>
+                    <td align=""center"">
+                        <table cellpadding=""0"" cellspacing=""0"" border=""0"">
+                            <tr>
+                                <td align=""center"" bgcolor=""#dc2626"" style=""border-radius: 6px;"">
+                                    <a href=""{rejectUrl}"" target=""_blank"" style=""display: inline-block; padding: 14px 32px; font-family: Arial, sans-serif; font-size: 16px; color: #ffffff; text-decoration: none; font-weight: bold; border-radius: 6px;"">Decline Booking</a>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+            <p style=""color: #9ca3af; font-size: 13px; text-align: center;"">These links expire in 48 hours. After expiration, use the app to manage this booking.</p>
             <p style=""margin-top: 20px;"">Best regards,<br>BookMeApp Team</p>
         </div>
     </div>
