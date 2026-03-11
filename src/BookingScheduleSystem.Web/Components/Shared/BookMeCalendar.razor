@@ -183,8 +183,8 @@
     private DateRange GetDateRange()
     {
         var days = GetVisibleDays();
-        var start = new DateTime(days[0].Year, days[0].Month, days[0].Day, 0, 0, 0, DateTimeKind.Utc);
-        var end = new DateTime(days[^1].Year, days[^1].Month, days[^1].Day, 0, 0, 0, DateTimeKind.Utc);
+        var start = new DateTime(days[0].Year, days[0].Month, days[0].Day, 0, 0, 0, DateTimeKind.Unspecified);
+        var end = new DateTime(days[^1].Year, days[^1].Month, days[^1].Day, 0, 0, 0, DateTimeKind.Unspecified);
         return new DateRange(start, end);
     }
 

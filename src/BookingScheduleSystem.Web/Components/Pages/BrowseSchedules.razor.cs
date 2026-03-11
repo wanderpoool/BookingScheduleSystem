@@ -156,8 +156,8 @@ public partial class BrowseSchedules
             // Strip timezone — schedule times are stored without timezone
             var s = dateRange.Start.Value;
             var e = dateRange.End.Value;
-            var startDate = new DateTime(s.Year, s.Month, s.Day, 0, 0, 0, DateTimeKind.Utc);
-            var endDate = new DateTime(e.Year, e.Month, e.Day, 0, 0, 0, DateTimeKind.Utc);
+            var startDate = new DateTime(s.Year, s.Month, s.Day, 0, 0, 0, DateTimeKind.Unspecified);
+            var endDate = new DateTime(e.Year, e.Month, e.Day, 0, 0, 0, DateTimeKind.Unspecified);
             // Day view sends Start==End, so expand to cover the full day
             if (endDate <= startDate)
                 endDate = startDate.AddDays(1);

@@ -370,7 +370,7 @@
         {
             // Load provider availability for a full week to determine which days providers work
             var tomorrow = DateTime.Today.AddDays(1);
-            var startDate = new DateTime(tomorrow.Year, tomorrow.Month, tomorrow.Day, 0, 0, 0, DateTimeKind.Utc);
+            var startDate = new DateTime(tomorrow.Year, tomorrow.Month, tomorrow.Day, 0, 0, 0, DateTimeKind.Unspecified);
             var endDate = startDate.AddDays(7);
 
             var result = await ScheduleService.ListPublicSchedulesAsync(_tenantId, startDate, endDate, 1, 200);
@@ -404,7 +404,7 @@
 
         try
         {
-            var startDate = new DateTime(_selectedDate.Value.Year, _selectedDate.Value.Month, _selectedDate.Value.Day, 0, 0, 0, DateTimeKind.Utc);
+            var startDate = new DateTime(_selectedDate.Value.Year, _selectedDate.Value.Month, _selectedDate.Value.Day, 0, 0, 0, DateTimeKind.Unspecified);
             var endDate = startDate.AddDays(1);
 
             var result = await ScheduleService.ListPublicSchedulesAsync(_tenantId, startDate, endDate, 1, 200);

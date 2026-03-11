@@ -177,10 +177,10 @@
 
         var startDateTime = new DateTime(
             _startDate!.Value.Year, _startDate.Value.Month, _startDate.Value.Day,
-            _startTime!.Value.Hours, _startTime.Value.Minutes, 0, DateTimeKind.Utc);
+            _startTime!.Value.Hours, _startTime.Value.Minutes, 0, DateTimeKind.Unspecified);
         var endDateTime = new DateTime(
             _endDate!.Value.Year, _endDate!.Value.Month, _endDate.Value.Day,
-            _endTime!.Value.Hours, _endTime.Value.Minutes, 0, DateTimeKind.Utc);
+            _endTime!.Value.Hours, _endTime.Value.Minutes, 0, DateTimeKind.Unspecified);
 
         var result = new ScheduleFormResult
         {
