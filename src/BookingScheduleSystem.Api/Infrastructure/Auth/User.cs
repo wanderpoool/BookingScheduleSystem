@@ -28,4 +28,9 @@ public sealed class User
     /// JSON format: {"Monday": {"IsOpen": true, "OpenTime": "09:00", "CloseTime": "17:00"}, ...}
     /// </summary>
     public string? WorkingHours { get; set; }
+
+    /// <summary>
+    /// Priority customers are moved ahead in queues
+    /// </summary>
+    public bool IsPriority { get; set; }
 }

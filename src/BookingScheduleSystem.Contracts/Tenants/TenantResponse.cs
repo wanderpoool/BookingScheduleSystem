@@ -18,4 +18,7 @@ public sealed record TenantResponse
     public string? BannerUrl { get; init; }
     public string? Location { get; init; }
     public string? LandingPageTemplate { get; init; }
+    public bool QueueEnabled { get; init; }
+    public int QueueAverageServiceTimeMinutes { get; init; } = 15;
+    public int QueueNotificationLeadMinutes { get; init; } = 15;
 }

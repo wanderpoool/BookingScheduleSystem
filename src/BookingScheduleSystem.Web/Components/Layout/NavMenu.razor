@@ -28,6 +28,14 @@
                 <MudNavLink Href="@SlugService.BuildUrl("/schedules/create")" Icon="@Icons.Material.Filled.AddCircle">Create Schedule</MudNavLink>
             </MudNavGroup>
 
+            @if (SlugService.QueueEnabled)
+            {
+                <MudNavGroup Title="Queue" Icon="@Icons.Material.Filled.FormatListNumbered" Expanded="false">
+                    <MudNavLink Href="@SlugService.BuildUrl("/queue/manage")" Icon="@Icons.Material.Filled.People">Manage Queue</MudNavLink>
+                    <MudNavLink Href="@SlugService.BuildUrl("/queue/qrcode")" Icon="@Icons.Material.Filled.QrCode2">QR Code</MudNavLink>
+                </MudNavGroup>
+            }
+
             <MudNavGroup Title="People" Icon="@Icons.Material.Filled.Group" Expanded="false">
                 <MudNavLink Href="@SlugService.BuildUrl("/providers")" Icon="@Icons.Material.Filled.Badge">Manage Providers</MudNavLink>
                 <MudNavLink Href="@SlugService.BuildUrl("/customers")" Icon="@Icons.Material.Filled.People">Manage Customers</MudNavLink>

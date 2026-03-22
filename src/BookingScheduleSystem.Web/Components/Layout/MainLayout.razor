@@ -208,6 +208,7 @@
                     {
                         _organizationName = tenant.Name;
                         SlugService.SetSlug(tenant.Subdomain);
+                        SlugService.SetQueueEnabled(tenant.QueueEnabled);
                     }
                 }
 

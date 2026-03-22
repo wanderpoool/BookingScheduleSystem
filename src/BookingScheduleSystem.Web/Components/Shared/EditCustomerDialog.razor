@@ -9,6 +9,9 @@
             <MudTextField @bind-Value="_lastName" Label="Last Name" Variant="Variant.Outlined" Required="true" />
             <MudTextField @bind-Value="_phoneNumber" Label="Phone Number" Variant="Variant.Outlined"
                           Placeholder="+639XXXXXXXXX" />
+
+            <MudSwitch @bind-Value="_isPriority" Color="Color.Error"
+                       Label="Priority Customer" />
         </MudStack>
     </DialogContent>
     <DialogActions>
@@ -37,6 +40,7 @@
     private string _firstName = string.Empty;
     private string _lastName = string.Empty;
     private string? _phoneNumber;
+    private bool _isPriority;
     private bool _isSaving;
 
     protected override void OnInitialized()
@@ -44,6 +48,7 @@
         _firstName = Customer.FirstName;
         _lastName = Customer.LastName;
         _phoneNumber = Customer.PhoneNumber;
+        _isPriority = Customer.IsPriority;
     }
 
     private void Cancel() => MudDialog.Cancel();
@@ -64,7 +69,8 @@
             {
                 FirstName = _firstName,
                 LastName = _lastName,
-                PhoneNumber = _phoneNumber
+                PhoneNumber = _phoneNumber,
+                IsPriority = _isPriority
             };
 
             await UserService.UpdateUserAsync(Customer.Id.Value, request);

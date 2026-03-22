@@ -17,6 +17,9 @@ public sealed class UpdateTenantEndpointRequest
     public string? BannerUrl { get; set; }
     public string? Location { get; set; }
     public string? LandingPageTemplate { get; set; }
+    public bool? QueueEnabled { get; set; }
+    public int? QueueAverageServiceTimeMinutes { get; set; }
+    public int? QueueNotificationLeadMinutes { get; set; }
 }
 
 public sealed class UpdateTenant : Endpoint<UpdateTenantEndpointRequest, TenantResponse>
@@ -99,6 +102,19 @@ public sealed class UpdateTenant : Endpoint<UpdateTenantEndpointRequest, TenantR
         tenant.Location = req.Location;
         tenant.LandingPageTemplate = req.LandingPageTemplate;
 
+        // Only GlobalAdmin can toggle QueueEnabled
+        if (req.QueueEnabled.HasValue && isGlobalAdmin)
+            tenant.QueueEnabled = req.QueueEnabled.Value;
+
+        // Allow queue config changes only when queue is enabled
+        if (tenant.QueueEnabled)
+        {
+            if (req.QueueAverageServiceTimeMinutes.HasValue)
+                tenant.QueueAverageServiceTimeMinutes = req.QueueAverageServiceTimeMinutes.Value;
+            if (req.QueueNotificationLeadMinutes.HasValue)
+                tenant.QueueNotificationLeadMinutes = req.QueueNotificationLeadMinutes.Value;
+        }
+
         session.Update(tenant);
         await session.SaveChangesAsync(ct);
 
@@ -117,7 +133,10 @@ public sealed class UpdateTenant : Endpoint<UpdateTenantEndpointRequest, TenantR
             OperatingHours = tenant.OperatingHours,
             BannerUrl = tenant.BannerUrl,
             Location = tenant.Location,
-            LandingPageTemplate = tenant.LandingPageTemplate
+            LandingPageTemplate = tenant.LandingPageTemplate,
+            QueueEnabled = tenant.QueueEnabled,
+            QueueAverageServiceTimeMinutes = tenant.QueueAverageServiceTimeMinutes,
+            QueueNotificationLeadMinutes = tenant.QueueNotificationLeadMinutes
         };
     }
 }

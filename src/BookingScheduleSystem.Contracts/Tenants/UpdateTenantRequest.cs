@@ -8,4 +8,7 @@ public sealed record UpdateTenantRequest
     public string? BannerUrl { get; init; }
     public string? Location { get; init; }
     public string? LandingPageTemplate { get; init; }
+    public bool? QueueEnabled { get; init; }
+    public int? QueueAverageServiceTimeMinutes { get; init; }
+    public int? QueueNotificationLeadMinutes { get; init; }
 }

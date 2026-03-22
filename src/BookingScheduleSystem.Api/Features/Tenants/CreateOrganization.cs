@@ -125,7 +125,10 @@ public sealed class CreateOrganization : Endpoint<CreateOrganizationRequest, Ten
             OperatingHours = tenant.OperatingHours,
             BannerUrl = tenant.BannerUrl,
             Location = tenant.Location,
-            LandingPageTemplate = tenant.LandingPageTemplate
+            LandingPageTemplate = tenant.LandingPageTemplate,
+            QueueEnabled = tenant.QueueEnabled,
+            QueueAverageServiceTimeMinutes = tenant.QueueAverageServiceTimeMinutes,
+            QueueNotificationLeadMinutes = tenant.QueueNotificationLeadMinutes
         };
     }
 }

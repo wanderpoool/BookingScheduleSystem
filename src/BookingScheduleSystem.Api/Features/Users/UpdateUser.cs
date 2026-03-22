@@ -16,6 +16,7 @@ public sealed class UpdateUserEndpointRequest
     public string? PhoneNumber { get; set; }
     public string? WorkingHours { get; set; }
     public bool? AutoAcceptBookings { get; set; }
+    public bool? IsPriority { get; set; }
     public Guid? TenantId { get; set; }
 }
 
@@ -123,6 +124,9 @@ public sealed class UpdateUser : Endpoint<UpdateUserEndpointRequest, UserRespons
             targetUser.AutoAcceptBookings = req.AutoAcceptBookings.Value;
         }
 
+        if (req.IsPriority.HasValue)
+            targetUser.IsPriority = req.IsPriority.Value;
+
         // TenantId can only be changed by GlobalAdmin
         if (req.TenantId.HasValue)
         {
@@ -157,7 +161,8 @@ public sealed class UpdateUser : Endpoint<UpdateUserEndpointRequest, UserRespons
             CreatedAt = targetUser.CreatedAt,
             IsActive = targetUser.IsActive,
             WorkingHours = targetUser.WorkingHours,
-            AutoAcceptBookings = targetUser.AutoAcceptBookings
+            AutoAcceptBookings = targetUser.AutoAcceptBookings,
+            IsPriority = targetUser.IsPriority
         };
     }
 }

@@ -390,6 +390,38 @@ Every request logs: "Opening a session without explicitly providing desired type
 
 ---
 
+## 🔑 Auth & Onboarding
+
+### 22. **Chatbot-Registered User First Login: OTP + Password Creation**
+**Priority**: High
+**Effort**: Medium
+
+**Description**:
+Users registered via the chatbot have no password set. On their first web login attempt, detect the missing password, send an OTP to verify identity, then prompt them to create a password before continuing to the normal authenticated flow.
+
+**Requirements**:
+- Detect at login that the user has no password hash stored (chatbot-registered users)
+- Instead of returning "invalid credentials", trigger an OTP flow (email or SMS based on available contact info)
+- After OTP verification, redirect to a "Create Password" screen
+- User sets a new password (with confirmation field + strength validation)
+- After password creation, automatically log the user in and continue to the existing post-login flow
+- Subsequent logins use normal email + password authentication
+
+**Technical Notes**:
+- API: Add a check in the login endpoint — if user exists but `PasswordHash` is null/empty, return a specific response (e.g., `"requiresPasswordSetup": true`) instead of 401
+- API: Add `POST /api/auth/set-initial-password` endpoint — accepts OTP verification + new password, sets the password hash
+- Web: Handle the `requiresPasswordSetup` response on the login page — redirect to OTP verification then password creation
+- Ensure OTP is validated before allowing password set (prevent account takeover)
+- Consider rate limiting on the OTP + password set flow
+
+**UI/UX**:
+- Login page detects "needs password" response → shows info message ("First time? Let's verify your identity")
+- OTP entry screen (reuse existing OTP component if available)
+- Password creation form with strength indicator and confirm field
+- Success → auto-login → redirect to dashboard
+
+---
+
 ## 📈 Future Enhancements
 
 ### 14. **Add-Ons & Custom Features**
@@ -437,6 +469,7 @@ Reward users for referring new customers.
 - [x] Email Notification System (Partial — OTP via AWS SES/SNS, subscription emails pending)
 
 ### Phase 2 (Important)
+- [ ] Chatbot-Registered User First Login: OTP + Password Creation (#22)
 - [ ] Multi-Tenant Customer Accounts
 - [x] Upgrade/Downgrade Subscriptions (API complete, UI partial)
 - [x] Usage Statistics Reset Job
@@ -456,4 +489,4 @@ Reward users for referring new customers.
 
 ---
 
-**Last Updated**: 2026-02-23
+**Last Updated**: 2026-03-02

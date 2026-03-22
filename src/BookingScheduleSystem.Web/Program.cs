@@ -183,6 +183,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 builder.Services.AddScoped<IAdminSubscriptionService, AdminSubscriptionService>();
 builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
+builder.Services.AddScoped<IQueueService, QueueService>();
 builder.Services.AddScoped<IQrCodeService, QrCodeService>();
 builder.Services.AddScoped<ITenantSlugService, TenantSlugService>();
 builder.Services.AddScoped<ChatbotToolExecutor>();

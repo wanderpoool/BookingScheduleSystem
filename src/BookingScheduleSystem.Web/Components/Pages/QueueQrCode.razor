@@ -1,0 +1,80 @@
+@page "/queue/qrcode"
+@page "/{Slug}/queue/qrcode"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Provider,GlobalAdmin")]
+@using BookingScheduleSystem.Contracts.Queue
+
+<PageTitle>Queue QR Code</PageTitle>
+
+<AuthorizeView Roles="Provider,GlobalAdmin">
+    <Authorized>
+        <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden;">
+            <div class="d-flex align-center pa-4 px-5" style="border-bottom: 1px solid var(--mud-palette-divider);">
+                <div class="mr-auto">
+                    <MudText Typo="Typo.h6" Style="font-weight: 700;">Queue QR Code</MudText>
+                    <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);">
+                        Display this QR code for customers to scan and join the queue
+                    </MudText>
+                </div>
+            </div>
+
+            <div class="pa-5">
+                @if (_featureDisabled)
+                {
+                    <MudStack AlignItems="AlignItems.Center" Spacing="2" Class="pa-8">
+                        <MudIcon Icon="@Icons.Material.Filled.Block" Size="Size.Large" Color="Color.Secondary" />
+                        <MudText Typo="Typo.h6" Color="Color.Secondary">Queue Management Not Enabled</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                            Queue management has not been enabled for your organization. Please contact your system administrator to enable this feature.
+                        </MudText>
+                    </MudStack>
+                }
+                else if (_isLoading)
+                {
+                    <MudStack AlignItems="AlignItems.Center" Spacing="3" Class="pa-8">
+                        <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="300px" Height="300px" Style="border-radius: 14px;" />
+                        <MudSkeleton Width="200px" Height="20px" />
+                    </MudStack>
+                }
+                else if (_errorMessage != null)
+                {
+                    <MudAlert Severity="Severity.Error">@_errorMessage</MudAlert>
+                }
+                else if (_qrCodeBase64 != null)
+                {
+                    <MudStack AlignItems="AlignItems.Center" Spacing="3">
+                        <MudPaper Elevation="0" Class="pa-4" Style="border: 2px solid var(--mud-palette-divider); border-radius: 14px; background: white;">
+                            <img src="data:image/png;base64,@_qrCodeBase64"
+                                 alt="Queue QR Code"
+                                 style="width: 300px; height: 300px; display: block;" />
+                        </MudPaper>
+
+                        <MudAlert Severity="Severity.Info" Dense="true" Variant="Variant.Outlined" Style="max-width: 400px;">
+                            This QR code is valid for today only. A new code is generated each day.
+                        </MudAlert>
+
+                        <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+                            Customers scan this code to join your virtual queue.
+                        </MudText>
+
+                        <MudStack Row="true" Spacing="2" Justify="Justify.Center">
+                            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.Refresh"
+                                       OnClick="GenerateQrCode">
+                                Refresh
+                            </MudButton>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.Print"
+                                       OnClick="Print">
+                                Print
+                            </MudButton>
+                        </MudStack>
+                    </MudStack>
+                }
+            </div>
+        </MudPaper>
+    </Authorized>
+    <NotAuthorized>
+        <MudAlert Severity="Severity.Warning">You need Provider or Admin access to view the QR code.</MudAlert>
+    </NotAuthorized>
+</AuthorizeView>

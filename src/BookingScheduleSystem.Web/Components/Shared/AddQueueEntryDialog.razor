@@ -1,0 +1,89 @@
+@using BookingScheduleSystem.Contracts.Queue
+@inject IQueueService QueueService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Add a customer to today's queue manually (e.g., phone-call customers).
+            </MudText>
+
+            <MudTextField @bind-Value="_phoneNumber" Label="Phone Number" Variant="Variant.Outlined"
+                          Required="true" Placeholder="09XX-XXX-XXXX"
+                          InputType="InputType.Telephone"
+                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Phone" />
+
+            <MudTextField @bind-Value="_customerName" Label="Customer Name" Variant="Variant.Outlined"
+                          Required="true"
+                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Person" />
+
+            <MudSwitch @bind-Value="_isPriority" Color="Color.Error" Label="Priority Customer" />
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Disabled="@_isSaving">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Save" Disabled="@_isSaving">
+            @if (_isSaving)
+            {
+                <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
+                <MudText>Adding...</MudText>
+            }
+            else
+            {
+                <MudText>Add to Queue</MudText>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private string _phoneNumber = string.Empty;
+    private string _customerName = string.Empty;
+    private bool _isPriority;
+    private bool _isSaving;
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task Save()
+    {
+        if (string.IsNullOrWhiteSpace(_phoneNumber))
+        {
+            Snackbar.Add("Phone number is required.", Severity.Warning);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_customerName))
+        {
+            Snackbar.Add("Customer name is required.", Severity.Warning);
+            return;
+        }
+
+        _isSaving = true;
+
+        try
+        {
+            var request = new AddQueueEntryRequest
+            {
+                PhoneNumber = _phoneNumber.Trim(),
+                CustomerName = _customerName.Trim(),
+                IsPriority = _isPriority
+            };
+
+            await QueueService.AddQueueEntryAsync(request);
+            Snackbar.Add($"{_customerName} added to the queue.", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

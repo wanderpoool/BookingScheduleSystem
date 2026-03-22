@@ -78,6 +78,12 @@
                                                          Variant="Variant.Filled">
                                                     @(customer.IsActive ? "Active" : "Inactive")
                                                 </MudChip>
+                                                @if (customer.IsPriority)
+                                                {
+                                                    <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Filled">
+                                                        Priority
+                                                    </MudChip>
+                                                }
                                             </MudStack>
                                             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
                                                 <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" Color="Color.Secondary" />

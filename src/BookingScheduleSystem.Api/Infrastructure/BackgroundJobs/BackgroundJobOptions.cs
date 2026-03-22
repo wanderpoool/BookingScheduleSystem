@@ -9,4 +9,5 @@ public sealed class BackgroundJobOptions
     public int BatchSize { get; set; } = 100;
     public int BookingReminderIntervalMinutes { get; set; } = 30;
     public int ReminderLeadTimeMinutes { get; set; } = 60;
+    public int QueueNotificationIntervalMinutes { get; set; } = 5;
 }

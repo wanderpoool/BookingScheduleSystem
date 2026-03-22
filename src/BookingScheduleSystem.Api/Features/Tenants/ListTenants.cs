@@ -65,7 +65,10 @@ public sealed class ListTenants : Endpoint<ListTenantsRequest, ListTenantsRespon
                 OperatingHours = t.OperatingHours,
                 BannerUrl = t.BannerUrl,
                 Location = t.Location,
-                LandingPageTemplate = t.LandingPageTemplate
+                LandingPageTemplate = t.LandingPageTemplate,
+                QueueEnabled = t.QueueEnabled,
+                QueueAverageServiceTimeMinutes = t.QueueAverageServiceTimeMinutes,
+                QueueNotificationLeadMinutes = t.QueueNotificationLeadMinutes
             }).ToList(),
             TotalCount = (int)totalCount,
             PageNumber = pageNumber,

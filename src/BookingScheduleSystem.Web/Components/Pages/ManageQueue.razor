@@ -1,0 +1,194 @@
+@page "/queue/manage"
+@page "/{Slug}/queue/manage"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Provider,GlobalAdmin")]
+@using BookingScheduleSystem.Contracts.Queue
+
+<PageTitle>Manage Queue</PageTitle>
+
+<AuthorizeView Roles="Provider,GlobalAdmin">
+    <Authorized>
+        <MudPaper Elevation="0" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; overflow: hidden;">
+            @* Header *@
+            <div class="d-flex align-center flex-wrap gap-2 pa-4 px-5" style="border-bottom: 1px solid var(--mud-palette-divider);">
+                <div class="mr-auto">
+                    <MudText Typo="Typo.h6" Style="font-weight: 700;">Today's Queue</MudText>
+                    <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);">
+                        @DateTime.Now.ToString("dddd, MMMM dd, yyyy")
+                    </MudText>
+                </div>
+                <MudStack Row="true" Spacing="1">
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.QrCode"
+                               Href="@(SlugService.BuildUrl("/queue/qrcode"))">
+                        QR Code
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.PersonAdd"
+                               OnClick="OpenAddCustomerDialog">
+                        Add Customer
+                    </MudButton>
+                </MudStack>
+            </div>
+
+            <div class="pa-5">
+                @if (_featureDisabled)
+                {
+                    <MudStack AlignItems="AlignItems.Center" Spacing="2" Class="pa-8">
+                        <MudIcon Icon="@Icons.Material.Filled.Block" Size="Size.Large" Color="Color.Secondary" />
+                        <MudText Typo="Typo.h6" Color="Color.Secondary">Queue Management Not Enabled</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                            Queue management has not been enabled for your organization. Please contact your system administrator to enable this feature.
+                        </MudText>
+                    </MudStack>
+                }
+                else if (_isLoading)
+                {
+                    @* Loading skeleton *@
+                    <MudGrid Spacing="3" Class="mb-4">
+                        @for (var i = 0; i < 3; i++)
+                        {
+                            <MudItem xs="12" sm="4">
+                                <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="80px" Style="border-radius: 14px;" />
+                            </MudItem>
+                        }
+                    </MudGrid>
+                    <MudStack Spacing="2">
+                        @for (var i = 0; i < 4; i++)
+                        {
+                            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="72px" Style="border-radius: 14px;" />
+                        }
+                    </MudStack>
+                }
+                else
+                {
+                    @* Stats bar *@
+                    <MudGrid Spacing="3" Class="mb-4">
+                        <MudItem xs="4">
+                            <MudPaper Elevation="0" Class="pa-3 d-flex flex-column align-center"
+                                      Style="border: 1px solid var(--mud-palette-warning); border-radius: 14px;">
+                                <MudText Typo="Typo.h4" Color="Color.Warning" Style="font-weight: 800;">@_totalWaiting</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Waiting</MudText>
+                            </MudPaper>
+                        </MudItem>
+                        <MudItem xs="4">
+                            <MudPaper Elevation="0" Class="pa-3 d-flex flex-column align-center"
+                                      Style="border: 1px solid var(--mud-palette-info); border-radius: 14px;">
+                                <MudText Typo="Typo.h4" Color="Color.Info" Style="font-weight: 800;">@_totalCalled</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Called</MudText>
+                            </MudPaper>
+                        </MudItem>
+                        <MudItem xs="4">
+                            <MudPaper Elevation="0" Class="pa-3 d-flex flex-column align-center"
+                                      Style="border: 1px solid var(--mud-palette-success); border-radius: 14px;">
+                                <MudText Typo="Typo.h4" Color="Color.Success" Style="font-weight: 800;">@_totalCompleted</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Done</MudText>
+                            </MudPaper>
+                        </MudItem>
+                    </MudGrid>
+
+                    @if (_entries == null || _entries.Count == 0)
+                    {
+                        @* Empty state *@
+                        <MudStack AlignItems="AlignItems.Center" Spacing="2" Class="pa-8">
+                            <MudIcon Icon="@Icons.Material.Filled.Groups" Size="Size.Large" Color="Color.Secondary" />
+                            <MudText Typo="Typo.body1" Color="Color.Secondary">No customers in queue yet</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                                Share the QR code with customers or add them manually using the "Add Customer" button above.
+                            </MudText>
+                        </MudStack>
+                    }
+                    else
+                    {
+                        @* Queue entries list *@
+                        <MudStack Spacing="2">
+                            @foreach (var entry in _entries)
+                            {
+                                <MudPaper Elevation="0" Class="pa-4"
+                                          Style="@GetEntryCardStyle(entry)">
+                                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3" Style="flex: 1; min-width: 0;">
+                                            @* Queue number chip *@
+                                            <MudChip T="string" Size="Size.Medium" Color="@GetEntryStatusColor(entry.Status)"
+                                                     Variant="Variant.Filled" Style="font-weight: 800; min-width: 48px;">
+                                                @entry.QueueNumber
+                                            </MudChip>
+
+                                            <MudStack Spacing="0" Style="min-width: 0; flex: 1;">
+                                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                                    <MudText Typo="Typo.body1" Style="font-weight: 600;">
+                                                        @(entry.CustomerName ?? "Walk-in")
+                                                    </MudText>
+                                                    @if (entry.IsPriority)
+                                                    {
+                                                        <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Filled">
+                                                            Priority
+                                                        </MudChip>
+                                                    }
+                                                </MudStack>
+                                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                                    <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Small" Color="Color.Secondary" />
+                                                    <MudText Typo="Typo.body2" Color="Color.Secondary" Style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                                        @entry.PhoneNumber
+                                                    </MudText>
+                                                </MudStack>
+                                                @if (entry.Status == QueueEntryStatus.Waiting)
+                                                {
+                                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                        ETA: ~@entry.EstimatedWaitMinutes min
+                                                    </MudText>
+                                                }
+                                            </MudStack>
+                                        </MudStack>
+
+                                        @* Action buttons *@
+                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                            @switch (entry.Status)
+                                            {
+                                                case QueueEntryStatus.Waiting:
+                                                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                                                               OnClick="@(() => CallNext(entry))">
+                                                        Call
+                                                    </MudButton>
+                                                    <QueueEntryActionsMenu Entry="entry"
+                                                                          OnSkip="@(() => SkipEntry(entry))"
+                                                                          OnNoShow="@(() => MarkNoShow(entry))"
+                                                                          OnMoveUp="@(() => MoveUp(entry))"
+                                                                          OnMoveDown="@(() => MoveDown(entry))" />
+                                                    break;
+
+                                                case QueueEntryStatus.Called:
+                                                    <MudButton Variant="Variant.Filled" Color="Color.Info" Size="Size.Small"
+                                                               OnClick="@(() => StartService(entry))">
+                                                        Start
+                                                    </MudButton>
+                                                    break;
+
+                                                case QueueEntryStatus.InService:
+                                                    <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Small"
+                                                               OnClick="@(() => MarkDone(entry))">
+                                                        Done
+                                                    </MudButton>
+                                                    break;
+
+                                                default:
+                                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                                                             Color="@GetEntryStatusColor(entry.Status)">
+                                                        @GetEntryStatusLabel(entry.Status)
+                                                    </MudChip>
+                                                    break;
+                                            }
+                                        </MudStack>
+                                    </MudStack>
+                                </MudPaper>
+                            }
+                        </MudStack>
+                    }
+                }
+            </div>
+        </MudPaper>
+    </Authorized>
+    <NotAuthorized>
+        <MudAlert Severity="Severity.Warning">You need Provider or Admin access to manage the queue.</MudAlert>
+    </NotAuthorized>
+</AuthorizeView>

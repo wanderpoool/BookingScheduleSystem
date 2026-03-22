@@ -8,4 +8,5 @@ public sealed record UpdateUserRequest
     public string? WorkingHours { get; init; }
     public bool? AutoAcceptBookings { get; init; }
     public Guid? TenantId { get; init; }
+    public bool? IsPriority { get; init; }
 }

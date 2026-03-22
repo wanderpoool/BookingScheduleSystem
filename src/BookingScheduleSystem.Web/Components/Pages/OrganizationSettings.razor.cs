@@ -14,17 +14,26 @@ public partial class OrganizationSettings
 
     [Inject] private ITenantService TenantService { get; set; } = default!;
     [Inject] private AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
+    [Inject] private ITenantSlugService SlugService { get; set; } = default!;
     [Inject] private ISnackbar Snackbar { get; set; } = default!;
 
     private TenantResponse? _tenant;
     private bool _isLoading = true;
     private bool _isEditing;
+    private bool _isGlobalAdmin;
     private bool _isSaving;
     private string? _tenantId;
     private string _editName = string.Empty;
     private string? _editDescription;
     private string? _editLocation;
     private string _editLandingPageTemplate = "simple";
+
+    // Queue settings state
+    private bool _isEditingQueue;
+    private bool _isSavingQueue;
+    private bool _editQueueEnabled;
+    private int _editAverageServiceTime = 15;
+    private int _editNotificationLeadMinutes = 15;
 
     // Operating hours state
     private Dictionary<DayOfWeek, DayScheduleModel> _operatingHours = OperatingHoursHelper.GetDefaultHours();
@@ -41,6 +50,7 @@ public partial class OrganizationSettings
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _isGlobalAdmin = authState.User.IsInRole("GlobalAdmin");
         _tenantId = authState.User.FindFirst("TenantId")?.Value;
 
         if (!string.IsNullOrEmpty(_tenantId))
@@ -199,6 +209,59 @@ public partial class OrganizationSettings
         finally
         {
             _isSavingHours = false;
+        }
+    }
+
+    private void StartEditingQueue()
+    {
+        if (_tenant == null) return;
+        _editQueueEnabled = _tenant.QueueEnabled;
+        _editAverageServiceTime = _tenant.QueueAverageServiceTimeMinutes;
+        _editNotificationLeadMinutes = _tenant.QueueNotificationLeadMinutes;
+        _isEditingQueue = true;
+    }
+
+    private void CancelEditingQueue()
+    {
+        _isEditingQueue = false;
+    }
+
+    private async Task SaveQueueSettings()
+    {
+        _isSavingQueue = true;
+        StateHasChanged();
+
+        try
+        {
+            var request = new UpdateTenantRequest
+            {
+                Name = _tenant!.Name,
+                Description = _tenant.Description,
+                Location = _tenant.Location,
+                OperatingHours = _tenant.OperatingHours,
+                BannerUrl = _tenant.BannerUrl,
+                LandingPageTemplate = _tenant.LandingPageTemplate,
+                QueueEnabled = _isGlobalAdmin ? _editQueueEnabled : null,
+                QueueAverageServiceTimeMinutes = _editAverageServiceTime,
+                QueueNotificationLeadMinutes = _editNotificationLeadMinutes
+            };
+
+            var updated = await TenantService.UpdateTenantAsync(Guid.Parse(_tenantId!), request);
+            if (updated != null)
+            {
+                _tenant = updated;
+                _isEditingQueue = false;
+                SlugService.SetQueueEnabled(updated.QueueEnabled);
+                Snackbar.Add("Queue settings updated!", Severity.Success);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isSavingQueue = false;
         }
     }
 

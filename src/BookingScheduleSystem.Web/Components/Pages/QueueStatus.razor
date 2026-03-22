@@ -1,0 +1,113 @@
+@page "/queue/status/{EntryId:guid}"
+@rendermode InteractiveServer
+@layout BareLayout
+@attribute [AllowAnonymous]
+@using Microsoft.AspNetCore.Authorization
+@using BookingScheduleSystem.Contracts.Queue
+
+<PageTitle>Queue Status</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraSmall" Class="pa-4" Style="min-height: 100vh; display: flex; flex-direction: column; justify-content: center;">
+    @if (_isLoading)
+    {
+        <MudStack AlignItems="AlignItems.Center" Spacing="3" Class="pa-8">
+            <MudSkeleton SkeletonType="SkeletonType.Circle" Width="80px" Height="80px" />
+            <MudSkeleton Width="120px" Height="32px" />
+            <MudSkeleton Width="200px" Height="16px" />
+            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="120px" Style="width: 100%; border-radius: 14px;" />
+        </MudStack>
+    }
+    else if (_errorMessage != null)
+    {
+        <MudStack AlignItems="AlignItems.Center" Spacing="3" Class="pa-8">
+            <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" Size="Size.Large" Color="Color.Error" />
+            <MudText Typo="Typo.h6" Align="Align.Center" Style="font-weight: 700;">Not Found</MudText>
+            <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary">@_errorMessage</MudText>
+        </MudStack>
+    }
+    else if (_entry != null)
+    {
+        <MudStack AlignItems="AlignItems.Center" Spacing="3">
+            @* Queue number card *@
+            <MudPaper Elevation="0" Class="pa-6 d-flex flex-column align-center" Style="@($"{GetStatusCardStyle()} width: 100%;")">
+                <MudText Typo="Typo.overline" Color="Color.Secondary">QUEUE NUMBER</MudText>
+                <MudText Typo="Typo.h2" Style="font-weight: 800; color: var(--mud-palette-primary);">@_entry.QueueNumber</MudText>
+                <MudChip T="string" Size="Size.Small" Color="@GetStatusColor()" Variant="Variant.Filled" Class="mt-2">
+                    @GetStatusLabel()
+                </MudChip>
+            </MudPaper>
+
+            @* Status-specific messaging *@
+            @switch (_entry.Status)
+            {
+                case QueueEntryStatus.Waiting:
+                    <MudPaper Elevation="0" Class="pa-4" Style="border: 1px solid var(--mud-palette-divider); border-radius: 14px; width: 100%;">
+                        <MudStack Spacing="2" AlignItems="AlignItems.Center">
+                            <MudIcon Icon="@Icons.Material.Filled.HourglassTop" Size="Size.Large" Color="Color.Warning" />
+                            <MudText Typo="Typo.body1" Align="Align.Center" Style="font-weight: 600;">
+                                Estimated wait: ~@_entry.EstimatedWaitMinutes min
+                            </MudText>
+                            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+                                We'll send you an SMS when your turn is approaching. You can leave the area and come back.
+                            </MudText>
+                        </MudStack>
+                    </MudPaper>
+                    break;
+
+                case QueueEntryStatus.Called:
+                    <MudAlert Severity="Severity.Success" Variant="Variant.Filled" Dense="false" Class="mt-2" Style="width: 100%;">
+                        <MudText Typo="Typo.h6" Align="Align.Center" Style="font-weight: 700;">It's Your Turn!</MudText>
+                        <MudText Typo="Typo.body1" Align="Align.Center">Please proceed to the service area now.</MudText>
+                    </MudAlert>
+                    break;
+
+                case QueueEntryStatus.InService:
+                    <MudAlert Severity="Severity.Info" Variant="Variant.Filled" Dense="false" Class="mt-2" Style="width: 100%;">
+                        <MudText Typo="Typo.h6" Align="Align.Center" Style="font-weight: 700;">You're Being Served</MudText>
+                    </MudAlert>
+                    break;
+
+                case QueueEntryStatus.Completed:
+                    <MudStack AlignItems="AlignItems.Center" Spacing="2" Class="mt-2">
+                        <MudIcon Icon="@Icons.Material.Filled.TaskAlt" Size="Size.Large" Color="Color.Success" />
+                        <MudText Typo="Typo.h6" Align="Align.Center" Style="font-weight: 700;">Service Completed</MudText>
+                        <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary">Thank you for visiting!</MudText>
+                    </MudStack>
+                    break;
+
+                case QueueEntryStatus.Skipped:
+                case QueueEntryStatus.NoShow:
+                    <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Dense="false" Class="mt-2" Style="width: 100%;">
+                        <MudText Typo="Typo.body1" Align="Align.Center">
+                            You were marked as @(_entry.Status == QueueEntryStatus.Skipped ? "skipped" : "no-show").
+                            Please contact staff if you're still here.
+                        </MudText>
+                    </MudAlert>
+                    break;
+            }
+
+            @* Refresh button — only for active statuses *@
+            @if (_entry.Status is QueueEntryStatus.Waiting or QueueEntryStatus.Called or QueueEntryStatus.InService)
+            {
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true"
+                           OnClick="RefreshStatus" Disabled="_isRefreshing"
+                           StartIcon="@Icons.Material.Filled.Refresh"
+                           Style="height: 48px; font-size: 1rem;" Class="mt-2">
+                    @if (_isRefreshing)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                        <text>Refreshing...</text>
+                    }
+                    else
+                    {
+                        <text>Refresh Status</text>
+                    }
+                </MudButton>
+            }
+
+            <MudText Typo="Typo.caption" Align="Align.Center" Color="Color.Secondary" Class="mt-2">
+                Joined at @_entry.JoinedAt.ToString("h:mm tt")
+            </MudText>
+        </MudStack>
+    }
+</MudContainer>

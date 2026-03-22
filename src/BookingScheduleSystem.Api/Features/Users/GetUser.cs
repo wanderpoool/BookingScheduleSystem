@@ -71,7 +71,8 @@ public sealed class GetUser : Endpoint<GetUserRequest, UserResponse>
             CreatedAt = user.CreatedAt,
             IsActive = user.IsActive,
             WorkingHours = user.WorkingHours,
-            AutoAcceptBookings = user.AutoAcceptBookings
+            AutoAcceptBookings = user.AutoAcceptBookings,
+            IsPriority = user.IsPriority
         };
     }
 }

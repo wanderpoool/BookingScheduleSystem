@@ -8,6 +8,7 @@ using BookingScheduleSystem.Api.Infrastructure.Database;
 using BookingScheduleSystem.Api.Infrastructure.MultiTenancy;
 using BookingScheduleSystem.Api.Infrastructure.Schedules;
 using BookingScheduleSystem.Api.Infrastructure.Notifications;
+using BookingScheduleSystem.Api.Infrastructure.Queue;
 using BookingScheduleSystem.Api.Infrastructure.Subscriptions;
 using FastEndpoints;
 using Marten;
@@ -162,6 +163,13 @@ builder.Services.AddMarten(options =>
     // Configure OtpRecord document for distributed OTP storage
     options.Schema.For<OtpRecord>().Identity(o => o.Id);
 
+    // Configure DailyQueue document with QueueId as identity
+    options.Schema.For<DailyQueue>()
+        .Identity(q => q.Id)
+        .UseOptimisticConcurrency(true)
+        .Index(q => q.TenantId)
+        .Index(q => q.DailyToken);
+
     // Configure UserTenant document (cross-tenant: maps users to tenants)
     options.Schema.For<UserTenant>()
         .Identity(ut => ut.Id)
@@ -209,6 +217,7 @@ builder.Services.AddHostedService<UsageStatisticsResetJob>();
 builder.Services.AddHostedService<MigrateUserTenantRecords>();
 builder.Services.AddHostedService<MigrateBookingReferenceNumbers>();
 builder.Services.AddHostedService<BookingReminderJob>();
+builder.Services.AddHostedService<QueueNotificationJob>();
 
 // Configure JWT authentication
 var jwtSecretKey = builder.Configuration["Jwt:SecretKey"]

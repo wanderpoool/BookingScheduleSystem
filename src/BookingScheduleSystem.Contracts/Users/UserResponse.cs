@@ -16,4 +16,5 @@ public sealed record UserResponse
     public required bool IsActive { get; init; }
     public string? WorkingHours { get; init; }
     public bool AutoAcceptBookings { get; init; }
+    public bool IsPriority { get; init; }
 }

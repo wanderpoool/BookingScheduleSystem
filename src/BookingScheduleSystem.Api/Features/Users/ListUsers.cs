@@ -83,7 +83,8 @@ public sealed class ListUsers : Endpoint<ListUsersRequest, ListUsersResponse>
                     CreatedAt = u.CreatedAt,
                     IsActive = u.IsActive,
                     WorkingHours = u.WorkingHours,
-                    AutoAcceptBookings = u.AutoAcceptBookings
+                    AutoAcceptBookings = u.AutoAcceptBookings,
+                    IsPriority = u.IsPriority
                 }).ToList(),
                 TotalCount = totalCount,
                 PageNumber = pageNumber,
@@ -129,7 +130,8 @@ public sealed class ListUsers : Endpoint<ListUsersRequest, ListUsersResponse>
                 CreatedAt = u.CreatedAt,
                 IsActive = u.IsActive,
                 WorkingHours = u.WorkingHours,
-                AutoAcceptBookings = u.AutoAcceptBookings
+                AutoAcceptBookings = u.AutoAcceptBookings,
+                IsPriority = u.IsPriority
             }).ToList(),
             TotalCount = (int)totalGlobalCount,
             PageNumber = pageNumber,

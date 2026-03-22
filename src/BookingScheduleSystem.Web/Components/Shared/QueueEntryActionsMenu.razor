@@ -1,0 +1,25 @@
+@using BookingScheduleSystem.Contracts.Queue
+
+<MudMenu Icon="@Icons.Material.Filled.MoreVert" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Size="Size.Small">
+    <MudMenuItem Icon="@Icons.Material.Filled.SkipNext" OnClick="@OnSkip">
+        Skip
+    </MudMenuItem>
+    <MudMenuItem Icon="@Icons.Material.Filled.PersonOff" OnClick="@OnNoShow">
+        No Show
+    </MudMenuItem>
+    <MudDivider />
+    <MudMenuItem Icon="@Icons.Material.Filled.ArrowUpward" OnClick="@OnMoveUp">
+        Move Up
+    </MudMenuItem>
+    <MudMenuItem Icon="@Icons.Material.Filled.ArrowDownward" OnClick="@OnMoveDown">
+        Move Down
+    </MudMenuItem>
+</MudMenu>
+
+@code {
+    [Parameter] public QueueEntryResponse Entry { get; set; } = default!;
+    [Parameter] public EventCallback OnSkip { get; set; }
+    [Parameter] public EventCallback OnNoShow { get; set; }
+    [Parameter] public EventCallback OnMoveUp { get; set; }
+    [Parameter] public EventCallback OnMoveDown { get; set; }
+}

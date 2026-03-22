@@ -25,4 +25,9 @@ public sealed class Tenant
     public string? BannerUrl { get; set; }
     public string? Location { get; set; }
     public string? LandingPageTemplate { get; set; }
+
+    // Queue management settings
+    public bool QueueEnabled { get; set; }
+    public int QueueAverageServiceTimeMinutes { get; set; } = 15;
+    public int QueueNotificationLeadMinutes { get; set; } = 15;
 }

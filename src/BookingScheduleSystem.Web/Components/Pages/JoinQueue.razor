@@ -1,0 +1,107 @@
+@page "/queue/join"
+@rendermode InteractiveServer
+@layout BareLayout
+@attribute [AllowAnonymous]
+@using Microsoft.AspNetCore.Authorization
+@using BookingScheduleSystem.Contracts.Queue
+
+<PageTitle>Join Queue</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraSmall" Class="pa-4" Style="min-height: 100vh; display: flex; flex-direction: column; justify-content: center;">
+    @if (_isLoading)
+    {
+        <MudStack AlignItems="AlignItems.Center" Spacing="3" Class="pa-8">
+            <MudSkeleton SkeletonType="SkeletonType.Circle" Width="64px" Height="64px" />
+            <MudSkeleton Width="200px" Height="24px" />
+            <MudSkeleton Width="160px" Height="16px" />
+            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="56px" Style="width: 100%; border-radius: 14px;" />
+            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="56px" Style="width: 100%; border-radius: 14px;" />
+            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="48px" Style="width: 100%; border-radius: 14px;" />
+        </MudStack>
+    }
+    else if (_errorMessage != null)
+    {
+        <MudStack AlignItems="AlignItems.Center" Spacing="3" Class="pa-8">
+            <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" Size="Size.Large" Color="Color.Error" />
+            <MudText Typo="Typo.h6" Align="Align.Center" Style="font-weight: 700;">Queue Unavailable</MudText>
+            <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary">@_errorMessage</MudText>
+        </MudStack>
+    }
+    else if (_joinResult != null)
+    {
+        @* Success state — show queue number *@
+        <MudStack AlignItems="AlignItems.Center" Spacing="3">
+            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Large" Color="Color.Success" />
+            <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Secondary">You're in the queue!</MudText>
+
+            <MudPaper Elevation="0" Class="pa-6 d-flex flex-column align-center" Style="border: 2px solid var(--mud-palette-primary); border-radius: 14px; width: 100%;">
+                <MudText Typo="Typo.overline" Color="Color.Secondary">YOUR QUEUE NUMBER</MudText>
+                <MudText Typo="Typo.h2" Color="Color.Primary" Style="font-weight: 800;">@_joinResult.QueueNumber</MudText>
+            </MudPaper>
+
+            <MudStack Spacing="1" AlignItems="AlignItems.Center">
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    Position: @_joinResult.PositionInQueue of @(_queueInfo?.CurrentWaitingCount ?? _joinResult.PositionInQueue)
+                </MudText>
+                <MudText Typo="Typo.body1" Style="font-weight: 600;">
+                    Estimated wait: ~@_joinResult.EstimatedWaitMinutes min
+                </MudText>
+            </MudStack>
+
+            <MudAlert Severity="Severity.Info" Dense="true" Class="mt-2" Style="width: 100%;">
+                We'll send an SMS to your phone when your turn is approaching. You can leave the area and come back.
+            </MudAlert>
+
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
+                       Href="@($"/queue/status/{_joinResult.EntryId.Value}")"
+                       Style="height: 48px; font-size: 1rem;" Class="mt-2">
+                Check My Status
+            </MudButton>
+        </MudStack>
+    }
+    else
+    {
+        @* Join form *@
+        <MudStack AlignItems="AlignItems.Center" Spacing="3">
+            <MudIcon Icon="@Icons.Material.Filled.Groups" Size="Size.Large" Color="Color.Primary" />
+            <MudText Typo="Typo.h5" Align="Align.Center" Style="font-weight: 700;">@(_queueInfo?.TenantName ?? "Join Queue")</MudText>
+            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+                @if (_queueInfo != null)
+                {
+                    <text>@_queueInfo.CurrentWaitingCount people currently waiting</text>
+                }
+            </MudText>
+
+            <MudTextField @bind-Value="_phoneNumber" Label="Phone Number" Variant="Variant.Outlined"
+                          InputType="InputType.Telephone" Required="true"
+                          Placeholder="09XX-XXX-XXXX"
+                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Phone"
+                          Style="font-size: 16px;" FullWidth="true" />
+
+            <MudTextField @bind-Value="_customerName" Label="Name (optional)" Variant="Variant.Outlined"
+                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Person"
+                          Style="font-size: 16px;" FullWidth="true" />
+
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
+                       OnClick="HandleJoinQueue" Disabled="_isJoining"
+                       Style="height: 48px; font-size: 1rem;" Class="mt-2">
+                @if (_isJoining)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    <text>Joining...</text>
+                }
+                else
+                {
+                    <text>Join Queue</text>
+                }
+            </MudButton>
+
+            @if (_queueInfo != null)
+            {
+                <MudText Typo="Typo.caption" Align="Align.Center" Color="Color.Secondary" Class="mt-2">
+                    Average service time: ~@_queueInfo.AverageServiceTimeMinutes min per person
+                </MudText>
+            }
+        </MudStack>
+    }
+</MudContainer>
