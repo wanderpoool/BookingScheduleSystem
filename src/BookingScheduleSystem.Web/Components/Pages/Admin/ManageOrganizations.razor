@@ -1,0 +1,239 @@
+@page "/admin/organizations"
+@page "/{Slug}/admin/organizations"
+@attribute [Authorize]
+@using BookingScheduleSystem.Contracts.Common
+@using BookingScheduleSystem.Contracts.Tenants
+@using BookingScheduleSystem.Web.Components.Admin
+@using BookingScheduleSystem.Web.Services
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "GlobalAdmin")]
+@inject ITenantService TenantService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>Manage Organizations</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="py-4">
+    <MudText Typo="Typo.h5" Class="mb-4">Manage Organizations</MudText>
+
+    @if (_loading)
+    {
+        <MudStack Spacing="2">
+            @for (var i = 0; i < 5; i++)
+            {
+                <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="52px" />
+            }
+        </MudStack>
+    }
+    else if (_errorMessage is not null)
+    {
+        <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Class="mb-4">
+            @_errorMessage
+        </MudAlert>
+        <MudButton Variant="Variant.Outlined" OnClick="LoadTenantsAsync"
+                   StartIcon="@Icons.Material.Filled.Refresh">
+            Retry
+        </MudButton>
+    }
+    else
+    {
+        @* Desktop Table *@
+        <MudHidden Breakpoint="Breakpoint.Xs">
+            <MudTable Items="_tenants" Hover="true" Striped="true" Dense="true"
+                      Loading="_loading" LoadingProgressColor="Color.Primary">
+                <HeaderContent>
+                    <MudTh>Name</MudTh>
+                    <MudTh>Subdomain</MudTh>
+                    <MudTh>Status</MudTh>
+                    <MudTh>Queue</MudTh>
+                    <MudTh Style="text-align: right;">Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate Context="tenant">
+                    <MudTd DataLabel="Name">@tenant.Name</MudTd>
+                    <MudTd DataLabel="Subdomain">@tenant.Subdomain</MudTd>
+                    <MudTd DataLabel="Status">
+                        <MudChip T="string" Size="Size.Small"
+                                 Color="@GetStatusColor(tenant)"
+                                 Variant="Variant.Filled">
+                            @GetStatusLabel(tenant)
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Queue">
+                        <MudChip T="string" Size="Size.Small"
+                                 Color="@(tenant.QueueEnabled ? Color.Success : Color.Default)"
+                                 Variant="@(tenant.QueueEnabled ? Variant.Filled : Variant.Outlined)">
+                            @(tenant.QueueEnabled ? "Enabled" : "Disabled")
+                        </MudChip>
+                    </MudTd>
+                    <MudTd Style="text-align: right;">
+                        <MudMenu Icon="@Icons.Material.Filled.MoreVert" Dense="true"
+                                 AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                            <MudMenuItem Icon="@Icons.Material.Filled.FormatListNumbered"
+                                         OnClick="@(() => OpenQueueSettingsDialog(tenant))">
+                                Queue Settings
+                            </MudMenuItem>
+                        </MudMenu>
+                    </MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText Typo="Typo.body1" Align="Align.Center" Class="py-6">
+                        No organizations found.
+                    </MudText>
+                </NoRecordsContent>
+            </MudTable>
+        </MudHidden>
+
+        @* Mobile Card List *@
+        <MudHidden Breakpoint="Breakpoint.SmAndUp">
+            <MudStack Spacing="2">
+                @if (!_tenants.Any())
+                {
+                    <MudText Typo="Typo.body1" Align="Align.Center" Class="py-6">
+                        No organizations found.
+                    </MudText>
+                }
+                @foreach (var tenant in _tenants)
+                {
+                    <MudCard Elevation="1">
+                        <MudCardContent>
+                            <MudStack Spacing="1">
+                                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                    <MudText Typo="Typo.subtitle1" Style="font-weight: 600;">
+                                        @tenant.Name
+                                    </MudText>
+                                    <MudChip T="string" Size="Size.Small"
+                                             Color="@GetStatusColor(tenant)"
+                                             Variant="Variant.Filled">
+                                        @GetStatusLabel(tenant)
+                                    </MudChip>
+                                </MudStack>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                    @tenant.Subdomain
+                                </MudText>
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Queue:</MudText>
+                                    <MudChip T="string" Size="Size.Small"
+                                             Color="@(tenant.QueueEnabled ? Color.Success : Color.Default)"
+                                             Variant="@(tenant.QueueEnabled ? Variant.Filled : Variant.Outlined)">
+                                        @(tenant.QueueEnabled ? "Enabled" : "Disabled")
+                                    </MudChip>
+                                </MudStack>
+                            </MudStack>
+                        </MudCardContent>
+                        <MudCardActions>
+                            <MudButton Size="Size.Small" Variant="Variant.Text"
+                                       StartIcon="@Icons.Material.Filled.FormatListNumbered"
+                                       OnClick="@(() => OpenQueueSettingsDialog(tenant))">
+                                Queue Settings
+                            </MudButton>
+                        </MudCardActions>
+                    </MudCard>
+                }
+            </MudStack>
+        </MudHidden>
+    }
+</MudContainer>
+
+@code {
+    [Parameter] public string? Slug { get; set; }
+
+    private List<TenantResponse> _tenants = new();
+    private bool _loading = true;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTenantsAsync();
+    }
+
+    private async Task LoadTenantsAsync()
+    {
+        _loading = true;
+        _errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            _tenants = await TenantService.ListTenantsAsync() ?? new();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to load organizations: {ex.Message}";
+            _tenants = new();
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OpenQueueSettingsDialog(TenantResponse tenant)
+    {
+        var parameters = new DialogParameters<QueueSettingsDialog>
+        {
+            { x => x.TenantName, tenant.Name },
+            { x => x.QueueEnabled, tenant.QueueEnabled },
+            { x => x.AverageServiceTimeMinutes, tenant.QueueAverageServiceTimeMinutes },
+            { x => x.NotificationLeadMinutes, tenant.QueueNotificationLeadMinutes }
+        };
+
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+            CloseOnEscapeKey = true
+        };
+
+        var dialog = await DialogService.ShowAsync<QueueSettingsDialog>("Queue Settings", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is not null && !result.Canceled && result.Data is QueueSettingsDialog.QueueSettingsResult settings)
+        {
+            await SaveQueueSettings(tenant, settings);
+        }
+    }
+
+    private async Task SaveQueueSettings(TenantResponse tenant, QueueSettingsDialog.QueueSettingsResult settings)
+    {
+        try
+        {
+            var request = new UpdateTenantRequest
+            {
+                Name = tenant.Name,
+                Description = tenant.Description,
+                OperatingHours = tenant.OperatingHours,
+                BannerUrl = tenant.BannerUrl,
+                Location = tenant.Location,
+                LandingPageTemplate = tenant.LandingPageTemplate,
+                QueueEnabled = settings.QueueEnabled,
+                QueueAverageServiceTimeMinutes = settings.AverageServiceTimeMinutes,
+                QueueNotificationLeadMinutes = settings.NotificationLeadMinutes
+            };
+
+            await TenantService.UpdateTenantAsync(tenant.Id.Value, request);
+            Snackbar.Add("Queue settings updated successfully.", Severity.Success);
+            await LoadTenantsAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch
+        {
+            Snackbar.Add("Failed to update queue settings.", Severity.Error);
+        }
+    }
+
+    private static string GetStatusLabel(TenantResponse tenant)
+    {
+        if (tenant.IsInTrial) return "Trial";
+        return tenant.IsActive ? "Active" : "Inactive";
+    }
+
+    private static Color GetStatusColor(TenantResponse tenant)
+    {
+        if (tenant.IsInTrial) return Color.Info;
+        return tenant.IsActive ? Color.Success : Color.Default;
+    }
+}

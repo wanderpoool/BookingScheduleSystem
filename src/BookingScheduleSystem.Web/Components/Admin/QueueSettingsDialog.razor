@@ -1,0 +1,102 @@
+@using BookingScheduleSystem.Contracts.Common
+@using BookingScheduleSystem.Contracts.Tenants
+
+<MudDialog ClassContent="overflow-visible">
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudText Typo="Typo.body1">
+                Queue settings for <strong>@TenantName</strong>
+            </MudText>
+
+            <MudSwitch T="bool" @bind-Value="_queueEnabled"
+                       Label="Queue Enabled"
+                       Color="Color.Primary" />
+
+            <MudNumericField T="int" @bind-Value="_averageServiceTimeMinutes"
+                             Label="Average Service Time (minutes)"
+                             Variant="Variant.Outlined"
+                             Min="5" Max="120"
+                             Disabled="@(!_queueEnabled)" />
+
+            <MudNumericField T="int" @bind-Value="_notificationLeadMinutes"
+                             Label="Notification Lead Time (minutes)"
+                             Variant="Variant.Outlined"
+                             Min="5" Max="60"
+                             Disabled="@(!_queueEnabled)" />
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudHidden Breakpoint="Breakpoint.Xs">
+            <MudButton OnClick="Cancel">Cancel</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Save"
+                       StartIcon="@Icons.Material.Filled.Save">
+                Save
+            </MudButton>
+        </MudHidden>
+        <MudHidden Breakpoint="Breakpoint.SmAndUp">
+            <MudStack Spacing="2" Style="width: 100%;">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Save"
+                           StartIcon="@Icons.Material.Filled.Save"
+                           FullWidth="true"
+                           Size="Size.Medium"
+                           Style="min-height: 48px;">
+                    Save
+                </MudButton>
+                <MudButton OnClick="Cancel"
+                           FullWidth="true"
+                           Size="Size.Medium"
+                           Style="min-height: 48px;">
+                    Cancel
+                </MudButton>
+            </MudStack>
+        </MudHidden>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public string TenantName { get; set; } = "";
+
+    [Parameter]
+    public bool QueueEnabled { get; set; }
+
+    [Parameter]
+    public int AverageServiceTimeMinutes { get; set; } = 15;
+
+    [Parameter]
+    public int NotificationLeadMinutes { get; set; } = 15;
+
+    private bool _queueEnabled;
+    private int _averageServiceTimeMinutes;
+    private int _notificationLeadMinutes;
+
+    protected override void OnParametersSet()
+    {
+        _queueEnabled = QueueEnabled;
+        _averageServiceTimeMinutes = AverageServiceTimeMinutes;
+        _notificationLeadMinutes = NotificationLeadMinutes;
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void Save()
+    {
+        var result = new QueueSettingsResult
+        {
+            QueueEnabled = _queueEnabled,
+            AverageServiceTimeMinutes = _averageServiceTimeMinutes,
+            NotificationLeadMinutes = _notificationLeadMinutes
+        };
+        MudDialog.Close(DialogResult.Ok(result));
+    }
+
+    public sealed record QueueSettingsResult
+    {
+        public bool QueueEnabled { get; init; }
+        public int AverageServiceTimeMinutes { get; init; }
+        public int NotificationLeadMinutes { get; init; }
+    }
+}
